@@ -1,0 +1,69 @@
+<div class="affliction-manager-content">
+  {{#if hasAfflictions}}
+    {{#each tokens}}
+      <div class="token-section">
+        <div class="token-header">
+          <img src="{{img}}" alt="{{name}}" />
+          <h3>{{name}}</h3>
+        </div>
+
+        {{#each afflictions}}
+          <div class="affliction-row">
+            <div class="affliction-info">
+              <h4>
+                {{name}} ({{type}})
+                {{#if hasWarning}}
+                  <i class="fas fa-exclamation-triangle" style="color: #ff6b00;" title="{{localize 'PF2E_AFFLICTIONER.MANAGER.MANUAL_HANDLING_REQUIRED'}}"></i>
+                {{/if}}
+              </h4>
+              <div class="affliction-details">
+                <span class="stage">
+                  {{stageDisplay}}
+                  <i class="fas fa-info-circle stage-info" title="{{stageTooltip}}"></i>
+                </span>
+                <span class="next-save">{{localize 'PF2E_AFFLICTIONER.MANAGER.NEXT_SAVE'}}: {{nextSaveDisplay}}</span>
+                <span class="treatment">{{treatmentDisplay}}</span>
+              </div>
+            </div>
+
+            <div class="affliction-actions">
+              <button type="button" data-action="rollSave"
+                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_SAVE'}}">
+                <i class="fas fa-dice-d20"></i>
+              </button>
+              <button type="button" data-action="treatAffliction"
+                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.TREAT'}}">
+                <i class="fas fa-medkit"></i>
+              </button>
+              <button type="button" data-action="progressStage"
+                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.PROGRESS_STAGE'}}">
+                <i class="fas fa-arrow-up"></i>
+              </button>
+              <button type="button" data-action="regressStage"
+                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.REGRESS_STAGE'}}">
+                <i class="fas fa-arrow-down"></i>
+              </button>
+              <button type="button" data-action="removeAffliction"
+                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.REMOVE_AFFLICTION'}}">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    {{/each}}
+  {{else}}
+    <p class="no-afflictions">{{localize 'PF2E_AFFLICTIONER.MANAGER.NO_AFFLICTIONS'}}</p>
+  {{/if}}
+
+  <div class="manager-footer">
+    <button type="button" data-action="addAffliction">
+      <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.MANAGER.ADD_AFFLICTION'}}
+    </button>
+  </div>
+</div>

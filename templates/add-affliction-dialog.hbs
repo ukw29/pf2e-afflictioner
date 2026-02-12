@@ -1,0 +1,49 @@
+<div class="add-affliction-content">
+  <div class="token-info">
+    <img src="{{token.img}}" alt="{{token.name}}" />
+    <h3>{{localize 'PF2E_AFFLICTIONER.DIALOG.ADD_TO'}} {{token.name}}</h3>
+  </div>
+
+  <div class="drop-zone">
+    <i class="fas fa-file-medical"></i>
+    <p>{{localize 'PF2E_AFFLICTIONER.DIALOG.DROP_ITEM'}}</p>
+  </div>
+
+  {{#if hasItems}}
+    <div class="affliction-list">
+      {{#if actorItems.length}}
+        <h4>{{localize 'PF2E_AFFLICTIONER.DIALOG.ACTOR_ITEMS'}}</h4>
+        <div class="item-grid">
+          {{#each actorItems}}
+            <button type="button" class="item-button" data-action="addFromItem" data-item-uuid="{{uuid}}">
+              <img src="{{img}}" alt="{{name}}" />
+              <span class="item-name">{{name}}</span>
+              <span class="item-type">{{type}}</span>
+            </button>
+          {{/each}}
+        </div>
+      {{/if}}
+
+      {{#if compendiumItems.length}}
+        <h4>{{localize 'PF2E_AFFLICTIONER.DIALOG.COMPENDIUM_ITEMS'}}</h4>
+        <div class="item-grid">
+          {{#each compendiumItems}}
+            <button type="button" class="item-button" data-action="addFromItem" data-item-uuid="{{uuid}}">
+              <img src="{{img}}" alt="{{name}}" />
+              <span class="item-name">{{name}}</span>
+              <span class="item-pack">{{pack}}</span>
+            </button>
+          {{/each}}
+        </div>
+      {{/if}}
+    </div>
+  {{else}}
+    <p class="no-items">{{localize 'PF2E_AFFLICTIONER.DIALOG.NO_ITEMS'}}</p>
+  {{/if}}
+
+  <div class="dialog-buttons">
+    <button type="button" data-action="addManual">
+      <i class="fas fa-edit"></i> {{localize 'PF2E_AFFLICTIONER.DIALOG.MANUAL_ENTRY'}}
+    </button>
+  </div>
+</div>

@@ -1,0 +1,59 @@
+{
+  "PF2E_AFFLICTIONER": {
+    "MANAGER": {
+      "TITLE": "Affliction Manager",
+      "NO_AFFLICTIONS": "No active afflictions",
+      "ADD_AFFLICTION": "Add Affliction",
+      "REMOVE_AFFLICTION": "Remove Affliction",
+      "ROLL_SAVE": "Roll Save",
+      "TREAT": "Treat",
+      "PROGRESS_STAGE": "Progress Stage",
+      "REGRESS_STAGE": "Regress Stage",
+      "NEXT_SAVE": "Next Save",
+      "TREATMENT": "Treatment",
+      "NOT_TREATED": "Not treated",
+      "ONSET": "Onset",
+      "STAGE": "Stage",
+      "ROUND": "Round",
+      "IN_ROUNDS": "In {rounds} round(s)",
+      "NOW": "Now",
+      "MANUAL_HANDLING_REQUIRED": "This stage requires manual handling by the GM"
+    },
+    "DIALOG": {
+      "ADD_AFFLICTION_TITLE": "Add Affliction",
+      "ADD_TO": "Add Affliction to",
+      "DROP_ITEM": "Drag and drop an item with poison or disease trait here",
+      "ACTOR_ITEMS": "From Actor",
+      "COMPENDIUM_ITEMS": "From Compendiums",
+      "NO_ITEMS": "No affliction items found. Drag an item here or use manual entry.",
+      "MANUAL_ENTRY": "Manual Entry",
+      "INITIAL_SAVE_TITLE": "{afflictionName} - Initial Save",
+      "INITIAL_SAVE_CONTENT": "{actorName} has been exposed to {afflictionName}!",
+      "SAVE_DC": "DC {dc} Fortitude Save",
+      "ROLL_SAVE": "Roll Save",
+      "ROLL_LATER": "Roll Later",
+      "STAGE_SAVE_TITLE": "{afflictionName} - Save",
+      "STAGE_SAVE_CONTENT": "{actorName} must save against {afflictionName}!",
+      "CURRENT_STAGE": "Current Stage: {stage}",
+      "TREATMENT_BONUS": "Treatment Bonus: {bonus}",
+      "TREAT_TITLE": "Treat {type}",
+      "TREAT_CONTENT": "{treater} treats {patient} for {afflictionName}",
+      "MEDICINE_CHECK": "DC {dc} Medicine Check",
+      "ROLL_MEDICINE": "Roll Medicine",
+      "CANCEL": "Cancel"
+    },
+    "NOTIFICATIONS": {
+      "RESISTED": "{tokenName} resisted {afflictionName}!",
+      "AFFLICTED": "{tokenName} is afflicted by {afflictionName}!",
+      "STAGE_CHANGED": "{tokenName} is now at stage {stage} of {afflictionName}",
+      "RECOVERED": "{tokenName} has recovered from {afflictionName}!",
+      "MAX_STAGE": "{tokenName} has reached maximum stage of {afflictionName}!",
+      "TREATMENT_POSITIVE": "{tokenName} receives +{bonus} to next save against {afflictionName}",
+      "TREATMENT_NEGATIVE": "{tokenName} receives {bonus} to next save against {afflictionName}",
+      "TREATMENT_NONE": "Treatment had no effect",
+      "ALREADY_TREATED": "This affliction has already been treated this stage",
+      "SELECT_TOKEN": "Select a token to perform treatment",
+      "MANUAL_EFFECTS": "Stage effects require manual handling - please apply effects to {tokenName}"
+    }
+  }
+}

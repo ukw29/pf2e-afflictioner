@@ -1,0 +1,485 @@
+/**
+ * PF2e Afflictioner - Base Styles
+ */
+
+/* Custom color scheme */
+:root {
+  --afflictioner-primary: #8b0000;
+  --afflictioner-primary-hover: #a00000;
+  --afflictioner-secondary: #2a4a2a;
+  --afflictioner-poison: #4a7c2a;
+  --afflictioner-disease: #7c4a2a;
+  --afflictioner-bg-dark: rgba(0, 0, 0, 0.6);
+  --afflictioner-bg-medium: rgba(0, 0, 0, 0.4);
+  --afflictioner-bg-light: rgba(0, 0, 0, 0.2);
+  --afflictioner-border: rgba(139, 0, 0, 0.3);
+  --afflictioner-text-light: #e0e0e0;
+  --afflictioner-warning: #ff6b00;
+}
+
+.pf2e-afflictioner {
+  font-family: var(--font-primary);
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(40, 20, 20, 0.95) 100%);
+  border: 2px solid var(--afflictioner-border);
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.4);
+}
+
+.pf2e-afflictioner .affliction-manager-content {
+  padding: 15px;
+}
+
+.pf2e-afflictioner .token-section {
+  margin-bottom: 20px;
+  border: 2px solid var(--afflictioner-border);
+  border-radius: 8px;
+  padding: 15px;
+  background: var(--afflictioner-bg-dark);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s ease;
+}
+
+.pf2e-afflictioner .token-section:hover {
+  border-color: var(--afflictioner-primary-hover);
+  box-shadow: 0 6px 12px rgba(139, 0, 0, 0.4);
+}
+
+.pf2e-afflictioner .token-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid var(--afflictioner-border);
+}
+
+.pf2e-afflictioner .token-header img {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--afflictioner-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
+}
+
+.pf2e-afflictioner .token-header h3 {
+  color: var(--afflictioner-text-light);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  margin: 0;
+  font-size: 16px;
+}
+
+.pf2e-afflictioner .affliction-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid var(--afflictioner-border);
+  border-left: 4px solid var(--afflictioner-primary);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.pf2e-afflictioner .affliction-row:hover {
+  background: var(--afflictioner-bg-light);
+  border-left-color: var(--afflictioner-primary-hover);
+  transform: translateX(2px);
+}
+
+.pf2e-afflictioner .affliction-info {
+  flex: 1;
+}
+
+.pf2e-afflictioner .affliction-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  color: var(--afflictioner-text-light);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf2e-afflictioner .affliction-details {
+  display: flex;
+  gap: 20px;
+  font-size: 12px;
+  color: #b0b0b0;
+  flex-wrap: wrap;
+}
+
+.pf2e-afflictioner .affliction-details > span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  background: var(--afflictioner-bg-dark);
+  border-radius: 4px;
+}
+
+.pf2e-afflictioner .affliction-details .stage {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-left: 2px solid var(--afflictioner-primary);
+  padding-left: 8px;
+}
+
+.pf2e-afflictioner .stage-info {
+  cursor: help;
+  color: #888;
+  opacity: 0.8;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.pf2e-afflictioner .stage-info:hover {
+  opacity: 1;
+  color: var(--afflictioner-primary-hover);
+  transform: scale(1.2);
+}
+
+.pf2e-afflictioner .affliction-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.pf2e-afflictioner .affliction-actions button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--afflictioner-border);
+  background: var(--afflictioner-bg-dark);
+  color: var(--afflictioner-text-light);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pf2e-afflictioner .affliction-actions button:hover {
+  background: var(--afflictioner-primary);
+  border-color: var(--afflictioner-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(139, 0, 0, 0.4);
+}
+
+.pf2e-afflictioner .affliction-actions button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(139, 0, 0, 0.4);
+}
+
+.pf2e-afflictioner .affliction-actions button i {
+  font-size: 14px;
+}
+
+/* Specific button colors */
+.pf2e-afflictioner .affliction-actions button[data-action="rollSave"]:hover {
+  background: #2a4a7c;
+  border-color: #3a5a8c;
+}
+
+.pf2e-afflictioner .affliction-actions button[data-action="treatAffliction"]:hover {
+  background: var(--afflictioner-poison);
+  border-color: #5a8c3a;
+}
+
+.pf2e-afflictioner .affliction-actions button[data-action="removeAffliction"]:hover {
+  background: #7c2a2a;
+  border-color: #8c3a3a;
+}
+
+.pf2e-afflictioner .no-afflictions {
+  text-align: center;
+  padding: 40px 20px;
+  color: #808080;
+  font-style: italic;
+  font-size: 14px;
+  background: var(--afflictioner-bg-dark);
+  border: 2px dashed var(--afflictioner-border);
+  border-radius: 8px;
+}
+
+.pf2e-afflictioner .manager-footer {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 2px solid var(--afflictioner-border);
+  text-align: center;
+}
+
+.pf2e-afflictioner .manager-footer button {
+  padding: 10px 20px;
+  background: var(--afflictioner-primary);
+  border: 2px solid var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.pf2e-afflictioner .manager-footer button:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(139, 0, 0, 0.5);
+}
+
+.pf2e-afflictioner .manager-footer button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(139, 0, 0, 0.4);
+}
+
+/* Affliction indicator on tokens */
+.affliction-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 24px;
+  height: 24px;
+  background: radial-gradient(circle, rgba(139, 0, 0, 0.95) 0%, rgba(139, 0, 0, 0.7) 100%);
+  border: 2px solid #8b0000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 100;
+  box-shadow: 0 0 10px rgba(139, 0, 0, 0.8), inset 0 0 5px rgba(0, 0, 0, 0.5);
+  animation: pulse-danger 2s ease-in-out infinite;
+}
+
+.affliction-indicator i {
+  color: #ffff00;
+  font-size: 13px;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 0, 0.8));
+}
+
+@keyframes pulse-danger {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(139, 0, 0, 0.8), inset 0 0 5px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(139, 0, 0, 1), inset 0 0 5px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Token HUD button styling */
+#token-hud .control-icon i.fa-biohazard {
+  color: #888888;
+  transition: all 0.2s ease;
+}
+
+#token-hud .control-icon:hover i.fa-biohazard {
+  color: #a00000;
+  filter: drop-shadow(0 0 4px rgba(139, 0, 0, 0.8));
+}
+
+#token-hud .control-icon.active i.fa-biohazard {
+  color: #ff0000;
+  filter: drop-shadow(0 0 6px rgba(255, 0, 0, 0.9));
+  animation: pulse-biohazard 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-biohazard {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px rgba(255, 0, 0, 0.9));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px rgba(255, 0, 0, 1));
+  }
+}
+
+/* Add Affliction Dialog */
+.add-affliction-dialog {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(40, 20, 20, 0.95) 100%);
+  border: 2px solid var(--afflictioner-border);
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.4);
+}
+
+.add-affliction-content {
+  padding: 15px;
+}
+
+.add-affliction-content .token-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--afflictioner-border);
+}
+
+.add-affliction-content .token-info img {
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--afflictioner-primary);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(139, 0, 0, 0.5);
+}
+
+.add-affliction-content .token-info h3 {
+  color: var(--afflictioner-text-light);
+  margin: 0;
+}
+
+.add-affliction-content .drop-zone {
+  border: 2px dashed var(--afflictioner-border);
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  margin-bottom: 15px;
+  background: var(--afflictioner-bg-dark);
+  transition: all 0.2s ease;
+}
+
+.add-affliction-content .drop-zone:hover {
+  border-color: var(--afflictioner-primary);
+  background: var(--afflictioner-bg-medium);
+}
+
+.add-affliction-content .drop-zone i {
+  font-size: 48px;
+  color: var(--afflictioner-primary);
+  margin-bottom: 10px;
+  opacity: 0.7;
+}
+
+.add-affliction-content .drop-zone p {
+  color: var(--afflictioner-text-light);
+  margin: 0;
+}
+
+.add-affliction-content .affliction-list {
+  margin-bottom: 15px;
+}
+
+.add-affliction-content .affliction-list h4 {
+  color: var(--afflictioner-text-light);
+  margin: 15px 0 10px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--afflictioner-border);
+  padding-bottom: 5px;
+}
+
+.add-affliction-content .item-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 15px;
+}
+
+.add-affliction-content .item-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--afflictioner-border);
+  background: var(--afflictioner-bg-medium);
+  cursor: pointer;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.add-affliction-content .item-button:hover {
+  background: var(--afflictioner-bg-light);
+  border-color: var(--afflictioner-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(139, 0, 0, 0.4);
+}
+
+.add-affliction-content .item-button img {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--afflictioner-border);
+}
+
+.add-affliction-content .item-name {
+  font-size: 12px;
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: var(--afflictioner-text-light);
+}
+
+.add-affliction-content .item-type,
+.add-affliction-content .item-pack {
+  font-size: 10px;
+  color: #888;
+}
+
+.add-affliction-content .no-items {
+  text-align: center;
+  padding: 30px 20px;
+  color: #808080;
+  font-style: italic;
+  background: var(--afflictioner-bg-dark);
+  border: 2px dashed var(--afflictioner-border);
+  border-radius: 8px;
+}
+
+.add-affliction-content .dialog-buttons {
+  display: flex;
+  justify-content: center;
+  padding-top: 15px;
+  border-top: 2px solid var(--afflictioner-border);
+}
+
+.add-affliction-content .dialog-buttons button {
+  padding: 10px 20px;
+  background: var(--afflictioner-primary);
+  border: 2px solid var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.add-affliction-content .dialog-buttons button:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(139, 0, 0, 0.5);
+}
+
+.add-affliction-content .dialog-buttons button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(139, 0, 0, 0.4);
+}
+
+/* Warning banner for manual handling */
+.affliction-warning {
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.15) 0%, rgba(255, 107, 0, 0.05) 100%);
+  border: 2px solid var(--afflictioner-warning);
+  border-left: 4px solid var(--afflictioner-warning);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  box-shadow: 0 4px 8px rgba(255, 107, 0, 0.2);
+}
+
+.affliction-warning i {
+  color: var(--afflictioner-warning);
+  margin-right: 8px;
+  filter: drop-shadow(0 0 4px rgba(255, 107, 0, 0.5));
+}
+
+.affliction-warning .raw-text {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--afflictioner-bg-dark);
+  border: 1px solid rgba(255, 107, 0, 0.3);
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--afflictioner-text-light);
+  line-height: 1.5;
+}

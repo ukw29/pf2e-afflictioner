@@ -1,0 +1,39 @@
+{
+  "id": "pf2e-afflictioner",
+  "title": "PF2e Afflictioner",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "RoiLeaf",
+      "discord": "RoiLeaf",
+      "flags": {}
+    }
+  ],
+  "flags": {
+    "canUpload": true
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "pf2e",
+        "type": "system",
+        "compatibility": {}
+      }
+    ]
+  },
+  "description": "Automated affliction (poison/disease) manager for PF2e. Tracks stages, onset, automatic saves, and treatment.",
+  "socket": true,
+  "esmodules": ["scripts/main.js"],
+  "styles": ["styles/base.css"],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ]
+}
