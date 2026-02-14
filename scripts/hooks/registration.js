@@ -16,6 +16,9 @@ export function registerAfflictionHooks() {
   // Combat hooks
   Hooks.on('updateCombat', onCombatUpdate);
 
+  // PF2e turn start - check for scheduled saves
+  Hooks.on('pf2e.startTurn', onPf2eStartTurn);
+
   // World time tracking (out-of-combat)
   Hooks.on('updateWorldTime', onWorldTimeUpdate);
 
@@ -196,20 +199,23 @@ async function onCombatUpdate(combat, changed, options, userId) {
     }
   }
 
-  // Handle turn changes - check for scheduled saves and damage on current combatant
-  if (changed.turn) {
-    const combatant = combat.combatant;
-    if (!combatant?.tokenId) return;
+  // Note: Save checking is now handled by pf2e.startTurn hook (see onPf2eStartTurn)
+  // This is more reliable than trying to detect turn changes from updateCombat
+}
 
-    const token = canvas.tokens.get(combatant.tokenId);
-    if (!token) return;
+/**
+ * Handle PF2e turn start - check for scheduled saves
+ */
+async function onPf2eStartTurn(_combatant, _encounter, _userId) {
+  const combat = game.combat;
+  if (!combat) return;
 
-    // Check for scheduled saves - this will prompt for saves when due
+  // Check saves for all combatants
+  for (const c of combat.combatants) {
+    const token = canvas.tokens.get(c.tokenId);
+    if (!token) continue;
+
     await AfflictionService.checkForScheduledSaves(token, combat);
-
-    // Note: Damage prompts are NOT posted here
-    // Damage is only prompted when entering a new stage (via handleStageSave)
-    // This matches PF2e rules: saves happen on schedule, damage happens when stage changes
   }
 }
 
@@ -360,6 +366,9 @@ function onRenderChatMessage(message, html) {
 
   // Add drag support for messages with affliction items
   addAfflictionDragSupport(message, root);
+
+  // Add "Apply Affliction" button to chat messages with affliction notes
+  addApplyAfflictionButton(message, root);
 
   // Handle initial save buttons (affliction already in "Initial Save" state)
   const rollInitialSaveButtons = root.querySelectorAll('.affliction-roll-initial-save');
@@ -524,8 +533,6 @@ function onRenderChatMessage(message, html) {
       token.setTarget(true, { user: game.user, releaseOthers: true, groupSelection: false });
 
       // Pan to token
-      canvas.animatePan({ x: token.x, y: token.y, duration: 250 });
-
       ui.notifications.info(`Targeted ${token.name}`);
     });
   });
@@ -571,6 +578,100 @@ function onRenderChatMessage(message, html) {
       btn.disabled = true;
     });
   });
+}
+
+/**
+ * Add "Apply Affliction" button to chat messages with affliction notes
+ */
+async function addApplyAfflictionButton(message, htmlElement) {
+  // Only for GMs
+  if (!game.user.isGM) return;
+
+  // Check if already initialized
+  if (htmlElement.dataset.applyAfflictionEnabled === 'true') return;
+
+  // Check for affliction data in message flags (PF2e context notes)
+  const notes = message.flags?.pf2e?.context?.notes || [];
+
+  const afflictionNote = notes.find(note => {
+    const text = note.text || '';
+    return text.includes('Saving Throw') && (text.includes('Stage 1') || text.includes('Stage 2'));
+  });
+
+  if (!afflictionNote) return;
+
+  // Check if there's a target
+  const target = message.flags?.pf2e?.context?.target;
+  if (!target?.token) return;
+
+  // Mark as initialized
+  htmlElement.dataset.applyAfflictionEnabled = 'true';
+
+  // Get the affliction item by searching the actor's items for one matching the note title
+  const actor = message.actor;
+  if (!actor) return;
+
+  // Search actor's items for the affliction
+  let item = actor.items.find(i => {
+    if (i.name === afflictionNote.title) {
+      const traits = i.system?.traits?.value || [];
+      return traits.includes('poison') || traits.includes('disease');
+    }
+    return false;
+  });
+
+  if (!item) return;
+
+  // Parse affliction
+  const afflictionData = AfflictionParser.parseFromItem(item);
+  if (!afflictionData) return;
+
+  // Find the roll-note element to add our button
+  const rollNote = htmlElement.querySelector('.roll-note');
+  if (!rollNote) return;
+
+  // Create button
+  const buttonContainer = document.createElement('div');
+  buttonContainer.className = 'affliction-apply-container';
+  buttonContainer.style.cssText = 'margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(139, 0, 0, 0.3);';
+
+  const button = document.createElement('button');
+  button.className = 'affliction-apply-to-target';
+  button.style.cssText = 'width: 100%; padding: 8px; background: var(--afflictioner-primary, #8b0000); border: 2px solid var(--afflictioner-primary-hover, #a00000); color: white; border-radius: 6px; cursor: pointer; font-weight: bold;';
+  button.innerHTML = '<i class="fas fa-biohazard"></i> Apply Affliction to Target';
+  button.dataset.targetToken = target.token;
+  button.dataset.itemUuid = item.uuid;
+
+  button.addEventListener('click', async () => {
+    try {
+      // Get target token
+      const targetTokenDoc = await fromUuid(target.token);
+      if (!targetTokenDoc) {
+        ui.notifications.error('Target token not found');
+        return;
+      }
+
+      const token = targetTokenDoc.object;
+      if (!token) {
+        ui.notifications.error('Token not on canvas');
+        return;
+      }
+
+      // Apply affliction
+      await AfflictionService.promptInitialSave(token, afflictionData);
+
+      ui.notifications.info(`Applied ${afflictionData.name} to ${token.name}`);
+      button.disabled = true;
+      button.style.opacity = '0.5';
+      button.innerHTML = '<i class="fas fa-check"></i> Affliction Applied';
+    } catch (error) {
+      console.error('PF2e Afflictioner | Error applying affliction:', error);
+      ui.notifications.error('Failed to apply affliction');
+    }
+  });
+
+  buttonContainer.appendChild(button);
+  rollNote.appendChild(buttonContainer);
 }
 
 /**

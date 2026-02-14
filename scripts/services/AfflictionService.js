@@ -67,12 +67,15 @@ export class AfflictionService {
       });
     }
 
-    // Build chat message content
-    const content = `
+    // Check PF2e metagame setting for showing DCs to players
+    const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
+
+    // Build player message content (may hide DC)
+    const playerContent = `
       <div class="pf2e-afflictioner-save-request">
         <h3><i class="fas fa-biohazard"></i> ${afflictionData.name} - Initial Save</h3>
         <p><strong>${actor.name}</strong> has been exposed to <strong>${afflictionData.name}</strong></p>
-        <p>Make a <strong>Fortitude save (DC ${afflictionData.dc})</strong> to resist the affliction</p>
+        <p>Make a <strong>Fortitude save${showDCToPlayers ? ` (DC ${afflictionData.dc})` : ''}</strong> to resist the affliction</p>
         <hr>
         <button class="affliction-roll-initial-save"
                 data-token-id="${token.id}"
@@ -85,11 +88,34 @@ export class AfflictionService {
     `;
 
     // Create chat message
-    await ChatMessage.create({
-      content: content,
-      speaker: ChatMessage.getSpeaker({ token: token }),
-      whisper: actor.hasPlayerOwner ? game.users.filter(u => actor.testUserPermission(u, 'OWNER')).map(u => u.id) : []
-    });
+    // Send player message to players only (exclude GMs)
+    const playerWhisper = actor.hasPlayerOwner
+      ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
+      : [];
+
+    if (playerWhisper.length > 0 || !actor.hasPlayerOwner) {
+      await ChatMessage.create({
+        content: playerContent,
+        speaker: ChatMessage.getSpeaker({ token: token }),
+        whisper: playerWhisper
+      });
+    }
+
+    // Send GM-only message with DC info (only if DCs are hidden from players)
+    if (!showDCToPlayers && actor.hasPlayerOwner) {
+      const gmContent = `
+        <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000;">
+          <h3><i class="fas fa-biohazard"></i> ${afflictionData.name} - Initial Save (GM Info)</h3>
+          <p><strong>${actor.name}</strong> has been exposed to <strong>${afflictionData.name}</strong></p>
+          <p>Make a <strong>Fortitude save (DC ${afflictionData.dc})</strong> to resist the affliction</p>
+        </div>
+      `;
+      await ChatMessage.create({
+        content: gmContent,
+        speaker: ChatMessage.getSpeaker({ token: token }),
+        whisper: game.users.filter(u => u.isGM).map(u => u.id)
+      });
+    }
   }
 
   /**
@@ -143,7 +169,7 @@ export class AfflictionService {
       onsetRemaining: AfflictionParser.durationToSeconds(affliction.onset),
       stageAdvancement: stageAdvancement, // Store for onset completion
       nextSaveRound: combat ? combat.round : null,
-      nextSaveInitiative: combat ? combat.combatant?.initiative : null,
+      nextSaveInitiative: combat ? combat.combatants.find(c => c.tokenId === token.id)?.initiative : null,
       stageStartRound: combat ? combat.round : null,
       nextSaveTimestamp: null
     };
@@ -154,6 +180,8 @@ export class AfflictionService {
       if (combat) {
         const onsetRounds = Math.ceil(updates.onsetRemaining / 6);
         updates.nextSaveRound = combat.round + onsetRounds;
+        const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
+        updates.nextSaveInitiative = tokenCombatant?.initiative;
       } else {
         updates.nextSaveTimestamp = game.time.worldTime + updates.onsetRemaining;
       }
@@ -181,6 +209,8 @@ export class AfflictionService {
         const durationSeconds = AfflictionParser.durationToSeconds(initialStage.duration);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
+        const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
+        updates.nextSaveInitiative = tokenCombatant?.initiative;
       } else {
         const durationSeconds = AfflictionParser.durationToSeconds(initialStage.duration);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
@@ -212,9 +242,14 @@ export class AfflictionService {
     const afflictions = AfflictionStore.getAfflictions(token);
 
     for (const [id, affliction] of Object.entries(afflictions)) {
-      // Check if save is due this round on this initiative
-      if (affliction.nextSaveRound === combat.round &&
-        affliction.nextSaveInitiative === combat.combatant.initiative) {
+      // Check if save is due or overdue
+      // If we're past the scheduled round, definitely prompt
+      // If we're in the scheduled round, check initiative matches
+      const isOverdue = combat.round > affliction.nextSaveRound;
+      const isDueNow = combat.round === affliction.nextSaveRound &&
+                       affliction.nextSaveInitiative === combat.combatant.initiative;
+
+      if (isOverdue || isDueNow) {
         await this.promptSave(token, affliction);
       }
     }
@@ -226,11 +261,15 @@ export class AfflictionService {
   static async promptSave(token, affliction) {
     const actor = token.actor;
 
-    // Build chat message content
-    let content = `
+    // Check PF2e metagame setting for showing DCs to players
+    const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
+
+    // Build player message content (may hide DC)
+    const playerContent = `
       <div class="pf2e-afflictioner-save-request">
         <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save Required</h3>
         <p><strong>${actor.name}</strong> must make a <strong>Fortitude save</strong></p>
+        ${showDCToPlayers ? `<p><strong>DC:</strong> ${affliction.dc}</p>` : ''}
         <p>Current Stage: ${affliction.currentStage}</p>
         ${affliction.treatmentBonus ? `<p><em>Treatment bonus active (${affliction.treatmentBonus > 0 ? '+' : ''}${affliction.treatmentBonus})</em></p>` : ''}
         <hr>
@@ -241,11 +280,39 @@ export class AfflictionService {
     `;
 
     // Create chat message
-    await ChatMessage.create({
-      content: content,
-      speaker: ChatMessage.getSpeaker({ token: token }),
-      whisper: actor.hasPlayerOwner ? game.users.filter(u => actor.testUserPermission(u, 'OWNER')).map(u => u.id) : []
-    });
+    try {
+      // Send player message to players only (exclude GMs)
+      const playerWhisper = actor.hasPlayerOwner
+        ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
+        : [];
+
+      if (playerWhisper.length > 0 || !actor.hasPlayerOwner) {
+        await ChatMessage.create({
+          content: playerContent,
+          speaker: ChatMessage.getSpeaker({ token: token }),
+          whisper: playerWhisper
+        });
+      }
+
+      // Send GM-only message with DC info (only if DCs are hidden from players)
+      if (!showDCToPlayers && actor.hasPlayerOwner) {
+        const gmContent = `
+          <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000;">
+            <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save (GM Info)</h3>
+            <p><strong>DC:</strong> ${affliction.dc}</p>
+            <p>Current Stage: ${affliction.currentStage}</p>
+            ${affliction.treatmentBonus ? `<p><em>Treatment bonus: ${affliction.treatmentBonus > 0 ? '+' : ''}${affliction.treatmentBonus}</em></p>` : ''}
+          </div>
+        `;
+        await ChatMessage.create({
+          content: gmContent,
+          speaker: ChatMessage.getSpeaker({ token: token }),
+          whisper: game.users.filter(u => u.isGM).map(u => u.id)
+        });
+      }
+    } catch (error) {
+      console.error(`PF2e Afflictioner | Error creating chat message:`, error);
+    }
   }
 
   /**
@@ -296,11 +363,11 @@ export class AfflictionService {
       </div>
     `;
 
-    // Create chat message
+    // Create chat message (GM only)
     await ChatMessage.create({
       content,
       speaker: ChatMessage.getSpeaker({ token: token }),
-      whisper: actor.hasPlayerOwner ? game.users.filter(u => actor.testUserPermission(u, 'OWNER')).map(u => u.id) : []
+      whisper: game.users.filter(u => u.isGM).map(u => u.id)
     });
   }
 
@@ -332,6 +399,7 @@ export class AfflictionService {
     // Manual operations clamp to stage 1, automatic saves can cure (stage 0)
     const minStage = isManual ? 1 : 0;
     const newStage = Math.max(minStage, affliction.currentStage + stageChange);
+
 
     // Stage 0 = cured (only possible from automatic saves)
     if (newStage === 0) {
@@ -392,6 +460,9 @@ export class AfflictionService {
         const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
+        // Use the afflicted token's initiative, not the current combatant's
+        const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
+        updates.nextSaveInitiative = tokenCombatant?.initiative;
         updates.stageStartRound = combat.round;
       } else {
         // Out of combat - use world time timestamp tracking
@@ -423,6 +494,53 @@ export class AfflictionService {
       stage: finalStage,
       afflictionName: affliction.name
     }));
+
+    // Create chat message for stage change
+    const oldStage = affliction.currentStage || 0;
+    const oldStageText = oldStage === 0 ? 'Initial Exposure' : `Stage ${oldStage}`;
+    const stageDirection = finalStage > oldStage ? 'increased' : 'decreased';
+    const stageIcon = finalStage > oldStage ? 'fa-arrow-up' : 'fa-arrow-down';
+    const stageColor = finalStage > oldStage ? '#ff6b00' : '#4a7c2a';
+    const bgColor = finalStage > oldStage ? 'rgba(255, 107, 0, 0.1)' : 'rgba(74, 124, 42, 0.1)';
+
+    // Build stage effects summary
+    let effectsSummary = '';
+    if (newStageData) {
+      const effects = [];
+      if (newStageData.damage?.length) {
+        effects.push(`Damage: ${newStageData.damage.map(d => `${d.formula} ${d.type}`).join(', ')}`);
+      }
+      if (newStageData.conditions?.length) {
+        effects.push(`Conditions: ${newStageData.conditions.map(c => c.value ? `${c.name} ${c.value}` : c.name).join(', ')}`);
+      }
+      if (newStageData.weakness?.length) {
+        effects.push(`Weakness: ${newStageData.weakness.map(w => `${w.type} ${w.value}`).join(', ')}`);
+      }
+      if (effects.length > 0) {
+        effectsSummary = `<div style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 0.9em;">${effects.join(' • ')}</div>`;
+      }
+    }
+
+    let content = `
+      <div class="pf2e-afflictioner-stage-change" style="border-left: 5px solid ${stageColor}; padding: 12px; background: ${bgColor}; border-radius: 4px; margin: 8px 0;">
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+          <i class="fas ${stageIcon}" style="color: ${stageColor}; font-size: 24px;"></i>
+          <div style="flex: 1;">
+            <h3 style="margin: 0; font-size: 1.2em; color: ${stageColor};">${affliction.name} - Stage ${stageDirection}</h3>
+            <p style="margin: 4px 0 0 0; font-size: 0.95em;"><strong>${token.name}</strong> is now at <strong>Stage ${finalStage}</strong> <span style="color: #888;">(was ${oldStageText})</span></p>
+          </div>
+        </div>
+        ${effectsSummary}
+        ${newStageData && newStageData.effects ? `<div style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; font-style: italic; color: #f5f5f5; font-size: 0.9em; border-left: 3px solid ${stageColor}; padding-left: 10px;">${newStageData.effects}</div>` : ''}
+      </div>
+    `;
+
+    // Stage change messages are GM-only
+    await ChatMessage.create({
+      content: content,
+      speaker: ChatMessage.getSpeaker({ token: token }),
+      whisper: game.users.filter(u => u.isGM).map(u => u.id)
+    });
   }
 
   /**
@@ -882,11 +1000,13 @@ export class AfflictionService {
 
           const durationSeconds = AfflictionParser.durationToSeconds(stageData.duration);
           const durationRounds = Math.ceil(durationSeconds / 6);
+          const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
           await AfflictionStore.updateAffliction(token, id, {
             inOnset: false,
             currentStage: targetStage,
             onsetRemaining: 0,
-            nextSaveRound: combat.round + durationRounds
+            nextSaveRound: combat.round + durationRounds,
+            nextSaveInitiative: tokenCombatant?.initiative
           });
 
           // Get updated affliction after stage change

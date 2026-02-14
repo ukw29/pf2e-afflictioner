@@ -66,11 +66,13 @@ export const DEFAULT_SETTINGS = {
 // PF2e condition names for parsing
 export const PF2E_CONDITIONS = [
   'blinded', 'broken', 'clumsy', 'concealed', 'confused', 'controlled',
-  'dazzled', 'deafened', 'doomed', 'drained', 'dying', 'encumbered',
-  'enfeebled', 'fascinated', 'fatigued', 'fleeing', 'frightened',
-  'grabbed', 'immobilized', 'invisible', 'paralyzed', 'persistent damage',
-  'petrified', 'prone', 'quickened', 'restrained', 'sickened', 'slowed',
-  'stunned', 'stupefied', 'unconscious', 'undetected', 'wounded'
+  'cursebound', 'dazzled', 'deafened', 'doomed', 'drained', 'dying',
+  'encumbered', 'enfeebled', 'fascinated', 'fatigued', 'fleeing', 'frightened',
+  'friendly', 'grabbed', 'helpful', 'hidden', 'hostile', 'immobilized',
+  'indifferent', 'invisible', 'malevolence', 'observed', 'off-guard',
+  'paralyzed', 'persistent-damage', 'petrified', 'prone', 'quickened',
+  'restrained', 'sickened', 'slowed', 'stunned', 'stupefied', 'unconscious',
+  'undetected', 'unfriendly', 'unnoticed', 'wounded'
 ];
 
 // Duration unit multipliers to seconds

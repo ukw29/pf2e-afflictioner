@@ -126,12 +126,20 @@ export class AfflictionParser {
    * Extract DC from text or item data
    */
   static extractDC(description, item) {
-    // Try system data first
+    // Try system data first (check both .dc and .value)
     if (item.system?.save?.dc) return item.system.save.dc;
+    if (item.system?.save?.value) return item.system.save.value;
 
-    // Parse from text: "DC 17 Fortitude"
-    const dcMatch = description.match(/DC\s+(\d+)/i);
-    return dcMatch ? parseInt(dcMatch[1]) : game.settings.get('pf2e-afflictioner', 'defaultDC');
+    // Parse from text: PF2e enriched format "@Check[fortitude|dc:22]" or plain "DC 17 Fortitude"
+    // Try enriched format first
+    let dcMatch = description.match(/@Check\[[^\]]*\|dc:(\d+)\]/i);
+    if (dcMatch) return parseInt(dcMatch[1]);
+
+    // Try plain text format
+    dcMatch = description.match(/DC\s+(\d+)/i);
+    if (dcMatch) return parseInt(dcMatch[1]);
+
+    return game.settings.get('pf2e-afflictioner', 'defaultDC');
   }
 
   /**
@@ -276,7 +284,7 @@ export class AfflictionParser {
     // Two formats: @Damage[1d6[poison]] with type, or @Damage[1d6] without type
 
     // Match @Damage with typed damage: @Damage[formula[type]]
-    const typedDamageMatches = text.matchAll(/@Damage\[([\d\w+-d]+)\[([^\]]+)\]\]/gi);
+    const typedDamageMatches = text.matchAll(/@Damage\[([\d\w+-]+)\[([^\]]+)\]\]/gi);
     for (const match of typedDamageMatches) {
       const formula = match[1].trim();
       const type = match[2].trim().toLowerCase();
@@ -288,7 +296,7 @@ export class AfflictionParser {
     }
 
     // Match @Damage without type: @Damage[formula]
-    const untypedDamageMatches = text.matchAll(/@Damage\[([\d\w+-d]+)\](?!\])/gi);
+    const untypedDamageMatches = text.matchAll(/@Damage\[([\d\w+-]+)\](?!\])/gi);
     for (const match of untypedDamageMatches) {
       const formula = match[1].trim();
 
@@ -368,7 +376,9 @@ export class AfflictionParser {
 
       // Check if it's a known condition
       for (const condition of PF2E_CONDITIONS) {
-        const conditionRegex = new RegExp(`^${condition}\\s*(\\d+)?$`, 'gi');
+        // Escape special regex characters in condition name
+        const escapedCondition = condition.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const conditionRegex = new RegExp(`^${escapedCondition}\\s*(\\d+)?$`, 'gi');
         const condMatch = conditionText.match(conditionRegex);
         if (condMatch) {
           const valueMatch = conditionText.match(/\d+/);
@@ -392,7 +402,9 @@ export class AfflictionParser {
       const condKey = condition.toLowerCase();
       if (foundConditions.has(condKey)) continue; // Already found in UUID
 
-      const regex = new RegExp(`\\b${condition}\\s*(\\d+)?\\b`, 'gi');
+      // Escape special regex characters in condition name
+      const escapedCondition = condition.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escapedCondition}\\s*(\\d+)?\\b`, 'gi');
       const match = plainText.match(regex);
       if (match) {
         const valueMatch = match[0].match(/\d+/);
