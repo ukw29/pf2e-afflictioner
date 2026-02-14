@@ -13,7 +13,7 @@
               <h4>
                 {{name}} ({{type}})
                 {{#if isVirulent}}
-                  <span style="color: #c45500; font-size: 0.85em; font-weight: normal;" data-tooltip="Success has no effect, critical success reduces by 1 stage">[Virulent]</span>
+                  <span style="color: #c45500; font-size: 0.85em; font-weight: normal;" data-tooltip="Requires two consecutive successes to reduce stage by 1. Critical success reduces by 1 instead of 2.">[Virulent]</span>
                 {{/if}}
                 {{#if hasMultipleExposure}}
                   <span style="color: #0066cc; font-size: 0.85em; font-weight: normal;" data-tooltip="Re-exposure increases stage by {{multipleExposureIncrease}}">[Multiple Exposure +{{multipleExposureIncrease}}]</span>
