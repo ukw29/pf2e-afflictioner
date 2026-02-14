@@ -32,12 +32,9 @@ export async function setAfflictions(token, afflictions) {
     return;
   }
 
-  console.log('AfflictionStore: setAfflictions called', { tokenId: token.id, afflictions });
 
   // Use setFlag instead of update for proper flag handling
   await token.document.setFlag(MODULE_ID, 'afflictions', afflictions);
-
-  console.log('AfflictionStore: Token flag set successfully');
 }
 
 /**
@@ -88,18 +85,12 @@ export async function removeAffliction(token, afflictionId) {
     return;
   }
 
-  console.log('AfflictionStore: removeAffliction called', { tokenId: token.id, afflictionId });
-
   // Use unsetFlag to directly remove the specific affliction
   await token.document.unsetFlag(MODULE_ID, `afflictions.${afflictionId}`);
 
-  console.log('AfflictionStore: Affliction unset successfully');
 
   // Wait for document to sync
   await new Promise(resolve => setTimeout(resolve, 50));
-
-  const verifyAfflictions = getAfflictions(token);
-  console.log('AfflictionStore: Verification after removal', verifyAfflictions);
 }
 
 /**

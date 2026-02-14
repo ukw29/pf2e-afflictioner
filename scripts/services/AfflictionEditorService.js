@@ -30,8 +30,6 @@ export class AfflictionEditorService {
       return afflictionData;
     }
 
-    console.log('AfflictionEditorService: Applying edited definition', { afflictionData, editedDef });
-
     // Create a merged copy
     const merged = { ...afflictionData };
 
@@ -40,8 +38,6 @@ export class AfflictionEditorService {
     if (editedDef.saveType !== undefined) merged.saveType = editedDef.saveType;
     if (editedDef.onset !== undefined) merged.onset = editedDef.onset;
     if (editedDef.stages !== undefined) merged.stages = editedDef.stages;
-
-    console.log('AfflictionEditorService: Merged result', merged);
 
     return merged;
   }

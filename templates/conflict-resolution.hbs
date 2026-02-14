@@ -542,6 +542,69 @@
                       </div>
                     </div>
                     {{/if}}
+
+                    <!-- Rule Elements Field -->
+                    {{#if fieldDiffsMap.ruleElements}}
+                    <div class="field-row differs">
+                      <div class="field-label">
+                        <strong>Rule Elements</strong>
+                      </div>
+                      <div class="field-columns">
+                        <div class="field-column current">
+                          {{#if current}}
+                            {{#if current.ruleElements.length}}
+                              {{#each current.ruleElements}}
+                                <div class="rule-element-item">
+                                  <small>{{label}}</small>
+                                </div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                        <div class="field-selector">
+                          {{#if (eq ../currentConflict.resolution.strategy "merge")}}
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="ruleElements"
+                                    data-version="current"
+                                    class="field-select-btn {{#if (eq fieldSelections.ruleElements 'current')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_CURRENT'}}">
+                              <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="ruleElements"
+                                    data-version="incoming"
+                                    class="field-select-btn {{#if (eq fieldSelections.ruleElements 'incoming')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_INCOMING'}}">
+                              <i class="fas fa-arrow-right"></i>
+                            </button>
+                          {{/if}}
+                        </div>
+                        <div class="field-column incoming">
+                          {{#if incoming}}
+                            {{#if incoming.ruleElements.length}}
+                              {{#each incoming.ruleElements}}
+                                <div class="rule-element-item">
+                                  <small>{{label}}</small>
+                                </div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/if}}
                   </div>
                 </div>
               {{/each}}

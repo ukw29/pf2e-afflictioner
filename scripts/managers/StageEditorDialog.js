@@ -26,6 +26,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       removeCondition: StageEditorDialog.removeCondition,
       addWeakness: StageEditorDialog.addWeakness,
       removeWeakness: StageEditorDialog.removeWeakness,
+      openEffect: StageEditorDialog.openEffect,
+      addRuleElement: StageEditorDialog.addRuleElement,
+      editRuleElement: StageEditorDialog.editRuleElement,
+      removeRuleElement: StageEditorDialog.removeRuleElement,
       removeEffect: StageEditorDialog.removeEffect,
       removeAllEffects: StageEditorDialog.removeAllEffects,
       saveStage: StageEditorDialog.saveStage,
@@ -43,12 +47,15 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     super(options);
     this.stageData = foundry.utils.deepClone(stageData);
     this.onSave = options.onSave || null;
+    this.afflictionName = options.afflictionName || 'Affliction';
+    this.stageNumber = options.stageNumber || this.stageData.number;
 
     // Ensure arrays exist
     if (!this.stageData.damage) this.stageData.damage = [];
     if (!this.stageData.conditions) this.stageData.conditions = [];
     if (!this.stageData.weakness) this.stageData.weakness = [];
     if (!this.stageData.autoEffects) this.stageData.autoEffects = [];
+    if (!this.stageData.ruleElements) this.stageData.ruleElements = [];
 
     // Update window title
     this.options.window.title = game.i18n.format('PF2E_AFFLICTIONER.EDITOR.STAGE_EDITOR_TITLE', {
@@ -144,7 +151,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     }
 
     // Parse @Damage[formula[type]] tags
-    const damageMatches = effectsText.matchAll(/@Damage\[([^\[]+)\[([^\]]+)\]\]/g);
+    const damageMatches = effectsText.matchAll(/@Damage\[([^[]+)\[([^\]]+)\]\]/g);
     for (const match of damageMatches) {
       const formula = match[1];
       const damageType = match[2];
@@ -182,7 +189,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     if (!formula) return { diceCount: 1, diceType: 'd6', bonus: 0 };
 
     // Match patterns like "2d6+3", "1d8", "3d4-2"
-    const match = formula.match(/^(\d+)(d\d+)([\+\-]\d+)?$/);
+    const match = formula.match(/^(\d+)(d\d+)([+-]\d+)?$/);
     if (match) {
       return {
         diceCount: parseInt(match[1]) || 1,
@@ -209,7 +216,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     }
 
     // Parse damage formulas (e.g., "2d6 fire", "1d8 poison")
-    const damageMatches = text.matchAll(/(\d+d\d+(?:[+\-]\d+)?)\s+(\w+)/gi);
+    const damageMatches = text.matchAll(/(\d+d\d+(?:[+-]\d+)?)\s+(\w+)/gi);
     for (const match of damageMatches) {
       const formula = match[1];
       const type = match[2].toLowerCase();
@@ -240,13 +247,39 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     // Parse weakness - handle multiple formats
     // Patterns: "weakness to cold 5", "weakness 5 to fire", "5 weakness to cold", "cold weakness 5"
     const weaknessPatterns = [
-      /weakness\s+to\s+(\w+)\s+(\d+)/gi,           // weakness to cold 5
-      /weakness\s+(\d+)\s+to\s+(\w+)/gi,           // weakness 5 to fire
-      /(\d+)\s+weakness\s+to\s+(\w+)/gi,           // 5 weakness to cold
-      /(\w+)\s+weakness\s+(\d+)/gi                 // cold weakness 5
+      /weakness\s+to\s+([\w-]+)\s+(\d+)/gi,       // weakness to cold-iron 5
+      /weakness\s+(\d+)\s+to\s+([\w-]+)/gi,       // weakness 5 to fire
+      /(\d+)\s+weakness\s+to\s+([\w-]+)/gi,       // 5 weakness to cold-iron
+      /([\w-]+)\s+weakness\s+(\d+)/gi             // cold-iron weakness 5
     ];
 
-    const validTypes = ['acid', 'bleed', 'bludgeoning', 'cold', 'electricity', 'fire', 'force', 'mental', 'piercing', 'poison', 'slashing', 'sonic', 'spirit', 'vitality', 'void', 'physical'];
+    const validTypes = [
+      // Energy & Damage
+      'acid', 'cold', 'electricity', 'fire', 'sonic', 'force', 'vitality', 'void',
+      // Physical
+      'physical', 'bludgeoning', 'piercing', 'slashing',
+      // Special
+      'bleed', 'mental', 'poison', 'spirit', 'emotion',
+      // Materials
+      'cold-iron', 'silver', 'adamantine', 'orichalcum', 'abysium', 'dawnsilver',
+      'djezet', 'duskwood', 'inubrix', 'noqual', 'peachwood', 'siccatite',
+      // Alignment
+      'holy', 'unholy',
+      // Traditions
+      'arcane', 'divine', 'occult', 'primal',
+      // Properties
+      'magical', 'non-magical', 'ghost-touch', 'alchemical',
+      // Specialized
+      'area-damage', 'critical-hits', 'precision', 'splash-damage', 'persistent-damage',
+      'spells', 'weapons', 'unarmed-attacks',
+      // Rare/Special
+      'arrow-vulnerability', 'axe-vulnerability', 'vampire-weaknesses', 'vulnerable-to-sunlight',
+      'vorpal', 'vorpal-fear', 'weapons-shedding-bright-light',
+      // Elemental
+      'air', 'earth', 'water', 'salt-water', 'salt',
+      // Other
+      'all-damage', 'energy', 'glass', 'light', 'metal', 'plant', 'radiation', 'time', 'wood'
+    ];
 
     for (const pattern of weaknessPatterns) {
       const matches = text.matchAll(pattern);
@@ -280,6 +313,154 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
           if (!dialog.stageData.weakness.some(w => w.type === type)) {
             dialog.stageData.weakness.push({ type, value });
           }
+        }
+      }
+    }
+
+    // Parse bonuses and create Rule Elements
+    // Pattern: "+1 item bonus to saving throws against mental effects"
+    // Pattern: "-2 status penalty to AC"
+    // Pattern: "+3 circumstance bonus to Stealth checks"
+    const bonusPattern = /([+-]\d+)\s+(item|circumstance|status)\s+(bonus|penalty)\s+to\s+([\w\s]+?)(?:\s+against\s+([\w\s]+?))?(?=\.|,|$|\s+and\s+)/gi;
+    const bonusMatches = text.matchAll(bonusPattern);
+
+    for (const match of bonusMatches) {
+      const value = parseInt(match[1]); // +1, -2, etc.
+      const bonusType = match[2].toLowerCase(); // item, circumstance, status
+      const bonusPenalty = match[3].toLowerCase(); // bonus or penalty
+      const targetRaw = match[4].trim().toLowerCase(); // "saving throws", "AC", "Stealth checks"
+      const againstRaw = match[5] ? match[5].trim().toLowerCase() : null; // "mental effects", null
+
+      // Adjust value if it's a penalty
+      const adjustedValue = bonusPenalty === 'penalty' ? -Math.abs(value) : value;
+
+      // Determine selector and predicate based on target
+      let selector = '';
+      const predicate = [];
+
+      // Parse target to determine selector
+      // Use regex word boundaries to avoid false matches (e.g., "attacks" matching "ac")
+      const hasWord = (word) => new RegExp(`\\b${word}\\b`, 'i').test(targetRaw);
+
+      if (hasWord('saving throw') || hasWord('save')) {
+        // Saving throws
+        if (hasWord('fortitude')) {
+          selector = 'fortitude';
+        } else if (hasWord('reflex')) {
+          selector = 'reflex';
+        } else if (hasWord('will')) {
+          selector = 'will';
+        } else {
+          selector = 'saving-throw'; // All saves
+        }
+      } else if (targetRaw.includes('attack roll') || hasWord('attack')) {
+        // Attack rolls (keep "attack roll" as includes to catch multi-word)
+        if (hasWord('spell')) {
+          selector = 'spell-attack-roll';
+        } else {
+          selector = 'attack-roll';
+        }
+      } else if (hasWord('ac') || targetRaw.includes('armor class')) {
+        selector = 'ac';
+      } else if (hasWord('perception')) {
+        selector = 'perception';
+      } else if (hasWord('initiative')) {
+        selector = 'initiative';
+      } else if (hasWord('damage')) {
+        selector = 'damage';
+      } else if (hasWord('check')) {
+        // Skill checks
+        if (hasWord('stealth')) {
+          selector = 'stealth';
+        } else if (hasWord('athletics')) {
+          selector = 'athletics';
+        } else if (hasWord('acrobatics')) {
+          selector = 'acrobatics';
+        } else if (hasWord('medicine')) {
+          selector = 'medicine';
+        } else if (hasWord('arcana')) {
+          selector = 'arcana';
+        } else if (hasWord('nature')) {
+          selector = 'nature';
+        } else if (hasWord('occultism')) {
+          selector = 'occultism';
+        } else if (hasWord('religion')) {
+          selector = 'religion';
+        } else if (hasWord('society')) {
+          selector = 'society';
+        } else if (hasWord('crafting')) {
+          selector = 'crafting';
+        } else if (hasWord('deception')) {
+          selector = 'deception';
+        } else if (hasWord('diplomacy')) {
+          selector = 'diplomacy';
+        } else if (hasWord('intimidation')) {
+          selector = 'intimidation';
+        } else if (hasWord('performance')) {
+          selector = 'performance';
+        } else if (hasWord('survival')) {
+          selector = 'survival';
+        } else if (hasWord('thievery')) {
+          selector = 'thievery';
+        } else {
+          selector = 'skill-check'; // All skills
+        }
+      }
+
+      // Parse "against X" to create predicate
+      if (againstRaw) {
+        if (againstRaw.includes('mental')) {
+          predicate.push('item:trait:mental');
+        } else if (againstRaw.includes('poison')) {
+          predicate.push('item:trait:poison');
+        } else if (againstRaw.includes('disease')) {
+          predicate.push('item:trait:disease');
+        } else if (againstRaw.includes('fire')) {
+          predicate.push('item:trait:fire');
+        } else if (againstRaw.includes('cold')) {
+          predicate.push('item:trait:cold');
+        } else if (againstRaw.includes('acid')) {
+          predicate.push('item:trait:acid');
+        } else if (againstRaw.includes('electricity')) {
+          predicate.push('item:trait:electricity');
+        } else if (againstRaw.includes('sonic')) {
+          predicate.push('item:trait:sonic');
+        } else if (againstRaw.includes('spell')) {
+          predicate.push('item:type:spell');
+        }
+      }
+
+      // Only create Rule Element if we have a valid selector
+      if (selector) {
+        // Build label
+        const predicateText = predicate.length > 0 ? ` (${againstRaw})` : '';
+        const label = `${dialog.afflictionName} - Stage ${dialog.stageNumber}: ${match[1]} ${bonusType} ${bonusPenalty} to ${match[4]}${predicateText}`;
+
+        // Create Rule Element config
+        const ruleElement = {
+          key: 'FlatModifier',
+          type: bonusType,
+          selector: selector,
+          value: adjustedValue,
+          label: label
+        };
+
+        // Add predicate if exists
+        if (predicate.length > 0) {
+          ruleElement.predicate = predicate;
+        }
+
+        // Check if this Rule Element already exists (avoid duplicates)
+        const exists = dialog.stageData.ruleElements.some(re =>
+          re.key === ruleElement.key &&
+          re.type === ruleElement.type &&
+          re.selector === ruleElement.selector &&
+          re.value === ruleElement.value &&
+          JSON.stringify(re.predicate || []) === JSON.stringify(ruleElement.predicate || [])
+        );
+
+        if (!exists) {
+          dialog.stageData.ruleElements.push(ruleElement);
         }
       }
     }
@@ -348,6 +529,497 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const dialog = this;
     const index = parseInt(button.dataset.index);
     dialog.stageData.weakness.splice(index, 1);
+    await dialog.render({ force: true });
+  }
+
+  static async openEffect(event, button) {
+    const dialog = this;
+    const uuid = button.dataset.uuid;
+    if (!uuid) return;
+
+    // Check if it's an auto-generated effect (not a real document)
+    if (uuid.startsWith('custom-')) {
+      // Find the effect data
+      const effectData = dialog.stageData.autoEffects.find(e => e.uuid === uuid);
+      if (!effectData) return;
+
+      // Format the Rule Element for display
+      const ruleElement = effectData.system?.rules?.[0];
+      let ruleDetails = '<p><strong>Auto-Generated Effect Preview</strong></p>';
+      ruleDetails += '<p><em>This effect will be created dynamically when the stage becomes active.</em></p>';
+      ruleDetails += '<hr>';
+      ruleDetails += `<p><strong>Effect Name:</strong> ${effectData.name}</p>`;
+
+      if (ruleElement) {
+        ruleDetails += '<p><strong>Rule Element:</strong></p>';
+        ruleDetails += '<ul style="margin-left: 20px; line-height: 1.8;">';
+        ruleDetails += `<li><strong>Type:</strong> ${ruleElement.key}</li>`;
+        ruleDetails += `<li><strong>Bonus Type:</strong> ${ruleElement.type}</li>`;
+        ruleDetails += `<li><strong>Selector:</strong> ${ruleElement.selector}</li>`;
+        ruleDetails += `<li><strong>Value:</strong> ${ruleElement.value > 0 ? '+' : ''}${ruleElement.value}</li>`;
+        if (ruleElement.predicate && ruleElement.predicate.length > 0) {
+          ruleDetails += `<li><strong>Predicate:</strong> ${ruleElement.predicate.join(', ')}</li>`;
+        }
+        ruleDetails += '</ul>';
+      }
+
+      // Show preview dialog
+      new foundry.applications.api.DialogV2({
+        window: { title: 'Effect Preview' },
+        content: ruleDetails,
+        buttons: [{
+          action: 'ok',
+          label: 'Close',
+          default: true
+        }],
+        modal: true
+      }).render(true);
+
+      return;
+    }
+
+    try {
+      const effect = await fromUuid(uuid);
+      if (effect && effect.sheet) {
+        effect.sheet.render(true);
+      } else {
+        ui.notifications.warn('Effect not found or has no sheet');
+      }
+    } catch (error) {
+      console.error('StageEditorDialog: Error opening effect', error);
+      ui.notifications.error('Failed to open effect');
+    }
+  }
+  static async addRuleElement(_event, button) {
+    const dialog = this;
+
+    // Create form for adding a Rule Element
+    const content = `
+      <form>
+        <div class="form-group">
+          <label>Bonus Type</label>
+          <select name="type" required>
+            <option value="item">Item</option>
+            <option value="circumstance">Circumstance</option>
+            <option value="status">Status</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Value (use negative for penalties)</label>
+          <input type="number" name="value" value="1" required />
+        </div>
+
+        <div class="form-group">
+          <label>Applies To (Selector)</label>
+          <select name="selector" required>
+            <optgroup label="Saves">
+              <option value="saving-throw">All Saves</option>
+              <option value="fortitude">Fortitude</option>
+              <option value="reflex">Reflex</option>
+              <option value="will">Will</option>
+            </optgroup>
+            <optgroup label="Defense">
+              <option value="ac">AC</option>
+              <option value="perception">Perception</option>
+            </optgroup>
+            <optgroup label="Offense">
+              <option value="attack-roll">Attack Rolls</option>
+              <option value="spell-attack-roll">Spell Attack Rolls</option>
+              <option value="damage">Damage</option>
+            </optgroup>
+            <optgroup label="Skills">
+              <option value="skill-check">All Skills</option>
+              <option value="acrobatics">Acrobatics</option>
+              <option value="arcana">Arcana</option>
+              <option value="athletics">Athletics</option>
+              <option value="crafting">Crafting</option>
+              <option value="deception">Deception</option>
+              <option value="diplomacy">Diplomacy</option>
+              <option value="intimidation">Intimidation</option>
+              <option value="medicine">Medicine</option>
+              <option value="nature">Nature</option>
+              <option value="occultism">Occultism</option>
+              <option value="performance">Performance</option>
+              <option value="religion">Religion</option>
+              <option value="society">Society</option>
+              <option value="stealth">Stealth</option>
+              <option value="survival">Survival</option>
+              <option value="thievery">Thievery</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option value="initiative">Initiative</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Condition/Predicate (Optional)</label>
+          <select name="predicate">
+            <option value="">Always Active</option>
+            <optgroup label="Item Damage Traits">
+              <option value="item:trait:fire">Against Fire</option>
+              <option value="item:trait:cold">Against Cold</option>
+              <option value="item:trait:acid">Against Acid</option>
+              <option value="item:trait:electricity">Against Electricity</option>
+              <option value="item:trait:sonic">Against Sonic</option>
+              <option value="item:trait:mental">Against Mental</option>
+              <option value="item:trait:poison">Against Poison</option>
+            </optgroup>
+            <optgroup label="Item Effect Traits">
+              <option value="item:trait:disease">Against Disease</option>
+              <option value="item:trait:fear">Against Fear</option>
+              <option value="item:trait:visual">Against Visual</option>
+              <option value="item:trait:auditory">Against Auditory</option>
+              <option value="item:trait:linguistic">Against Linguistic</option>
+              <option value="item:trait:emotion">Against Emotion</option>
+            </optgroup>
+            <optgroup label="Item Types">
+              <option value="item:type:spell">Against Spells</option>
+              <option value="item:type:weapon">Against Weapons</option>
+              <option value="item:ranged">Against Ranged</option>
+              <option value="item:melee">Against Melee</option>
+            </optgroup>
+            <optgroup label="Attack Traits">
+              <option value="attack:trait:ranged">On Ranged Attacks</option>
+              <option value="attack:trait:melee">On Melee Attacks</option>
+            </optgroup>
+            <optgroup label="Self Conditions">
+              <option value="self:condition:frightened">While Frightened</option>
+              <option value="self:condition:sickened">While Sickened</option>
+              <option value="self:condition:off-guard">While Off-Guard</option>
+              <option value="self:condition:hidden">While Hidden</option>
+              <option value="self:condition:concealed">While Concealed</option>
+            </optgroup>
+            <optgroup label="Target Conditions">
+              <option value="target:condition:off-guard">Against Off-Guard</option>
+              <option value="target:condition:frightened">Against Frightened</option>
+              <option value="target:condition:prone">Against Prone</option>
+            </optgroup>
+            <optgroup label="Target Traits">
+              <option value="target:trait:dragon">Against Dragons</option>
+              <option value="target:trait:undead">Against Undead</option>
+              <option value="target:trait:demon">Against Demons</option>
+              <option value="target:trait:devil">Against Devils</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Custom Predicate (Optional)</label>
+          <input type="text" name="customPredicate" placeholder="e.g., attack:trait:ranged or self:condition:hidden" />
+          <small style="display: block; margin-top: 4px; color: #888; font-size: 11px;">
+            Use custom predicate syntax if the dropdown doesn't have what you need. This will override the dropdown selection.
+          </small>
+        </div>
+      </form>
+    `;
+
+    const result = await foundry.applications.api.DialogV2.prompt({
+      window: { title: 'Add Rule Element' },
+      content: content,
+      ok: {
+        label: 'Add',
+        callback: (event, button) => new FormDataExtended(button.form).object
+      },
+      rejectClose: false
+    });
+
+    if (!result) return;
+
+    // Determine which predicate to use (custom takes precedence)
+    const finalPredicate = result.customPredicate?.trim() || result.predicate;
+
+    // Build label - get predicate display text
+    let predicateText = '';
+    if (finalPredicate) {
+      if (result.customPredicate?.trim()) {
+        // Use custom predicate as-is for display
+        predicateText = ` (${finalPredicate})`;
+      } else {
+        // Use dropdown text
+        const predicateOption = button.querySelector(`select[name="predicate"] option[value="${finalPredicate}"]`);
+        predicateText = predicateOption ? ` (${predicateOption.textContent})` : ` (${finalPredicate})`;
+      }
+    }
+
+    const selectorName = button.querySelector(`select[name="selector"] option[value="${result.selector}"]`)?.textContent || result.selector;
+    const bonusPenalty = result.value >= 0 ? 'bonus' : 'penalty';
+    const label = `${dialog.afflictionName} - Stage ${dialog.stageNumber}: ${result.value >= 0 ? '+' : ''}${result.value} ${result.type} ${bonusPenalty} to ${selectorName}${predicateText}`;
+
+    // Create Rule Element
+    const ruleElement = {
+      key: 'FlatModifier',
+      type: result.type,
+      selector: result.selector,
+      value: parseInt(result.value),
+      label: label
+    };
+
+    // Add predicate if specified
+    if (finalPredicate) {
+      ruleElement.predicate = [finalPredicate];
+    }
+
+    // Add to stage data
+    dialog.stageData.ruleElements.push(ruleElement);
+
+    ui.notifications.info('Rule Element added');
+    await dialog.render({ force: true });
+  }
+
+  /**
+   * Helper to determine if predicate is custom or from dropdown
+   * @param {Object} ruleElement - The Rule Element to check
+   * @returns {string} - The custom predicate value if it's not in dropdown, empty string otherwise
+   */
+  static getCustomPredicateValue(ruleElement) {
+    if (!ruleElement.predicate || ruleElement.predicate.length === 0) return '';
+
+    const predicate = ruleElement.predicate[0];
+
+    // List of predefined dropdown values (expanded based on PF2e documentation)
+    const dropdownValues = [
+      // Item damage traits
+      'item:trait:fire',
+      'item:trait:cold',
+      'item:trait:acid',
+      'item:trait:electricity',
+      'item:trait:sonic',
+      'item:trait:mental',
+      'item:trait:poison',
+      // Item effect traits
+      'item:trait:disease',
+      'item:trait:fear',
+      'item:trait:visual',
+      'item:trait:auditory',
+      'item:trait:linguistic',
+      'item:trait:emotion',
+      // Item types
+      'item:type:spell',
+      'item:type:weapon',
+      'item:ranged',
+      'item:melee',
+      // Attack traits
+      'attack:trait:ranged',
+      'attack:trait:melee',
+      // Self conditions
+      'self:condition:frightened',
+      'self:condition:sickened',
+      'self:condition:off-guard',
+      'self:condition:hidden',
+      'self:condition:concealed',
+      // Target conditions
+      'target:condition:off-guard',
+      'target:condition:frightened',
+      'target:condition:prone',
+      // Target traits
+      'target:trait:dragon',
+      'target:trait:undead',
+      'target:trait:demon',
+      'target:trait:devil'
+    ];
+
+    // If predicate is in dropdown, return empty (use dropdown)
+    // Otherwise return the predicate as custom
+    return dropdownValues.includes(predicate) ? '' : predicate;
+  }
+
+  static async editRuleElement(_event, button) {
+    const dialog = this;
+    const index = parseInt(button.dataset.index);
+    const ruleElement = dialog.stageData.ruleElements[index];
+
+    if (!ruleElement) return;
+
+    // Create form for editing the Rule Element, pre-populated with current values
+    const content = `
+      <form>
+        <div class="form-group">
+          <label>Bonus Type</label>
+          <select name="type" required>
+            <option value="item" ${ruleElement.type === 'item' ? 'selected' : ''}>Item</option>
+            <option value="circumstance" ${ruleElement.type === 'circumstance' ? 'selected' : ''}>Circumstance</option>
+            <option value="status" ${ruleElement.type === 'status' ? 'selected' : ''}>Status</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Value (use negative for penalties)</label>
+          <input type="number" name="value" value="${ruleElement.value}" required />
+        </div>
+
+        <div class="form-group">
+          <label>Applies To (Selector)</label>
+          <select name="selector" required>
+            <optgroup label="Saves">
+              <option value="saving-throw" ${ruleElement.selector === 'saving-throw' ? 'selected' : ''}>All Saves</option>
+              <option value="fortitude" ${ruleElement.selector === 'fortitude' ? 'selected' : ''}>Fortitude</option>
+              <option value="reflex" ${ruleElement.selector === 'reflex' ? 'selected' : ''}>Reflex</option>
+              <option value="will" ${ruleElement.selector === 'will' ? 'selected' : ''}>Will</option>
+            </optgroup>
+            <optgroup label="Defense">
+              <option value="ac" ${ruleElement.selector === 'ac' ? 'selected' : ''}>AC</option>
+              <option value="perception" ${ruleElement.selector === 'perception' ? 'selected' : ''}>Perception</option>
+            </optgroup>
+            <optgroup label="Offense">
+              <option value="attack-roll" ${ruleElement.selector === 'attack-roll' ? 'selected' : ''}>Attack Rolls</option>
+              <option value="spell-attack-roll" ${ruleElement.selector === 'spell-attack-roll' ? 'selected' : ''}>Spell Attack Rolls</option>
+              <option value="damage" ${ruleElement.selector === 'damage' ? 'selected' : ''}>Damage</option>
+            </optgroup>
+            <optgroup label="Skills">
+              <option value="skill-check" ${ruleElement.selector === 'skill-check' ? 'selected' : ''}>All Skills</option>
+              <option value="acrobatics" ${ruleElement.selector === 'acrobatics' ? 'selected' : ''}>Acrobatics</option>
+              <option value="arcana" ${ruleElement.selector === 'arcana' ? 'selected' : ''}>Arcana</option>
+              <option value="athletics" ${ruleElement.selector === 'athletics' ? 'selected' : ''}>Athletics</option>
+              <option value="crafting" ${ruleElement.selector === 'crafting' ? 'selected' : ''}>Crafting</option>
+              <option value="deception" ${ruleElement.selector === 'deception' ? 'selected' : ''}>Deception</option>
+              <option value="diplomacy" ${ruleElement.selector === 'diplomacy' ? 'selected' : ''}>Diplomacy</option>
+              <option value="intimidation" ${ruleElement.selector === 'intimidation' ? 'selected' : ''}>Intimidation</option>
+              <option value="medicine" ${ruleElement.selector === 'medicine' ? 'selected' : ''}>Medicine</option>
+              <option value="nature" ${ruleElement.selector === 'nature' ? 'selected' : ''}>Nature</option>
+              <option value="occultism" ${ruleElement.selector === 'occultism' ? 'selected' : ''}>Occultism</option>
+              <option value="performance" ${ruleElement.selector === 'performance' ? 'selected' : ''}>Performance</option>
+              <option value="religion" ${ruleElement.selector === 'religion' ? 'selected' : ''}>Religion</option>
+              <option value="society" ${ruleElement.selector === 'society' ? 'selected' : ''}>Society</option>
+              <option value="stealth" ${ruleElement.selector === 'stealth' ? 'selected' : ''}>Stealth</option>
+              <option value="survival" ${ruleElement.selector === 'survival' ? 'selected' : ''}>Survival</option>
+              <option value="thievery" ${ruleElement.selector === 'thievery' ? 'selected' : ''}>Thievery</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option value="initiative" ${ruleElement.selector === 'initiative' ? 'selected' : ''}>Initiative</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Condition/Predicate (Optional)</label>
+          <select name="predicate">
+            <option value="" ${!ruleElement.predicate || ruleElement.predicate.length === 0 ? 'selected' : ''}>Always Active</option>
+            <optgroup label="Item Damage Traits">
+              <option value="item:trait:fire" ${ruleElement.predicate?.[0] === 'item:trait:fire' ? 'selected' : ''}>Against Fire</option>
+              <option value="item:trait:cold" ${ruleElement.predicate?.[0] === 'item:trait:cold' ? 'selected' : ''}>Against Cold</option>
+              <option value="item:trait:acid" ${ruleElement.predicate?.[0] === 'item:trait:acid' ? 'selected' : ''}>Against Acid</option>
+              <option value="item:trait:electricity" ${ruleElement.predicate?.[0] === 'item:trait:electricity' ? 'selected' : ''}>Against Electricity</option>
+              <option value="item:trait:sonic" ${ruleElement.predicate?.[0] === 'item:trait:sonic' ? 'selected' : ''}>Against Sonic</option>
+              <option value="item:trait:mental" ${ruleElement.predicate?.[0] === 'item:trait:mental' ? 'selected' : ''}>Against Mental</option>
+              <option value="item:trait:poison" ${ruleElement.predicate?.[0] === 'item:trait:poison' ? 'selected' : ''}>Against Poison</option>
+            </optgroup>
+            <optgroup label="Item Effect Traits">
+              <option value="item:trait:disease" ${ruleElement.predicate?.[0] === 'item:trait:disease' ? 'selected' : ''}>Against Disease</option>
+              <option value="item:trait:fear" ${ruleElement.predicate?.[0] === 'item:trait:fear' ? 'selected' : ''}>Against Fear</option>
+              <option value="item:trait:visual" ${ruleElement.predicate?.[0] === 'item:trait:visual' ? 'selected' : ''}>Against Visual</option>
+              <option value="item:trait:auditory" ${ruleElement.predicate?.[0] === 'item:trait:auditory' ? 'selected' : ''}>Against Auditory</option>
+              <option value="item:trait:linguistic" ${ruleElement.predicate?.[0] === 'item:trait:linguistic' ? 'selected' : ''}>Against Linguistic</option>
+              <option value="item:trait:emotion" ${ruleElement.predicate?.[0] === 'item:trait:emotion' ? 'selected' : ''}>Against Emotion</option>
+            </optgroup>
+            <optgroup label="Item Types">
+              <option value="item:type:spell" ${ruleElement.predicate?.[0] === 'item:type:spell' ? 'selected' : ''}>Against Spells</option>
+              <option value="item:type:weapon" ${ruleElement.predicate?.[0] === 'item:type:weapon' ? 'selected' : ''}>Against Weapons</option>
+              <option value="item:ranged" ${ruleElement.predicate?.[0] === 'item:ranged' ? 'selected' : ''}>Against Ranged</option>
+              <option value="item:melee" ${ruleElement.predicate?.[0] === 'item:melee' ? 'selected' : ''}>Against Melee</option>
+            </optgroup>
+            <optgroup label="Attack Traits">
+              <option value="attack:trait:ranged" ${ruleElement.predicate?.[0] === 'attack:trait:ranged' ? 'selected' : ''}>On Ranged Attacks</option>
+              <option value="attack:trait:melee" ${ruleElement.predicate?.[0] === 'attack:trait:melee' ? 'selected' : ''}>On Melee Attacks</option>
+            </optgroup>
+            <optgroup label="Self Conditions">
+              <option value="self:condition:frightened" ${ruleElement.predicate?.[0] === 'self:condition:frightened' ? 'selected' : ''}>While Frightened</option>
+              <option value="self:condition:sickened" ${ruleElement.predicate?.[0] === 'self:condition:sickened' ? 'selected' : ''}>While Sickened</option>
+              <option value="self:condition:off-guard" ${ruleElement.predicate?.[0] === 'self:condition:off-guard' ? 'selected' : ''}>While Off-Guard</option>
+              <option value="self:condition:hidden" ${ruleElement.predicate?.[0] === 'self:condition:hidden' ? 'selected' : ''}>While Hidden</option>
+              <option value="self:condition:concealed" ${ruleElement.predicate?.[0] === 'self:condition:concealed' ? 'selected' : ''}>While Concealed</option>
+            </optgroup>
+            <optgroup label="Target Conditions">
+              <option value="target:condition:off-guard" ${ruleElement.predicate?.[0] === 'target:condition:off-guard' ? 'selected' : ''}>Against Off-Guard</option>
+              <option value="target:condition:frightened" ${ruleElement.predicate?.[0] === 'target:condition:frightened' ? 'selected' : ''}>Against Frightened</option>
+              <option value="target:condition:prone" ${ruleElement.predicate?.[0] === 'target:condition:prone' ? 'selected' : ''}>Against Prone</option>
+            </optgroup>
+            <optgroup label="Target Traits">
+              <option value="target:trait:dragon" ${ruleElement.predicate?.[0] === 'target:trait:dragon' ? 'selected' : ''}>Against Dragons</option>
+              <option value="target:trait:undead" ${ruleElement.predicate?.[0] === 'target:trait:undead' ? 'selected' : ''}>Against Undead</option>
+              <option value="target:trait:demon" ${ruleElement.predicate?.[0] === 'target:trait:demon' ? 'selected' : ''}>Against Demons</option>
+              <option value="target:trait:devil" ${ruleElement.predicate?.[0] === 'target:trait:devil' ? 'selected' : ''}>Against Devils</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Custom Predicate (Optional)</label>
+          <input type="text" name="customPredicate" value="${StageEditorDialog.getCustomPredicateValue(ruleElement)}" placeholder="e.g., attack:trait:ranged or self:condition:hidden" />
+          <small style="display: block; margin-top: 4px; color: #888; font-size: 11px;">
+            Use custom predicate syntax if the dropdown doesn't have what you need. This will override the dropdown selection.
+          </small>
+        </div>
+      </form>
+    `;
+
+    const result = await foundry.applications.api.DialogV2.prompt({
+      window: { title: 'Edit Rule Element' },
+      content: content,
+      ok: {
+        label: 'Save',
+        callback: (event, button) => new FormDataExtended(button.form).object
+      },
+      rejectClose: false
+    });
+
+    if (!result) return;
+
+    // Determine which predicate to use (custom takes precedence)
+    const finalPredicate = result.customPredicate?.trim() || result.predicate;
+
+    // Build updated label - get predicate display text
+    let predicateText = '';
+    if (finalPredicate) {
+      if (result.customPredicate?.trim()) {
+        // Use custom predicate as-is for display
+        predicateText = ` (${finalPredicate})`;
+      } else {
+        // Use dropdown text
+        const predicateOption = button.querySelector(`select[name="predicate"] option[value="${finalPredicate}"]`);
+        predicateText = predicateOption ? ` (${predicateOption.textContent})` : ` (${finalPredicate})`;
+      }
+    }
+
+    const selectorName = button.querySelector(`select[name="selector"] option[value="${result.selector}"]`)?.textContent || result.selector;
+    const bonusPenalty = result.value >= 0 ? 'bonus' : 'penalty';
+    const label = `${dialog.afflictionName} - Stage ${dialog.stageNumber}: ${result.value >= 0 ? '+' : ''}${result.value} ${result.type} ${bonusPenalty} to ${selectorName}${predicateText}`;
+
+    // Update Rule Element
+    dialog.stageData.ruleElements[index] = {
+      key: 'FlatModifier',
+      type: result.type,
+      selector: result.selector,
+      value: parseInt(result.value),
+      label: label
+    };
+
+    // Add predicate if specified
+    if (finalPredicate) {
+      dialog.stageData.ruleElements[index].predicate = [finalPredicate];
+    }
+
+    ui.notifications.info('Rule Element updated');
+    await dialog.render({ force: true });
+  }
+
+  static async removeRuleElement(_event, button) {
+    const dialog = this;
+    const index = parseInt(button.dataset.index);
+
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Remove Rule Element' },
+      content: '<p>Remove this rule element?</p>',
+      yes: () => true,
+      no: () => false,
+      defaultYes: false
+    });
+
+    if (!confirmed) return;
+
+    dialog.stageData.ruleElements.splice(index, 1);
+    ui.notifications.info('Rule Element removed');
     await dialog.render({ force: true });
   }
 
@@ -469,18 +1141,22 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
   async updateFromForm() {
     const formData = new FormDataExtended(this.element).object;
 
-    console.log('StageEditorDialog: updateFromForm - formData:', formData);
-
     // Update effects
     if (formData.effects !== undefined) {
       this.stageData.effects = formData.effects || '';
     }
 
-    // Update duration
+    // Update duration - handle both nested and flat structure
     if (formData.duration) {
       this.stageData.duration = {
         value: parseInt(formData.duration.value) || 1,
         unit: formData.duration.unit || 'day'
+      };
+    } else if (formData['duration.value'] !== undefined || formData['duration.unit'] !== undefined) {
+      // Fallback: handle flat structure if FormDataExtended doesn't nest it
+      this.stageData.duration = {
+        value: parseInt(formData['duration.value']) || 1,
+        unit: formData['duration.unit'] || 'day'
       };
     }
 
@@ -542,8 +1218,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
           value: parseInt(w.value) || 0
         }));
     }
-
-    console.log('StageEditorDialog: updateFromForm - updated stageData:', this.stageData);
   }
 
   static async saveStage(event, button) {
@@ -551,8 +1225,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
 
     // Update from form values
     await dialog.updateFromForm();
-
-    console.log('StageEditorDialog: Saving stage data', dialog.stageData);
 
     // Call save callback
     if (dialog.onSave) {

@@ -44,14 +44,52 @@
       <div class="effects-list">
         {{#each stage.autoEffects}}
           <div class="effect-item" data-index="{{@index}}">
-            <img src="{{img}}" alt="{{name}}" />
-            <span class="effect-name">{{name}}</span>
+            <img src="{{img}}" alt="{{name}}" data-action="openEffect" data-uuid="{{uuid}}" style="cursor: pointer;" />
+            <span class="effect-name" data-action="openEffect" data-uuid="{{uuid}}" style="cursor: pointer;">{{name}}</span>
             <button type="button" data-action="removeEffect" data-index="{{@index}}" class="remove-button">
               <i class="fas fa-times"></i>
             </button>
           </div>
         {{/each}}
       </div>
+    {{/if}}
+  </div>
+
+  <!-- Rule Elements (Parsed Bonuses) -->
+  <div class="form-section rule-elements-section">
+    <div class="section-header">
+      <h4>Stage Bonuses (Rule Elements)</h4>
+      <button type="button" data-action="addRuleElement" class="add-button">
+        <i class="fas fa-plus"></i> Add Bonus
+      </button>
+    </div>
+
+    {{#if stage.ruleElements.length}}
+      <div class="rule-elements-list">
+        {{#each stage.ruleElements}}
+          <div class="rule-element-item" data-index="{{@index}}">
+            <div class="rule-element-content" data-action="editRuleElement" data-index="{{@index}}" style="cursor: pointer;" data-tooltip="Click to edit">
+              <i class="fas fa-chart-line"></i>
+              <div class="rule-element-text">
+                <span class="rule-element-label">{{label}}</span>
+                <small class="rule-element-details">
+                  {{key}} ({{type}} → {{selector}}{{#if value}} {{#if (gt value 0)}}+{{/if}}{{value}}{{/if}})
+                  {{#if predicate}}
+                    | Predicate: {{#each predicate}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}
+                  {{/if}}
+                </small>
+              </div>
+            </div>
+            <button type="button" data-action="removeRuleElement" data-index="{{@index}}" class="remove-button" data-tooltip="Remove Rule Element">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        {{/each}}
+      </div>
+    {{else}}
+      <p style="text-align: center; color: #888; font-style: italic; padding: 20px;">
+        No parsed bonuses. Use the "Parse" button above to extract bonuses from instructions.
+      </p>
     {{/if}}
   </div>
 
@@ -196,22 +234,96 @@
         <div class="weakness-entry" data-index="{{@index}}">
           <select name="weakness.{{@index}}.type">
             <option value="">Select type...</option>
-            <option value="acid" {{#if (eq type "acid")}}selected{{/if}}>Acid</option>
-            <option value="bleed" {{#if (eq type "bleed")}}selected{{/if}}>Bleed</option>
-            <option value="bludgeoning" {{#if (eq type "bludgeoning")}}selected{{/if}}>Bludgeoning</option>
-            <option value="cold" {{#if (eq type "cold")}}selected{{/if}}>Cold</option>
-            <option value="electricity" {{#if (eq type "electricity")}}selected{{/if}}>Electricity</option>
-            <option value="fire" {{#if (eq type "fire")}}selected{{/if}}>Fire</option>
-            <option value="force" {{#if (eq type "force")}}selected{{/if}}>Force</option>
-            <option value="mental" {{#if (eq type "mental")}}selected{{/if}}>Mental</option>
-            <option value="piercing" {{#if (eq type "piercing")}}selected{{/if}}>Piercing</option>
-            <option value="poison" {{#if (eq type "poison")}}selected{{/if}}>Poison</option>
-            <option value="slashing" {{#if (eq type "slashing")}}selected{{/if}}>Slashing</option>
-            <option value="sonic" {{#if (eq type "sonic")}}selected{{/if}}>Sonic</option>
-            <option value="spirit" {{#if (eq type "spirit")}}selected{{/if}}>Spirit</option>
-            <option value="vitality" {{#if (eq type "vitality")}}selected{{/if}}>Vitality</option>
-            <option value="void" {{#if (eq type "void")}}selected{{/if}}>Void</option>
-            <option value="untyped" {{#if (eq type "untyped")}}selected{{/if}}>Untyped</option>
+            <optgroup label="Energy & Damage">
+              <option value="acid" {{#if (eq type "acid")}}selected{{/if}}>Acid</option>
+              <option value="cold" {{#if (eq type "cold")}}selected{{/if}}>Cold</option>
+              <option value="electricity" {{#if (eq type "electricity")}}selected{{/if}}>Electricity</option>
+              <option value="fire" {{#if (eq type "fire")}}selected{{/if}}>Fire</option>
+              <option value="sonic" {{#if (eq type "sonic")}}selected{{/if}}>Sonic</option>
+              <option value="force" {{#if (eq type "force")}}selected{{/if}}>Force</option>
+              <option value="vitality" {{#if (eq type "vitality")}}selected{{/if}}>Vitality</option>
+              <option value="void" {{#if (eq type "void")}}selected{{/if}}>Void</option>
+            </optgroup>
+            <optgroup label="Physical">
+              <option value="physical" {{#if (eq type "physical")}}selected{{/if}}>Physical (All)</option>
+              <option value="bludgeoning" {{#if (eq type "bludgeoning")}}selected{{/if}}>Bludgeoning</option>
+              <option value="piercing" {{#if (eq type "piercing")}}selected{{/if}}>Piercing</option>
+              <option value="slashing" {{#if (eq type "slashing")}}selected{{/if}}>Slashing</option>
+            </optgroup>
+            <optgroup label="Special">
+              <option value="bleed" {{#if (eq type "bleed")}}selected{{/if}}>Bleed</option>
+              <option value="mental" {{#if (eq type "mental")}}selected{{/if}}>Mental</option>
+              <option value="poison" {{#if (eq type "poison")}}selected{{/if}}>Poison</option>
+              <option value="spirit" {{#if (eq type "spirit")}}selected{{/if}}>Spirit</option>
+              <option value="emotion" {{#if (eq type "emotion")}}selected{{/if}}>Emotion</option>
+            </optgroup>
+            <optgroup label="Materials">
+              <option value="cold-iron" {{#if (eq type "cold-iron")}}selected{{/if}}>Cold Iron</option>
+              <option value="silver" {{#if (eq type "silver")}}selected{{/if}}>Silver</option>
+              <option value="adamantine" {{#if (eq type "adamantine")}}selected{{/if}}>Adamantine</option>
+              <option value="orichalcum" {{#if (eq type "orichalcum")}}selected{{/if}}>Orichalcum</option>
+              <option value="abysium" {{#if (eq type "abysium")}}selected{{/if}}>Abysium</option>
+              <option value="dawnsilver" {{#if (eq type "dawnsilver")}}selected{{/if}}>Dawnsilver</option>
+              <option value="djezet" {{#if (eq type "djezet")}}selected{{/if}}>Djezet</option>
+              <option value="duskwood" {{#if (eq type "duskwood")}}selected{{/if}}>Duskwood</option>
+              <option value="inubrix" {{#if (eq type "inubrix")}}selected{{/if}}>Inubrix</option>
+              <option value="noqual" {{#if (eq type "noqual")}}selected{{/if}}>Noqual</option>
+              <option value="peachwood" {{#if (eq type "peachwood")}}selected{{/if}}>Peachwood</option>
+              <option value="siccatite" {{#if (eq type "siccatite")}}selected{{/if}}>Siccatite</option>
+            </optgroup>
+            <optgroup label="Alignment">
+              <option value="holy" {{#if (eq type "holy")}}selected{{/if}}>Holy</option>
+              <option value="unholy" {{#if (eq type "unholy")}}selected{{/if}}>Unholy</option>
+            </optgroup>
+            <optgroup label="Traditions">
+              <option value="arcane" {{#if (eq type "arcane")}}selected{{/if}}>Arcane</option>
+              <option value="divine" {{#if (eq type "divine")}}selected{{/if}}>Divine</option>
+              <option value="occult" {{#if (eq type "occult")}}selected{{/if}}>Occult</option>
+              <option value="primal" {{#if (eq type "primal")}}selected{{/if}}>Primal</option>
+            </optgroup>
+            <optgroup label="Properties">
+              <option value="magical" {{#if (eq type "magical")}}selected{{/if}}>Magical</option>
+              <option value="non-magical" {{#if (eq type "non-magical")}}selected{{/if}}>Non-Magical</option>
+              <option value="ghost-touch" {{#if (eq type "ghost-touch")}}selected{{/if}}>Ghost Touch</option>
+              <option value="alchemical" {{#if (eq type "alchemical")}}selected{{/if}}>Alchemical</option>
+            </optgroup>
+            <optgroup label="Specialized">
+              <option value="area-damage" {{#if (eq type "area-damage")}}selected{{/if}}>Area Damage</option>
+              <option value="critical-hits" {{#if (eq type "critical-hits")}}selected{{/if}}>Critical Hits</option>
+              <option value="precision" {{#if (eq type "precision")}}selected{{/if}}>Precision</option>
+              <option value="splash-damage" {{#if (eq type "splash-damage")}}selected{{/if}}>Splash Damage</option>
+              <option value="persistent-damage" {{#if (eq type "persistent-damage")}}selected{{/if}}>Persistent Damage</option>
+              <option value="spells" {{#if (eq type "spells")}}selected{{/if}}>Spells</option>
+              <option value="weapons" {{#if (eq type "weapons")}}selected{{/if}}>Weapons</option>
+              <option value="unarmed-attacks" {{#if (eq type "unarmed-attacks")}}selected{{/if}}>Unarmed Attacks</option>
+            </optgroup>
+            <optgroup label="Rare/Special">
+              <option value="arrow-vulnerability" {{#if (eq type "arrow-vulnerability")}}selected{{/if}}>Arrow Vulnerability</option>
+              <option value="axe-vulnerability" {{#if (eq type "axe-vulnerability")}}selected{{/if}}>Axe Vulnerability</option>
+              <option value="vampire-weaknesses" {{#if (eq type "vampire-weaknesses")}}selected{{/if}}>Vampire Weaknesses</option>
+              <option value="vulnerable-to-sunlight" {{#if (eq type "vulnerable-to-sunlight")}}selected{{/if}}>Vulnerable to Sunlight</option>
+              <option value="vorpal" {{#if (eq type "vorpal")}}selected{{/if}}>Vorpal</option>
+              <option value="vorpal-fear" {{#if (eq type "vorpal-fear")}}selected{{/if}}>Vorpal Fear</option>
+              <option value="weapons-shedding-bright-light" {{#if (eq type "weapons-shedding-bright-light")}}selected{{/if}}>Weapons Shedding Bright Light</option>
+            </optgroup>
+            <optgroup label="Elemental">
+              <option value="air" {{#if (eq type "air")}}selected{{/if}}>Air</option>
+              <option value="earth" {{#if (eq type "earth")}}selected{{/if}}>Earth</option>
+              <option value="water" {{#if (eq type "water")}}selected{{/if}}>Water</option>
+              <option value="salt-water" {{#if (eq type "salt-water")}}selected{{/if}}>Salt Water</option>
+              <option value="salt" {{#if (eq type "salt")}}selected{{/if}}>Salt</option>
+            </optgroup>
+            <optgroup label="Other">
+              <option value="all-damage" {{#if (eq type "all-damage")}}selected{{/if}}>All Damage</option>
+              <option value="energy" {{#if (eq type "energy")}}selected{{/if}}>Energy</option>
+              <option value="glass" {{#if (eq type "glass")}}selected{{/if}}>Glass</option>
+              <option value="light" {{#if (eq type "light")}}selected{{/if}}>Light</option>
+              <option value="metal" {{#if (eq type "metal")}}selected{{/if}}>Metal</option>
+              <option value="plant" {{#if (eq type "plant")}}selected{{/if}}>Plant</option>
+              <option value="radiation" {{#if (eq type "radiation")}}selected{{/if}}>Radiation</option>
+              <option value="time" {{#if (eq type "time")}}selected{{/if}}>Time</option>
+              <option value="wood" {{#if (eq type "wood")}}selected{{/if}}>Wood</option>
+            </optgroup>
           </select>
           <input type="number" name="weakness.{{@index}}.value" value="{{value}}" placeholder="Value" min="1" />
           <button type="button" data-action="removeWeakness" data-index="{{@index}}" class="remove-button">

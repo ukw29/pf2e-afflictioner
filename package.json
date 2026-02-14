@@ -1,0 +1,89 @@
+{
+  "name": "pf2e-afflictioner",
+  "version": "1.0.0",
+  "description": "A Foundry VTT module to manage afflictions for Pathfinder 2e",
+  "main": "scripts/main.js",
+  "scripts": {
+    "test": "jest --maxWorkers=50%",
+    "test:watch": "jest --maxWorkers=50% --watch",
+    "test:coverage": "jest --coverage --maxWorkers=50%",
+    "test:ci": "jest --ci --coverage --watchAll=false --maxWorkers=50%",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build": "echo 'No build step required for Foundry VTT modules'",
+    "prepublishOnly": "npm run test:ci && npm run lint",
+    "prepare": "husky",
+    "bench:hashgrid": "cross-env RUN_BENCH=1 jest -- tests/bench/hashgrid.bench.test.js"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.3",
+    "@babel/preset-env": "^7.28.3",
+    "@eslint/js": "^9.35.0",
+    "babel-jest": "^30.1.2",
+    "canvas": "^3.2.0",
+    "eslint": "^9.35.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "globals": "^16.3.0",
+    "husky": "^9.1.7",
+    "cross-env": "^7.0.3",
+    "jest": "^30.1.3",
+    "jest-environment-jsdom": "^30.1.2",
+    "prettier": "^3.6.2"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/scripts/$1"
+    },
+    "collectCoverageFrom": [
+      "scripts/**/*.js",
+      "!scripts/**/*.test.js",
+      "!scripts/main.js"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 1.5,
+        "functions": 2,
+        "lines": 2,
+        "statements": 1.5
+      },
+      "./scripts/stores/": {
+        "branches": 75,
+        "functions": 95,
+        "lines": 75,
+        "statements": 75
+      },
+      "./scripts/utils.js": {
+        "branches": 30,
+        "functions": 50,
+        "lines": 40,
+        "statements": 35
+      }
+    },
+    "testMatch": [
+      "**/tests/**/*.test.js",
+      "**/scripts/**/*.test.js"
+    ]
+  },
+  "babel": {
+    "presets": [
+      [
+        "@babel/preset-env",
+        {
+          "targets": {
+            "node": "current"
+          }
+        }
+      ]
+    ]
+  },
+  "volta": {
+    "node": "20.19.4"
+  }
+}

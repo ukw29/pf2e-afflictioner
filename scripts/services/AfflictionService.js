@@ -21,7 +21,6 @@ export class AfflictionService {
     const editedDef = AfflictionDefinitionStore.getEditedDefinition(key);
 
     if (editedDef) {
-      console.log('AfflictionService: Applying edited definition', { key, editedDef });
       afflictionData = AfflictionEditorService.applyEditedDefinition(afflictionData, editedDef);
     }
 
@@ -130,7 +129,6 @@ export class AfflictionService {
       // Has onset: Start in onset (stage 0), but remember how many stages to advance after
       startingStage = 0;
       stageAdvancement = degree === DEGREE_OF_SUCCESS.CRITICAL_FAILURE ? 2 : 1;
-      console.log(`PF2e Afflictioner | Initial save degree: ${degree}, stageAdvancement set to: ${stageAdvancement}`);
     } else {
       // No onset: Failure = stage 1, Critical Failure = stage 2
       startingStage = degree === DEGREE_OF_SUCCESS.CRITICAL_FAILURE ? 2 : 1;
@@ -150,8 +148,6 @@ export class AfflictionService {
       nextSaveTimestamp: null
     };
 
-    console.log(`PF2e Afflictioner | Updates object:`, updates);
-
     // Calculate next save timing and apply effects
     if (affliction.onset) {
       // Has onset: Save happens after onset expires
@@ -165,7 +161,6 @@ export class AfflictionService {
       // Update affliction
       await AfflictionStore.updateAffliction(token, affliction.id, updates);
       const updatedAffliction = AfflictionStore.getAffliction(token, affliction.id);
-      console.log(`PF2e Afflictioner | After update, affliction.stageAdvancement:`, updatedAffliction.stageAdvancement);
 
       // Update effect to show onset
       await this.createOrUpdateAfflictionEffect(
@@ -402,11 +397,6 @@ export class AfflictionService {
         // Out of combat - use world time timestamp tracking
         const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
-        console.log('AfflictionService | Setting nextSaveTimestamp for stage change:', {
-          currentWorldTime: game.time.worldTime,
-          durationSeconds,
-          nextSaveTimestamp: updates.nextSaveTimestamp
-        });
       }
     }
 
@@ -506,7 +496,6 @@ export class AfflictionService {
               };
 
               await actor.createEmbeddedDocuments('Item', [effectSource]);
-              console.log('PF2e Afflictioner | Applied auto-effect:', effectItem.name);
             }
           }
         } catch (error) {
@@ -632,7 +621,6 @@ export class AfflictionService {
 
       // Add weakness rules if present in stage
       if (stage.weakness && stage.weakness.length > 0) {
-        console.log('AfflictionService | Adding weakness rules:', stage.weakness);
         for (const weak of stage.weakness) {
           const weaknessRule = {
             key: 'Weakness',
@@ -640,12 +628,9 @@ export class AfflictionService {
             value: weak.value,
             label: `${affliction.name} (Weakness)`
           };
-          console.log('AfflictionService | Weakness rule:', weaknessRule);
           rules.push(weaknessRule);
         }
       }
-
-      console.log('AfflictionService | Final rules array:', rules);
 
       // Get source item image
       let itemImg = 'icons/svg/hazard.svg'; // default
@@ -724,7 +709,6 @@ export class AfflictionService {
 
       // Add weakness rules if present in stage
       if (stage.weakness && stage.weakness.length > 0) {
-        console.log('AfflictionService | Updating with weakness rules:', stage.weakness);
         for (const weak of stage.weakness) {
           const weaknessRule = {
             key: 'Weakness',
@@ -732,12 +716,9 @@ export class AfflictionService {
             value: weak.value,
             label: `${affliction.name} (Weakness)`
           };
-          console.log('AfflictionService | Weakness rule for update:', weaknessRule);
           rules.push(weaknessRule);
         }
       }
-
-      console.log('AfflictionService | Update rules array:', rules);
 
       // Build updated stage description
       const stageDesc = affliction.inOnset
@@ -779,7 +760,6 @@ export class AfflictionService {
           const effect = await fromUuid(affliction.appliedEffectUuid);
           if (effect) {
             await effect.delete();
-            console.log('PF2e Afflictioner | Removed effect by UUID:', affliction.appliedEffectUuid);
             effectRemoved = true;
           }
         } catch (error) {
@@ -796,7 +776,6 @@ export class AfflictionService {
 
           for (const effect of effects) {
             await effect.delete();
-            console.log('PF2e Afflictioner | Removed effect by flag search:', effect.name);
           }
         } catch (error) {
           console.error('PF2e Afflictioner | Error removing effect by flag search:', error);
@@ -826,12 +805,11 @@ export class AfflictionService {
             e.flags?.['pf2e-afflictioner']?.autoAppliedEffect === true &&
             e.flags?.['pf2e-afflictioner']?.afflictionId === affliction.id &&
             (e.flags?.['pf2e-afflictioner']?.stageNumber === affliction.currentStage ||
-             e.name === effectData.name)
+              e.name === effectData.name)
           );
 
           for (const effect of autoEffects) {
             await effect.delete();
-            console.log('PF2e Afflictioner | Removed auto-applied effect:', effect.name);
           }
         } catch (error) {
           console.error('PF2e Afflictioner | Error removing auto-effect:', error);
@@ -894,9 +872,7 @@ export class AfflictionService {
         if (newRemaining <= 0) {
           // Onset complete - advance to stage based on initial save result
           // stageAdvancement: 1 for failure, 2 for critical failure
-          console.log(`PF2e Afflictioner | Onset complete for ${affliction.name}, stageAdvancement:`, affliction.stageAdvancement);
           const targetStage = affliction.stageAdvancement || 1;
-          console.log(`PF2e Afflictioner | Target stage:`, targetStage);
           const stageData = affliction.stages[targetStage - 1];
 
           if (!stageData) {

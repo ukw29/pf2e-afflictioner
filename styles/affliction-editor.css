@@ -870,3 +870,115 @@
   border-color: #8c6a3a;
 }
 
+
+/* Rule Elements Section */
+.rule-elements-section {
+  background: var(--afflictioner-bg-dark);
+  border: 1px solid rgba(74, 124, 42, 0.3);
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.rule-elements-section .section-header h4 {
+  color: #b4f88a;
+  border-bottom-color: rgba(74, 124, 42, 0.3);
+}
+
+.rule-elements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rule-element-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid rgba(74, 124, 42, 0.3);
+  border-left: 3px solid #4a7c2a;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.rule-element-item:hover {
+  background: var(--afflictioner-bg-light);
+  border-left-color: #5a9c3a;
+}
+
+.rule-element-item .rule-element-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0; /* Allow text to wrap */
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px;
+  margin: -4px;
+  transition: background 0.2s ease;
+}
+
+.rule-element-item .rule-element-content:hover {
+  background: rgba(74, 124, 42, 0.15);
+}
+
+.rule-element-item .rule-element-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.rule-element-item i {
+  color: #b4f88a;
+  font-size: 16px;
+  min-width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.rule-element-label {
+  color: var(--afflictioner-text-light);
+  font-weight: 500;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rule-element-details {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+  background: rgba(74, 124, 42, 0.1);
+  padding: 2px 8px;
+  border-radius: 3px;
+  word-break: break-word;
+}
+
+.rule-element-item .remove-button {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(139, 0, 0, 0.4);
+  border-radius: 4px;
+  color: #ff6b6b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rule-element-item .remove-button:hover {
+  background: var(--afflictioner-primary);
+  border-color: var(--afflictioner-primary-hover);
+  color: white;
+  transform: scale(1.1);
+}

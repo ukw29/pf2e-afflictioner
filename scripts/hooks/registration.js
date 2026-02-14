@@ -19,8 +19,6 @@ export function registerAfflictionHooks() {
   // World time tracking (out-of-combat)
   Hooks.on('updateWorldTime', onWorldTimeUpdate);
 
-  // Token lifecycle
-  Hooks.on('deleteToken', onTokenDelete);
 
   // Token HUD
   Hooks.on('renderTokenHUD', onRenderTokenHUD);
@@ -102,15 +100,12 @@ async function onCreateChatMessage(message, options, userId) {
   // Find the token for this actor on the current scene
   const token = canvas.tokens.placeables.find(t => t.actor?.uuid === actor.uuid);
   if (!token) {
-    console.log('PF2e Afflictioner | No token found for actor', actor.name);
     return;
   }
 
   // Get the save result from the message
   const degreeOfSuccess = flags.context?.outcome;
   if (!degreeOfSuccess) return;
-
-  console.log(`PF2e Afflictioner | Detected ${afflictionData.name} save from ${actor.name}: ${degreeOfSuccess}`);
 
   // Auto-apply based on save result
   // Success or Critical Success = resisted
@@ -228,11 +223,9 @@ async function onWorldTimeUpdate(worldTime, delta) {
   // Skip very small time changes (< 1 second) to avoid noise
   if (delta < 1) return;
 
-  console.log(`PF2e Afflictioner | World time advanced by ${delta} seconds`);
 
   // Check tokens on current canvas (we can only interact with rendered tokens)
   if (!canvas?.tokens) {
-    console.log(`PF2e Afflictioner | No canvas available, skipping world time update`);
     return;
   }
 
@@ -240,19 +233,16 @@ async function onWorldTimeUpdate(worldTime, delta) {
     const afflictions = AfflictionStore.getAfflictions(token);
     if (Object.keys(afflictions).length === 0) continue;
 
-    console.log(`PF2e Afflictioner | Checking ${token.name} (${Object.keys(afflictions).length} afflictions)`);
 
     for (const [id, affliction] of Object.entries(afflictions)) {
       // Skip if in active combat (combat-based tracking takes precedence)
       if (game.combat && game.combat.started) {
-        console.log(`PF2e Afflictioner | Skipping ${affliction.name} - combat is active`);
         continue;
       }
 
       // Update onset timers
       if (affliction.inOnset && affliction.onsetRemaining > 0) {
         const newRemaining = affliction.onsetRemaining - delta;
-        console.log(`PF2e Afflictioner | ${token.name} - ${affliction.name} onset: ${affliction.onsetRemaining}s -> ${newRemaining}s`);
 
         if (newRemaining <= 0) {
           // Onset complete - advance to stage based on initial save result
@@ -295,15 +285,6 @@ async function onWorldTimeUpdate(worldTime, delta) {
       }
     }
   }
-}
-
-/**
- * Handle token deletion - cleanup affliction data
- */
-async function onTokenDelete(tokenDocument, options, userId) {
-  // Afflictions are stored in token flags, so they're automatically cleaned up
-  // This hook is here for future extensibility (e.g., cleanup visual effects)
-  console.log(`PF2e Afflictioner | Token ${tokenDocument.name} deleted`);
 }
 
 /**
@@ -498,8 +479,6 @@ function onRenderChatMessage(message, html) {
 
           // Clean formula - remove any trailing brackets
           const cleanFormula = formula.trim().replace(/\[.*$/, '');
-
-          console.log(`PF2e Afflictioner | Rolling damage: ${cleanFormula} (${type})`);
 
           // Roll plain formula for display
           const damageRoll = await new Roll(cleanFormula).evaluate({ async: true });

@@ -78,7 +78,6 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     });
 
     this._worldTimeHook = Hooks.on('updateWorldTime', (worldTime, delta) => {
-      console.log('AfflictionManager | World time updated, delta:', delta);
       this.render({ force: true });
     });
   }
@@ -284,21 +283,12 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
           const needsMigration = !affliction.nextSaveTimestamp || affliction.nextSaveTimestamp > 1000000000000;
 
           if (needsMigration) {
-            console.log('AfflictionManager | Migrating affliction to timestamp tracking:', affliction.name);
             // Calculate when next save should be in game world time
             const currentStage = affliction.stages?.[affliction.currentStage - 1];
             if (currentStage?.duration) {
               const durationSeconds = AfflictionParser.durationToSeconds(currentStage.duration);
               // Use current world time + full duration (we don't track exactly when it was added)
               const nextSaveTimestamp = game.time.worldTime + durationSeconds;
-
-              console.log('AfflictionManager | Migration values:', {
-                durationSeconds,
-                currentWorldTime: game.time.worldTime,
-                nextSaveTimestamp,
-                remainingSeconds: nextSaveTimestamp - game.time.worldTime,
-                oldTimestamp: affliction.nextSaveTimestamp
-              });
 
               // Update the affliction with the timestamp
               await AfflictionStore.updateAffliction(token, id, {
@@ -348,17 +338,6 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
   formatNextSave(affliction) {
     const combat = game.combat;
 
-    console.log('AfflictionManager | formatNextSave called for:', affliction.name, {
-      inCombat: !!combat,
-      combatRound: combat?.round,
-      nextSaveRound: affliction.nextSaveRound,
-      nextSaveTimestamp: affliction.nextSaveTimestamp,
-      addedTimestamp: affliction.addedTimestamp,
-      inOnset: affliction.inOnset,
-      currentStage: affliction.currentStage,
-      stageDuration: affliction.stages?.[affliction.currentStage - 1]?.duration
-    });
-
     // Check if we're in onset
     if (affliction.inOnset && affliction.onsetRemaining) {
       const minutes = Math.ceil(affliction.onsetRemaining / 60);
@@ -398,16 +377,9 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
     // Out of combat - show time-based info
     if (!combat) {
-      console.log('AfflictionManager | Out of combat branch');
-
       // Use timestamp if available (timestamp is in game world time seconds)
       if (affliction.nextSaveTimestamp) {
         const remainingSeconds = affliction.nextSaveTimestamp - game.time.worldTime;
-        console.log('AfflictionManager | Using nextSaveTimestamp:', {
-          timestamp: affliction.nextSaveTimestamp,
-          worldTime: game.time.worldTime,
-          remainingSeconds
-        });
 
         if (remainingSeconds <= 0) return 'Save due!';
 
@@ -422,7 +394,6 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
       // Fall back to showing full duration (for very old afflictions without proper tracking)
       if (stage?.duration) {
-        console.log('AfflictionManager | Using duration fallback - showing full duration');
         const durationSeconds = this.constructor.durationToSeconds(stage.duration);
         const hours = Math.floor(durationSeconds / 3600);
         const minutes = Math.ceil((durationSeconds % 3600) / 60);
@@ -463,7 +434,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     cleaned = cleaned.replace(/@UUID\[[^\]]+\]/g, '');
 
     // Clean up @Damage[formula[type]] -> formula (type)
-    cleaned = cleaned.replace(/@Damage\[([^\[]+)\[([^\]]+)\]\]/g, '$1 ($2 damage)');
+    cleaned = cleaned.replace(/@Damage\[([^[]+)\[([^\]]+)\]\]/g, '$1 ($2 damage)');
 
     // Clean up @Damage[formula] -> formula
     cleaned = cleaned.replace(/@Damage\[([^\]]+)\]/g, '$1');

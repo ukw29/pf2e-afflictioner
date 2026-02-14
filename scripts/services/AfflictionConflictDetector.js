@@ -188,6 +188,11 @@ export class AfflictionConflictDetector {
       diffs.push({ field: 'autoEffects', current: currentStage.autoEffects, incoming: incomingStage.autoEffects });
     }
 
+    // Check ruleElements arrays
+    if (!this.isRuleElementsArrayEqual(currentStage.ruleElements, incomingStage.ruleElements)) {
+      diffs.push({ field: 'ruleElements', current: currentStage.ruleElements, incoming: incomingStage.ruleElements });
+    }
+
     return diffs;
   }
 
@@ -274,6 +279,39 @@ export class AfflictionConflictDetector {
     return sorted1.every((e1, i) => {
       const e2 = sorted2[i];
       return e1.uuid === e2.uuid;
+    });
+  }
+
+  static isRuleElementsArrayEqual(arr1, arr2) {
+    // Normalize: treat undefined/null same as empty array
+    const a1 = arr1 || [];
+    const a2 = arr2 || [];
+
+    if (a1.length !== a2.length) return false;
+    if (a1.length === 0) return true; // Both empty
+
+    // Sort by key, type, selector, and value for consistent comparison
+    const sorted1 = [...a1].sort((a, b) =>
+      `${a.key}-${a.type}-${a.selector}-${a.value}`.localeCompare(`${b.key}-${b.type}-${b.selector}-${b.value}`)
+    );
+    const sorted2 = [...a2].sort((a, b) =>
+      `${a.key}-${a.type}-${a.selector}-${a.value}`.localeCompare(`${b.key}-${b.type}-${b.selector}-${b.value}`)
+    );
+
+    return sorted1.every((r1, i) => {
+      const r2 = sorted2[i];
+      if (r1.key !== r2.key) return false;
+      if (r1.type !== r2.type) return false;
+      if (r1.selector !== r2.selector) return false;
+      if (r1.value !== r2.value) return false;
+
+      // Compare predicates
+      const p1 = r1.predicate || [];
+      const p2 = r2.predicate || [];
+      if (p1.length !== p2.length) return false;
+      if (p1.length > 0 && !p1.every((p, idx) => p === p2[idx])) return false;
+
+      return true;
     });
   }
 }

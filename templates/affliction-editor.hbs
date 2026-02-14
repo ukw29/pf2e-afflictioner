@@ -70,7 +70,7 @@
         <div class="stage-preview">
           <div class="stage-field">
             <strong>{{localize 'PF2E_AFFLICTIONER.EDITOR.INSTRUCTIONS'}}:</strong>
-            <span>{{effects}}</span>
+            <span>{{{enrichedEffects}}}</span>
           </div>
 
           <div class="stage-field">
@@ -117,6 +117,19 @@
               <span>
                 {{#each autoEffects}}
                   {{name}}{{#unless @last}}, {{/unless}}
+                {{/each}}
+              </span>
+            </div>
+          {{/if}}
+
+          {{#if ruleElements.length}}
+            <div class="stage-field">
+              <strong>Stage Bonuses:</strong>
+              <span>
+                {{#each ruleElements}}
+                  <div class="rule-element-preview">
+                    <i class="fas fa-chart-line"></i> {{label}}
+                  </div>
                 {{/each}}
               </span>
             </div>

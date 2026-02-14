@@ -52,11 +52,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     // Store original and working copy
     this.originalData = foundry.utils.deepClone(afflictionData);
     this.editedData = AfflictionEditorService.prepareEditStructure(afflictionData);
-
-    console.log('AfflictionEditorDialog: Initialized with data', {
-      original: this.originalData,
-      edited: this.editedData
-    });
   }
 
   async _prepareContext(options) {
@@ -85,8 +80,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
       ui.notifications.error(`Stage ${stageNumber} not found`);
       return;
     }
-
-    console.log('AfflictionEditorDialog: Opening stage editor for stage', stageNumber);
 
     // Open stage editor dialog
     const stageEditor = new StageEditorDialog(stage, {
@@ -181,8 +174,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
   static async saveChanges(event, button) {
     const dialog = this;
     const formData = new FormDataExtended(dialog.element).object;
-
-    console.log('AfflictionEditorDialog: Saving changes', formData);
 
     // Update DC
     if (formData.dc !== undefined) {

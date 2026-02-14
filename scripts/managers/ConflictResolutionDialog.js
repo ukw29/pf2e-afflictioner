@@ -374,6 +374,7 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
         conditions: this.selectField(selections, 'conditions', currentStage, incomingStage) || [],
         weakness: this.selectField(selections, 'weakness', currentStage, incomingStage) || [],
         autoEffects: this.selectField(selections, 'autoEffects', currentStage, incomingStage) || [],
+        ruleElements: this.selectField(selections, 'ruleElements', currentStage, incomingStage) || [],
         rawText: this.selectField(selections, 'rawText', currentStage, incomingStage) || '',
         requiresManualHandling: false
       };

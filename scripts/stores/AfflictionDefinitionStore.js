@@ -33,7 +33,6 @@ export async function saveEditedDefinition(key, editedData) {
     return;
   }
 
-  console.log('AfflictionDefinitionStore: Saving edited definition', { key, editedData });
 
   const editedAfflictions = { ...game.settings.get(MODULE_ID, 'editedAfflictions') };
 
@@ -44,8 +43,6 @@ export async function saveEditedDefinition(key, editedData) {
   editedAfflictions[key] = editedData;
 
   await game.settings.set(MODULE_ID, 'editedAfflictions', editedAfflictions);
-
-  console.log('AfflictionDefinitionStore: Edited definition saved successfully');
 }
 
 /**
@@ -64,14 +61,11 @@ export async function removeEditedDefinition(key) {
     return;
   }
 
-  console.log('AfflictionDefinitionStore: Removing edited definition', { key });
 
   const editedAfflictions = { ...game.settings.get(MODULE_ID, 'editedAfflictions') };
   delete editedAfflictions[key];
 
   await game.settings.set(MODULE_ID, 'editedAfflictions', editedAfflictions);
-
-  console.log('AfflictionDefinitionStore: Edited definition removed successfully');
 }
 
 /**

@@ -7,8 +7,6 @@ import { registerSettings } from './settings.js';
 import { registerAfflictionHooks } from './hooks/registration.js';
 
 Hooks.once('init', async () => {
-  console.log('PF2e Afflictioner | Initializing');
-
   // Register settings
   registerSettings();
 

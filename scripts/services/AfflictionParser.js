@@ -18,22 +18,15 @@ export class AfflictionParser {
 
     if (!type) return null;
 
-    // Debug logging
-    console.log('AfflictionParser: Parsing item', item.name);
-    console.log('AfflictionParser: item.system', item.system);
-
     // Check for structured affliction data first (PF2e native afflictions)
     if (item.system?.stage) {
-      console.log('AfflictionParser: Found structured stages', item.system.stage);
       return this.parseStructuredAffliction(item);
     }
 
     // Parse from description text
     const description = item.system?.description?.value || '';
-    console.log('AfflictionParser: Parsing from description', description.substring(0, 200));
 
     const stages = this.extractStages(description);
-    console.log('AfflictionParser: Extracted stages', stages);
 
     return {
       name: item.name,
@@ -156,15 +149,12 @@ export class AfflictionParser {
     }
 
     if (!onsetMatch) {
-      console.log('AfflictionParser: No onset found');
       return null;
     }
 
     const text = onsetMatch[1].trim();
-    console.log('AfflictionParser: Extracted onset text', text);
 
     const duration = this.parseDuration(text);
-    console.log('AfflictionParser: Parsed onset duration', duration);
 
     return duration;
   }
@@ -281,18 +271,15 @@ export class AfflictionParser {
     const damageEntries = [];
     const seenFormulas = new Set(); // Prevent duplicates
 
-    console.log('AfflictionParser | Extracting damage from:', text);
 
     // First, extract @Damage[...] notation (PF2e format)
     // Two formats: @Damage[1d6[poison]] with type, or @Damage[1d6] without type
 
     // Match @Damage with typed damage: @Damage[formula[type]]
-    const typedDamageMatches = text.matchAll(/@Damage\[([\d\w\+\-d]+)\[([^\]]+)\]\]/gi);
+    const typedDamageMatches = text.matchAll(/@Damage\[([\d\w+-d]+)\[([^\]]+)\]\]/gi);
     for (const match of typedDamageMatches) {
       const formula = match[1].trim();
       const type = match[2].trim().toLowerCase();
-
-      console.log('AfflictionParser | Found typed @Damage:', { formula, type });
 
       if (!seenFormulas.has(formula)) {
         damageEntries.push({ formula, type });
@@ -301,11 +288,10 @@ export class AfflictionParser {
     }
 
     // Match @Damage without type: @Damage[formula]
-    const untypedDamageMatches = text.matchAll(/@Damage\[([\d\w\+\-d]+)\](?!\])/gi);
+    const untypedDamageMatches = text.matchAll(/@Damage\[([\d\w+-d]+)\](?!\])/gi);
     for (const match of untypedDamageMatches) {
       const formula = match[1].trim();
 
-      console.log('AfflictionParser | Found untyped @Damage:', formula);
 
       if (!seenFormulas.has(formula)) {
         damageEntries.push({
@@ -317,12 +303,10 @@ export class AfflictionParser {
     }
 
     // Then, extract plain text damage patterns like "1d6 poison", "2d8+5 fire"
-    const plainDamageMatches = text.matchAll(/(\d+d\d+(?:\s*[+\-]\s*\d+)?)\s+(acid|bludgeoning|cold|electricity|fire|force|mental|piercing|poison|slashing|sonic|bleed|persistent)/gi);
+    const plainDamageMatches = text.matchAll(/(\d+d\d+(?:\s*[+-]\s*\d+)?)\s+(acid|bludgeoning|cold|electricity|fire|force|mental|piercing|poison|slashing|sonic|bleed|persistent)/gi);
     for (const match of plainDamageMatches) {
       const formula = match[1].trim();
       const type = match[2].trim().toLowerCase();
-
-      console.log('AfflictionParser | Found plain damage:', { formula, type });
 
       if (!seenFormulas.has(formula)) {
         damageEntries.push({ formula, type });
@@ -330,7 +314,6 @@ export class AfflictionParser {
       }
     }
 
-    console.log('AfflictionParser | Final damage entries:', damageEntries);
     return damageEntries;
   }
 
@@ -343,15 +326,12 @@ export class AfflictionParser {
     const weaknesses = [];
     const seenTypes = new Set();
 
-    console.log('AfflictionParser | Extracting weakness from:', text);
 
     // Pattern 1: "weakness to [type] [value]" (e.g., "weakness to cold 5")
     const pattern1Matches = text.matchAll(/weakness\s+to\s+(\w+)\s+(\d+)/gi);
     for (const match of pattern1Matches) {
       const type = match[1].trim().toLowerCase();
       const value = parseInt(match[2]);
-
-      console.log('AfflictionParser | Found weakness (pattern 1):', { type, value });
 
       if (!seenTypes.has(type)) {
         weaknesses.push({ type, value });
@@ -365,15 +345,11 @@ export class AfflictionParser {
       const value = parseInt(match[1]);
       const type = match[2].trim().toLowerCase();
 
-      console.log('AfflictionParser | Found weakness (pattern 2):', { type, value });
-
       if (!seenTypes.has(type)) {
         weaknesses.push({ type, value });
         seenTypes.add(type);
       }
     }
-
-    console.log('AfflictionParser | Final weakness entries:', weaknesses);
     return weaknesses;
   }
 
