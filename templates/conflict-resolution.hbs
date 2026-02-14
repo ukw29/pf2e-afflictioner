@@ -1,0 +1,583 @@
+<div class="conflict-resolution-content">
+  <!-- Summary Header -->
+  <div class="import-summary">
+    <h3>
+      <i class="fas fa-code-branch"></i>
+      {{localize "PF2E_AFFLICTIONER.CONFLICT.IMPORT_SUMMARY"}}
+    </h3>
+    <div class="summary-stats">
+      <div class="stat">
+        <span class="stat-label">{{localize "PF2E_AFFLICTIONER.CONFLICT.TOTAL_INCOMING"}}</span>
+        <span class="stat-value">{{summary.totalIncoming}}</span>
+      </div>
+      <div class="stat conflict">
+        <span class="stat-label">{{localize "PF2E_AFFLICTIONER.CONFLICT.CONFLICTS"}}</span>
+        <span class="stat-value">{{summary.conflictCount}}</span>
+      </div>
+      <div class="stat auto">
+        <span class="stat-label">{{localize "PF2E_AFFLICTIONER.CONFLICT.AUTO_IMPORT"}}</span>
+        <span class="stat-value">{{summary.autoImportCount}}</span>
+      </div>
+    </div>
+  </div>
+
+  {{#if hasConflicts}}
+    <!-- Progress Bar -->
+    <div class="conflict-progress">
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: {{progress.percentage}}%"></div>
+      </div>
+      <span class="progress-text">
+        {{progress.resolved}} of {{progress.total}} {{localize "PF2E_AFFLICTIONER.CONFLICT.CONFLICTS_RESOLVED"}}
+      </span>
+    </div>
+
+    <!-- Conflict Layout -->
+    <div class="conflict-layout">
+      <!-- Sidebar -->
+      <div class="conflict-sidebar">
+        <h4>{{localize "PF2E_AFFLICTIONER.CONFLICT.CONFLICTS_LIST"}}</h4>
+
+        <!-- Bulk actions -->
+        <div class="bulk-actions-compact">
+          <button type="button" data-action="bulkResolve" data-strategy="keep"
+                  data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.KEEP_ALL_TIP'}}">
+            <i class="fas fa-arrow-left"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.KEEP_ALL"}}
+          </button>
+          <button type="button" data-action="bulkResolve" data-strategy="accept"
+                  data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.ACCEPT_ALL_TIP'}}">
+            <i class="fas fa-arrow-right"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.ACCEPT_ALL"}}
+          </button>
+        </div>
+
+        <div class="conflict-list">
+          {{#each conflicts}}
+            <div class="conflict-item {{#if isCurrent}}active{{/if}} {{#if resolution.resolved}}resolved{{/if}}"
+                 data-action="selectConflict" data-index="{{index}}">
+              <div class="conflict-item-header">
+                <span class="conflict-name">{{name}}</span>
+                {{#if resolution.resolved}}
+                  <i class="fas fa-check resolution-icon"></i>
+                {{else}}
+                  <i class="fas fa-exclamation-triangle resolution-icon pending"></i>
+                {{/if}}
+              </div>
+              <div class="conflict-item-meta">
+                <span class="conflict-type">{{type}}</span>
+                {{#if resolution.resolved}}
+                  <span class="resolution-badge {{resolution.strategy}}">
+                    {{resolution.strategy}}
+                  </span>
+                {{/if}}
+              </div>
+            </div>
+          {{/each}}
+        </div>
+      </div>
+
+      <!-- Main Conflict View -->
+      <div class="conflict-main">
+        {{#if currentConflict}}
+          <div class="conflict-header">
+            <h3>{{currentConflict.name}}</h3>
+            <span class="conflict-type-badge">{{currentConflict.type}}</span>
+          </div>
+
+          <!-- Resolution Strategy Buttons -->
+          {{#unless currentConflict.resolution.resolved}}
+            <div class="resolution-strategy">
+              <button type="button" data-action="resolveConflict" data-strategy="keep"
+                      class="strategy-btn keep">
+                <i class="fas fa-arrow-left"></i>
+                <span>{{localize "PF2E_AFFLICTIONER.CONFLICT.KEEP_CURRENT"}}</span>
+                <small>{{localize "PF2E_AFFLICTIONER.CONFLICT.KEEP_CURRENT_DESC"}}</small>
+              </button>
+
+              <button type="button" data-action="resolveConflict" data-strategy="accept"
+                      class="strategy-btn accept">
+                <i class="fas fa-arrow-right"></i>
+                <span>{{localize "PF2E_AFFLICTIONER.CONFLICT.ACCEPT_INCOMING"}}</span>
+                <small>{{localize "PF2E_AFFLICTIONER.CONFLICT.ACCEPT_INCOMING_DESC"}}</small>
+              </button>
+
+              <button type="button" data-action="resolveConflict" data-strategy="merge"
+                      class="strategy-btn merge">
+                <i class="fas fa-code-branch"></i>
+                <span>{{localize "PF2E_AFFLICTIONER.CONFLICT.CUSTOM_MERGE"}}</span>
+                <small>{{localize "PF2E_AFFLICTIONER.CONFLICT.CUSTOM_MERGE_DESC"}}</small>
+              </button>
+            </div>
+          {{else}}
+            <div class="resolution-resolved">
+              <i class="fas fa-check-circle"></i>
+              <span>{{localize "PF2E_AFFLICTIONER.CONFLICT.RESOLVED_USING"}}: <strong>{{currentConflict.resolution.strategy}}</strong></span>
+            </div>
+          {{/unless}}
+
+          <!-- Side-by-Side Comparison -->
+          <div class="conflict-comparison">
+            <!-- Basic Properties -->
+            <section class="comparison-section">
+              <h4>{{localize "PF2E_AFFLICTIONER.CONFLICT.BASIC_PROPERTIES"}}</h4>
+              <table class="comparison-table">
+                <thead>
+                  <tr>
+                    <th>{{localize "PF2E_AFFLICTIONER.CONFLICT.PROPERTY"}}</th>
+                    <th><i class="fas fa-arrow-left"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.CURRENT"}}</th>
+                    <th><i class="fas fa-arrow-right"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.INCOMING"}}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="{{#if currentConflict.comparison.basic.dc.differs}}differs{{/if}}">
+                    <td><strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.DC"}}</strong></td>
+                    <td>{{currentConflict.comparison.basic.dc.current}}</td>
+                    <td>{{currentConflict.comparison.basic.dc.incoming}}</td>
+                  </tr>
+                  <tr class="{{#if currentConflict.comparison.basic.saveType.differs}}differs{{/if}}">
+                    <td><strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.SAVE_TYPE"}}</strong></td>
+                    <td>{{currentConflict.comparison.basic.saveType.current}}</td>
+                    <td>{{currentConflict.comparison.basic.saveType.incoming}}</td>
+                  </tr>
+                  <tr class="{{#if currentConflict.comparison.basic.onset.differs}}differs{{/if}}">
+                    <td><strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.ONSET"}}</strong></td>
+                    <td>
+                      {{#if currentConflict.comparison.basic.onset.current}}
+                        {{currentConflict.comparison.basic.onset.current.value}} {{currentConflict.comparison.basic.onset.current.unit}}(s)
+                      {{else}}
+                        {{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}
+                      {{/if}}
+                    </td>
+                    <td>
+                      {{#if currentConflict.comparison.basic.onset.incoming}}
+                        {{currentConflict.comparison.basic.onset.incoming.value}} {{currentConflict.comparison.basic.onset.incoming.unit}}(s)
+                      {{else}}
+                        {{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}
+                      {{/if}}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+
+            <!-- Stages Comparison -->
+            <section class="comparison-section stages-comparison">
+              <h4>{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGES"}}</h4>
+
+              {{#if (eq currentConflict.resolution.strategy "merge")}}
+                <div class="merge-instructions">
+                  <i class="fas fa-info-circle"></i>
+                  {{localize "PF2E_AFFLICTIONER.CONFLICT.MERGE_INSTRUCTIONS"}}
+                </div>
+              {{/if}}
+
+              {{#each currentConflict.comparison.stages}}
+                <div class="stage-comparison {{diffType}}">
+                  <div class="stage-comparison-header">
+                    <h5>{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE"}} {{number}}</h5>
+                    <span class="diff-type-badge {{diffType}}">{{diffType}}</span>
+
+                    {{#if (eq ../currentConflict.resolution.strategy "merge")}}
+                      <div class="stage-select-all">
+                        <button type="button"
+                                data-action="selectAllFields"
+                                data-stage-index="{{stageIndex}}"
+                                data-version="current"
+                                class="stage-select-all-btn">
+                          <i class="fas fa-arrow-left"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.ALL_CURRENT"}}
+                        </button>
+                        <button type="button"
+                                data-action="selectAllFields"
+                                data-stage-index="{{stageIndex}}"
+                                data-version="incoming"
+                                class="stage-select-all-btn">
+                          <i class="fas fa-arrow-right"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.ALL_INCOMING"}}
+                        </button>
+                      </div>
+                    {{/if}}
+                  </div>
+
+                  <div class="stage-comparison-body">
+                    <!-- Duration Field -->
+                    {{#if fieldDiffsMap.duration}}
+                    <div class="field-row differs">
+                      <div class="field-label">
+                        <strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.FIELD_DURATION"}}</strong>
+                      </div>
+                      <div class="field-columns">
+                        <div class="field-column current">
+                          {{#if current}}
+                            {{#if current.duration}}
+                              {{current.duration.value}} {{current.duration.unit}}(s)
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NOT_SET"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                        <div class="field-selector">
+                          {{#if (eq ../currentConflict.resolution.strategy "merge")}}
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="duration"
+                                    data-version="current"
+                                    class="field-select-btn {{#if (eq fieldSelections.duration 'current')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_CURRENT'}}">
+                              <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="duration"
+                                    data-version="incoming"
+                                    class="field-select-btn {{#if (eq fieldSelections.duration 'incoming')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_INCOMING'}}">
+                              <i class="fas fa-arrow-right"></i>
+                            </button>
+                          {{/if}}
+                        </div>
+                        <div class="field-column incoming">
+                          {{#if incoming}}
+                            {{#if incoming.duration}}
+                              {{incoming.duration.value}} {{incoming.duration.unit}}(s)
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NOT_SET"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/if}}
+
+                    <!-- Effects Text Field -->
+                    {{#if fieldDiffsMap.effects}}
+                    <div class="field-row differs">
+                      <div class="field-label">
+                        <strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.FIELD_EFFECTS"}}</strong>
+                      </div>
+                      <div class="field-columns">
+                        <div class="field-column current">
+                          {{#if current}}
+                            {{#if current.effects}}
+                              <div class="effects-text">{{current.effects}}</div>
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NOT_SET"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                        <div class="field-selector">
+                          {{#if (eq ../currentConflict.resolution.strategy "merge")}}
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="effects"
+                                    data-version="current"
+                                    class="field-select-btn {{#if (eq fieldSelections.effects 'current')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_CURRENT'}}">
+                              <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="effects"
+                                    data-version="incoming"
+                                    class="field-select-btn {{#if (eq fieldSelections.effects 'incoming')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_INCOMING'}}">
+                              <i class="fas fa-arrow-right"></i>
+                            </button>
+                          {{/if}}
+                        </div>
+                        <div class="field-column incoming">
+                          {{#if incoming}}
+                            {{#if incoming.effects}}
+                              <div class="effects-text">{{incoming.effects}}</div>
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NOT_SET"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/if}}
+
+                    <!-- Damage Field -->
+                    {{#if fieldDiffsMap.damage}}
+                    <div class="field-row differs">
+                      <div class="field-label">
+                        <strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.FIELD_DAMAGE"}}</strong>
+                      </div>
+                      <div class="field-columns">
+                        <div class="field-column current">
+                          {{#if current}}
+                            {{#if current.damage.length}}
+                              {{#each current.damage}}
+                                <div class="damage-item">{{formula}} [{{type}}]</div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                        <div class="field-selector">
+                          {{#if (eq ../currentConflict.resolution.strategy "merge")}}
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="damage"
+                                    data-version="current"
+                                    class="field-select-btn {{#if (eq fieldSelections.damage 'current')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_CURRENT'}}">
+                              <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="damage"
+                                    data-version="incoming"
+                                    class="field-select-btn {{#if (eq fieldSelections.damage 'incoming')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_INCOMING'}}">
+                              <i class="fas fa-arrow-right"></i>
+                            </button>
+                          {{/if}}
+                        </div>
+                        <div class="field-column incoming">
+                          {{#if incoming}}
+                            {{#if incoming.damage.length}}
+                              {{#each incoming.damage}}
+                                <div class="damage-item">{{formula}} [{{type}}]</div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/if}}
+
+                    <!-- Conditions Field -->
+                    {{#if fieldDiffsMap.conditions}}
+                    <div class="field-row differs">
+                      <div class="field-label">
+                        <strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.FIELD_CONDITIONS"}}</strong>
+                      </div>
+                      <div class="field-columns">
+                        <div class="field-column current">
+                          {{#if current}}
+                            {{#if current.conditions.length}}
+                              {{#each current.conditions}}
+                                <div class="condition-item">{{name}}{{#if value}} {{value}}{{/if}}</div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                        <div class="field-selector">
+                          {{#if (eq ../currentConflict.resolution.strategy "merge")}}
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="conditions"
+                                    data-version="current"
+                                    class="field-select-btn {{#if (eq fieldSelections.conditions 'current')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_CURRENT'}}">
+                              <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="conditions"
+                                    data-version="incoming"
+                                    class="field-select-btn {{#if (eq fieldSelections.conditions 'incoming')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_INCOMING'}}">
+                              <i class="fas fa-arrow-right"></i>
+                            </button>
+                          {{/if}}
+                        </div>
+                        <div class="field-column incoming">
+                          {{#if incoming}}
+                            {{#if incoming.conditions.length}}
+                              {{#each incoming.conditions}}
+                                <div class="condition-item">{{name}}{{#if value}} {{value}}{{/if}}</div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/if}}
+
+                    <!-- Weakness Field -->
+                    {{#if fieldDiffsMap.weakness}}
+                    <div class="field-row differs">
+                      <div class="field-label">
+                        <strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.FIELD_WEAKNESS"}}</strong>
+                      </div>
+                      <div class="field-columns">
+                        <div class="field-column current">
+                          {{#if current}}
+                            {{#if current.weakness.length}}
+                              {{#each current.weakness}}
+                                <div class="weakness-item">{{type}} {{value}}</div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                        <div class="field-selector">
+                          {{#if (eq ../currentConflict.resolution.strategy "merge")}}
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="weakness"
+                                    data-version="current"
+                                    class="field-select-btn {{#if (eq fieldSelections.weakness 'current')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_CURRENT'}}">
+                              <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="weakness"
+                                    data-version="incoming"
+                                    class="field-select-btn {{#if (eq fieldSelections.weakness 'incoming')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_INCOMING'}}">
+                              <i class="fas fa-arrow-right"></i>
+                            </button>
+                          {{/if}}
+                        </div>
+                        <div class="field-column incoming">
+                          {{#if incoming}}
+                            {{#if incoming.weakness.length}}
+                              {{#each incoming.weakness}}
+                                <div class="weakness-item">{{type}} {{value}}</div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/if}}
+
+                    <!-- Auto Effects Field -->
+                    {{#if fieldDiffsMap.autoEffects}}
+                    <div class="field-row differs">
+                      <div class="field-label">
+                        <strong>{{localize "PF2E_AFFLICTIONER.CONFLICT.FIELD_AUTO_EFFECTS"}}</strong>
+                      </div>
+                      <div class="field-columns">
+                        <div class="field-column current">
+                          {{#if current}}
+                            {{#if current.autoEffects.length}}
+                              {{#each current.autoEffects}}
+                                <div class="auto-effect-item">{{name}}</div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                        <div class="field-selector">
+                          {{#if (eq ../currentConflict.resolution.strategy "merge")}}
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="autoEffects"
+                                    data-version="current"
+                                    class="field-select-btn {{#if (eq fieldSelections.autoEffects 'current')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_CURRENT'}}">
+                              <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <button type="button"
+                                    data-action="toggleFieldSelection"
+                                    data-stage-index="{{stageIndex}}"
+                                    data-field="autoEffects"
+                                    data-version="incoming"
+                                    class="field-select-btn {{#if (eq fieldSelections.autoEffects 'incoming')}}selected{{/if}}"
+                                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.USE_INCOMING'}}">
+                              <i class="fas fa-arrow-right"></i>
+                            </button>
+                          {{/if}}
+                        </div>
+                        <div class="field-column incoming">
+                          {{#if incoming}}
+                            {{#if incoming.autoEffects.length}}
+                              {{#each incoming.autoEffects}}
+                                <div class="auto-effect-item">{{name}}</div>
+                              {{/each}}
+                            {{else}}
+                              <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.NONE"}}</span>
+                            {{/if}}
+                          {{else}}
+                            <span class="field-missing">{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGE_MISSING"}}</span>
+                          {{/if}}
+                        </div>
+                      </div>
+                    </div>
+                    {{/if}}
+                  </div>
+                </div>
+              {{/each}}
+            </section>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="conflict-footer">
+      <button type="button" data-action="cancelImport" class="cancel-button">
+        <i class="fas fa-times"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.CANCEL_IMPORT"}}
+      </button>
+
+      <button type="button" data-action="finishImport" class="primary-button"
+              {{#unless allResolved}}disabled{{/unless}}>
+        <i class="fas fa-check"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.FINISH_IMPORT"}}
+      </button>
+    </div>
+
+  {{else}}
+    <!-- No conflicts -->
+    <div class="no-conflicts">
+      <i class="fas fa-check-circle"></i>
+      <h3>{{localize "PF2E_AFFLICTIONER.CONFLICT.NO_CONFLICTS_TITLE"}}</h3>
+      <p>{{localize "PF2E_AFFLICTIONER.CONFLICT.NO_CONFLICTS_MESSAGE" count=autoImportCount}}</p>
+
+      <div class="auto-import-actions">
+        <button type="button" data-action="finishImport" class="primary-button">
+          <i class="fas fa-download"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.IMPORT_ALL"}}
+        </button>
+        <button type="button" data-action="cancelImport" class="cancel-button">
+          {{localize "PF2E_AFFLICTIONER.CONFLICT.CANCEL"}}
+        </button>
+      </div>
+    </div>
+  {{/if}}
+</div>

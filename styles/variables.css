@@ -1,0 +1,18 @@
+/**
+ * PF2e Afflictioner - CSS Variables
+ */
+
+/* Custom color scheme */
+:root {
+  --afflictioner-primary: #8b0000;
+  --afflictioner-primary-hover: #a00000;
+  --afflictioner-secondary: #2a4a2a;
+  --afflictioner-poison: #4a7c2a;
+  --afflictioner-disease: #7c4a2a;
+  --afflictioner-bg-dark: rgba(0, 0, 0, 0.6);
+  --afflictioner-bg-medium: rgba(0, 0, 0, 0.4);
+  --afflictioner-bg-light: rgba(0, 0, 0, 0.2);
+  --afflictioner-border: rgba(139, 0, 0, 0.3);
+  --afflictioner-text-light: #e0e0e0;
+  --afflictioner-warning: #ff6b00;
+}

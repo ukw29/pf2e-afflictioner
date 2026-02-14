@@ -1,0 +1,141 @@
+<div class="affliction-editor-content">
+  <!-- Header with affliction name and type -->
+  <div class="editor-header">
+    <h3>{{affliction.name}} <span class="affliction-type">({{affliction.type}})</span></h3>
+  </div>
+
+  <!-- Basic properties section -->
+  <section class="editor-section basic-properties">
+    <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.BASIC_PROPERTIES'}}</h4>
+
+    <div class="form-group">
+      <label for="affliction-dc">{{localize 'PF2E_AFFLICTIONER.EDITOR.DC'}}</label>
+      <input type="number" id="affliction-dc" name="dc" value="{{affliction.dc}}" min="1" max="50" />
+    </div>
+
+    <div class="form-group">
+      <label for="affliction-save-type">{{localize 'PF2E_AFFLICTIONER.EDITOR.SAVE_TYPE'}}</label>
+      <select id="affliction-save-type" name="saveType">
+        <option value="fortitude" {{#if (eq affliction.saveType "fortitude")}}selected{{/if}}>Fortitude</option>
+        <option value="reflex" {{#if (eq affliction.saveType "reflex")}}selected{{/if}}>Reflex</option>
+        <option value="will" {{#if (eq affliction.saveType "will")}}selected{{/if}}>Will</option>
+      </select>
+    </div>
+
+    <div class="form-group onset-group">
+      <label>{{localize 'PF2E_AFFLICTIONER.EDITOR.ONSET'}}</label>
+      {{#if affliction.onset}}
+        <input type="number" name="onset.value" value="{{affliction.onset.value}}" min="0" placeholder="0" />
+        <select name="onset.unit">
+          <option value="round" {{#if (eq affliction.onset.unit "round")}}selected{{/if}}>Round(s)</option>
+          <option value="minute" {{#if (eq affliction.onset.unit "minute")}}selected{{/if}}>Minute(s)</option>
+          <option value="hour" {{#if (eq affliction.onset.unit "hour")}}selected{{/if}}>Hour(s)</option>
+          <option value="day" {{#if (eq affliction.onset.unit "day")}}selected{{/if}}>Day(s)</option>
+        </select>
+        <button type="button" data-action="toggleOnset" class="toggle-onset-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.REMOVE_ONSET'}}">
+          <i class="fas fa-times"></i>
+        </button>
+      {{else}}
+        <span class="no-onset">{{localize 'PF2E_AFFLICTIONER.EDITOR.NO_ONSET'}}</span>
+        <button type="button" data-action="toggleOnset" class="toggle-onset-btn add-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.ADD_ONSET'}}">
+          <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.ADD_ONSET'}}
+        </button>
+      {{/if}}
+    </div>
+  </section>
+
+  <!-- Stages section -->
+  <section class="editor-section stages-section">
+    <div class="section-header-with-actions">
+      <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.STAGES'}}</h4>
+      <button type="button" data-action="addStage" class="add-stage-btn">
+        <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.ADD_STAGE'}}
+      </button>
+    </div>
+
+    {{#each affliction.stages}}
+      <div class="stage-card" data-stage-number="{{number}}">
+        <div class="stage-header">
+          <h5>Stage {{number}}</h5>
+          <div class="stage-actions">
+            <button type="button" data-action="editStage" data-stage-number="{{number}}" class="edit-stage-btn">
+              <i class="fas fa-pencil-alt"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.EDIT_STAGE'}}
+            </button>
+            <button type="button" data-action="removeStage" data-stage-number="{{number}}" class="remove-stage-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.REMOVE_STAGE'}}">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="stage-preview">
+          <div class="stage-field">
+            <strong>{{localize 'PF2E_AFFLICTIONER.EDITOR.INSTRUCTIONS'}}:</strong>
+            <span>{{effects}}</span>
+          </div>
+
+          <div class="stage-field">
+            <strong>{{localize 'PF2E_AFFLICTIONER.EDITOR.DURATION'}}:</strong>
+            <span>{{duration.value}} {{duration.unit}}(s)</span>
+          </div>
+
+          {{#if damage.length}}
+            <div class="stage-field">
+              <strong>{{localize 'PF2E_AFFLICTIONER.EDITOR.DAMAGE'}}:</strong>
+              <span>
+                {{#each damage}}
+                  {{formula}}[{{type}}]{{#unless @last}}, {{/unless}}
+                {{/each}}
+              </span>
+            </div>
+          {{/if}}
+
+          {{#if conditions.length}}
+            <div class="stage-field">
+              <strong>{{localize 'PF2E_AFFLICTIONER.EDITOR.CONDITIONS'}}:</strong>
+              <span>
+                {{#each conditions}}
+                  {{name}}{{#if value}} {{value}}{{/if}}{{#unless @last}}, {{/unless}}
+                {{/each}}
+              </span>
+            </div>
+          {{/if}}
+
+          {{#if weakness.length}}
+            <div class="stage-field">
+              <strong>{{localize 'PF2E_AFFLICTIONER.EDITOR.WEAKNESS'}}:</strong>
+              <span>
+                {{#each weakness}}
+                  {{type}} {{value}}{{#unless @last}}, {{/unless}}
+                {{/each}}
+              </span>
+            </div>
+          {{/if}}
+
+          {{#if autoEffects.length}}
+            <div class="stage-field">
+              <strong>{{localize 'PF2E_AFFLICTIONER.EDITOR.AUTO_EFFECTS'}}:</strong>
+              <span>
+                {{#each autoEffects}}
+                  {{name}}{{#unless @last}}, {{/unless}}
+                {{/each}}
+              </span>
+            </div>
+          {{/if}}
+        </div>
+      </div>
+    {{/each}}
+  </section>
+
+  <!-- Action buttons -->
+  <div class="editor-footer">
+    <button type="button" data-action="saveChanges" class="primary-button">
+      <i class="fas fa-save"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.SAVE_CHANGES'}}
+    </button>
+    <button type="button" data-action="resetToDefault" class="secondary-button">
+      <i class="fas fa-undo"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.RESET_TO_DEFAULT'}}
+    </button>
+    <button type="button" data-action="cancelEdit" class="cancel-button">
+      <i class="fas fa-times"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.CANCEL'}}
+    </button>
+  </div>
+</div>

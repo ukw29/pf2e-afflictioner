@@ -1,0 +1,58 @@
+<div class="edited-afflictions-content">
+  <!-- Drop zone hint -->
+  <div class="drop-zone-hint">
+    <i class="fas fa-file-import"></i>
+    <p>{{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.DROP_HINT'}}</p>
+  </div>
+
+  <!-- Export/Import buttons -->
+  <div class="bulk-actions">
+    <button type="button" data-action="exportAllEdits" class="export-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.EXPORT_TOOLTIP'}}">
+      <i class="fas fa-file-export"></i> {{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.EXPORT'}}
+    </button>
+    <button type="button" data-action="importEdits" class="import-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.IMPORT_TOOLTIP'}}">
+      <i class="fas fa-file-import"></i> {{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.IMPORT'}}
+    </button>
+  </div>
+
+  {{#if hasEdits}}
+    <div class="edits-list">
+      {{#each edits}}
+        <div class="edit-row">
+          <div class="edit-info">
+            <h4>
+              {{name}} <span class="affliction-type">({{type}})</span>
+              {{#if isCustom}}
+                <span class="custom-badge">Custom</span>
+              {{/if}}
+            </h4>
+            <div class="edit-details">
+              <span><strong>DC:</strong> {{dc}}</span>
+              <span><strong>Save:</strong> {{saveType}}</span>
+              <span><strong>Onset:</strong> {{onset}}</span>
+              <span><strong>Stages:</strong> {{stageCount}}</span>
+              <span><strong>Edited:</strong> {{editedAt}}</span>
+            </div>
+          </div>
+
+          <div class="edit-actions">
+            <button type="button" data-action="editDefinition" data-key="{{key}}"
+                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.EDIT'}}">
+              <i class="fas fa-pencil-alt"></i>
+            </button>
+            <button type="button" data-action="resetDefinition" data-key="{{key}}" data-name="{{name}}"
+                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.RESET'}}">
+              <i class="fas fa-undo"></i>
+            </button>
+            <button type="button" data-action="deleteDefinition" data-key="{{key}}" data-name="{{name}}"
+                    data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.DELETE'}}" class="delete-btn">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+      {{/each}}
+    </div>
+  {{else}}
+    <p class="no-edits">{{localize 'PF2E_AFFLICTIONER.EDITED_MANAGER.NO_EDITS'}}</p>
+  {{/if}}
+</div>

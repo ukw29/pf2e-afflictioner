@@ -1,0 +1,872 @@
+/**
+ * PF2e Afflictioner - Editor Styles
+ * Affliction Editor and Stage Editor dialogs
+ */
+/* ===== AFFLICTION EDITOR STYLES ===== */
+
+/* Affliction Editor Dialog */
+.affliction-editor {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(40, 20, 20, 0.95) 100%);
+  border: 2px solid var(--afflictioner-border);
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.4);
+}
+
+.affliction-editor-content {
+  padding: 15px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.affliction-editor .editor-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--afflictioner-border);
+}
+
+.affliction-editor .editor-header h3 {
+  color: var(--afflictioner-text-light);
+  margin: 0;
+  font-size: 18px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.affliction-editor .affliction-type {
+  color: #888;
+  font-weight: normal;
+  font-size: 14px;
+}
+
+/* Editor sections */
+.affliction-editor .editor-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: var(--afflictioner-bg-dark);
+  border-radius: 8px;
+  border: 1px solid var(--afflictioner-border);
+}
+
+.affliction-editor .editor-section h4 {
+  color: var(--afflictioner-text-light);
+  margin: 0 0 15px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--afflictioner-border);
+  padding-bottom: 8px;
+}
+
+/* Form groups */
+.affliction-editor .form-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.affliction-editor .form-group label {
+  min-width: 100px;
+  color: var(--afflictioner-text-light);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.affliction-editor .form-group input[type="number"],
+.affliction-editor .form-group select {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid var(--afflictioner-border);
+  border-radius: 4px;
+  color: var(--afflictioner-text-light);
+  font-size: 13px;
+}
+
+.affliction-editor .form-group input[type="number"]:focus,
+.affliction-editor .form-group select:focus {
+  outline: none;
+  border-color: var(--afflictioner-primary);
+  box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2);
+}
+
+.affliction-editor .onset-group {
+  align-items: flex-start;
+}
+
+.affliction-editor .onset-group input[type="number"] {
+  flex: 0 0 80px;
+}
+
+.affliction-editor .onset-group select {
+  flex: 1;
+}
+
+/* Section header with actions */
+.affliction-editor .section-header-with-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--afflictioner-border);
+}
+
+.affliction-editor .section-header-with-actions h4 {
+  margin: 0;
+  color: var(--afflictioner-text-light);
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.affliction-editor .add-stage-btn {
+  padding: 4px 12px;
+  background: var(--afflictioner-primary);
+  border: 1px solid var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.affliction-editor .add-stage-btn:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(139, 0, 0, 0.4);
+}
+
+/* Stage cards */
+.affliction-editor .stage-card {
+  border: 1px solid var(--afflictioner-border);
+  padding: 12px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  background: var(--afflictioner-bg-medium);
+  transition: all 0.2s ease;
+}
+
+.affliction-editor .stage-card:hover {
+  border-color: var(--afflictioner-primary-hover);
+  background: var(--afflictioner-bg-light);
+}
+
+.affliction-editor .stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--afflictioner-border);
+}
+
+.affliction-editor .stage-header h5 {
+  margin: 0;
+  color: var(--afflictioner-text-light);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.affliction-editor .stage-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.affliction-editor .edit-stage-btn,
+.affliction-editor .remove-stage-btn {
+  padding: 4px 12px;
+  border: 1px solid;
+  color: var(--afflictioner-text-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.affliction-editor .edit-stage-btn {
+  background: var(--afflictioner-primary);
+  border-color: var(--afflictioner-primary-hover);
+}
+
+.affliction-editor .edit-stage-btn:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(139, 0, 0, 0.4);
+}
+
+.affliction-editor .remove-stage-btn {
+  padding: 4px 8px;
+  background: #7c2a2a;
+  border-color: #8c3a3a;
+}
+
+.affliction-editor .remove-stage-btn:hover {
+  background: #8c3a3a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(124, 42, 42, 0.4);
+}
+
+/* Onset toggle button */
+.affliction-editor .toggle-onset-btn {
+  padding: 4px 10px;
+  border: 1px solid;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.affliction-editor .toggle-onset-btn.add-btn {
+  background: var(--afflictioner-primary);
+  border-color: var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+}
+
+.affliction-editor .toggle-onset-btn.add-btn:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(139, 0, 0, 0.4);
+}
+
+.affliction-editor .toggle-onset-btn:not(.add-btn) {
+  background: #7c2a2a;
+  border-color: #8c3a3a;
+  color: var(--afflictioner-text-light);
+  padding: 6px 10px;
+}
+
+.affliction-editor .toggle-onset-btn:not(.add-btn):hover {
+  background: #8c3a3a;
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(124, 42, 42, 0.4);
+}
+
+.affliction-editor .no-onset {
+  color: #888;
+  font-style: italic;
+  font-size: 13px;
+  flex: 1;
+}
+
+.affliction-editor .stage-preview {
+  font-size: 12px;
+  color: #b0b0b0;
+}
+
+.affliction-editor .stage-field {
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.affliction-editor .stage-field strong {
+  color: var(--afflictioner-text-light);
+}
+
+/* Editor footer */
+.affliction-editor .editor-footer {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 2px solid var(--afflictioner-border);
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.affliction-editor .primary-button,
+.affliction-editor .secondary-button,
+.affliction-editor .cancel-button {
+  padding: 10px 20px;
+  border: 2px solid;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.affliction-editor .primary-button {
+  background: var(--afflictioner-primary);
+  border-color: var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+}
+
+.affliction-editor .primary-button:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(139, 0, 0, 0.5);
+}
+
+.affliction-editor .secondary-button {
+  background: var(--afflictioner-bg-dark);
+  border-color: var(--afflictioner-border);
+  color: var(--afflictioner-text-light);
+}
+
+.affliction-editor .secondary-button:hover {
+  background: var(--afflictioner-bg-medium);
+  border-color: var(--afflictioner-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(139, 0, 0, 0.3);
+}
+
+.affliction-editor .cancel-button {
+  background: transparent;
+  border-color: #666;
+  color: #aaa;
+}
+
+.affliction-editor .cancel-button:hover {
+  border-color: #888;
+  color: #ddd;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Stage Editor Dialog */
+.stage-editor {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(40, 20, 20, 0.95) 100%);
+  border: 2px solid var(--afflictioner-border);
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.4);
+}
+
+.stage-editor-content {
+  padding: 15px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.stage-editor .stage-editor-header {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid var(--afflictioner-border);
+}
+
+.stage-editor .stage-editor-header h3 {
+  color: var(--afflictioner-text-light);
+  margin: 0;
+  font-size: 18px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.stage-editor .form-group.effects-group {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.stage-editor .form-group.effects-group > label {
+  margin-bottom: 8px;
+}
+
+.stage-editor .effects-wrapper {
+  width: 100%;
+}
+
+/* Compact duration group */
+.stage-editor .duration-group-compact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: var(--afflictioner-bg-dark);
+  border-radius: 6px;
+  border: 1px solid var(--afflictioner-border);
+}
+
+.stage-editor .duration-group-compact label {
+  min-width: auto;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--afflictioner-text-light);
+}
+
+.stage-editor .duration-group-compact .duration-value {
+  width: 60px;
+  padding: 4px 8px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid var(--afflictioner-border);
+  border-radius: 4px;
+  color: var(--afflictioner-text-light);
+  font-size: 13px;
+}
+
+.stage-editor .duration-group-compact .duration-unit {
+  flex: 1;
+  max-width: 150px;
+  padding: 4px 8px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid var(--afflictioner-border);
+  border-radius: 4px;
+  color: var(--afflictioner-text-light);
+  font-size: 13px;
+}
+
+.stage-editor .form-group.effects-textarea-group {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.stage-editor .effects-textarea-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.stage-editor .effects-textarea-wrapper textarea {
+  flex: 1;
+}
+
+.stage-editor .parse-effects-btn {
+  padding: 6px 12px;
+  background: var(--afflictioner-primary);
+  border: 1px solid var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.stage-editor .parse-effects-btn:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(139, 0, 0, 0.4);
+}
+
+.stage-editor .form-group textarea {
+  width: 100%;
+  padding: 8px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid var(--afflictioner-border);
+  border-radius: 4px;
+  color: var(--afflictioner-text-light);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.stage-editor .form-group textarea:focus {
+  outline: none;
+  border-color: var(--afflictioner-primary);
+  box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2);
+}
+
+/* Enricher badges */
+.stage-editor .enricher-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--afflictioner-bg-dark);
+  border-radius: 4px;
+  border: 1px solid var(--afflictioner-border);
+}
+
+.stage-editor .enricher-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid;
+  transition: all 0.2s ease;
+}
+
+.stage-editor .enricher-badge.uuid {
+  background: rgba(42, 74, 124, 0.3);
+  border-color: #2a4a7c;
+  color: #8ab4f8;
+}
+
+.stage-editor .enricher-badge.condition {
+  background: rgba(124, 74, 42, 0.3);
+  border-color: #7c4a2a;
+  color: #f8b48a;
+}
+
+.stage-editor .enricher-badge.effect {
+  background: rgba(124, 42, 124, 0.3);
+  border-color: #7c2a7c;
+  color: #f88af8;
+}
+
+.stage-editor .enricher-badge.damage {
+  background: rgba(124, 42, 42, 0.3);
+  border-color: #7c2a2a;
+  color: #f88a8a;
+}
+
+.stage-editor .enricher-badge.check {
+  background: rgba(74, 124, 42, 0.3);
+  border-color: #4a7c2a;
+  color: #b4f88a;
+}
+
+.stage-editor .enricher-badge i {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.stage-editor .enricher-badge .badge-value {
+  font-family: monospace;
+  font-weight: bold;
+  opacity: 0.9;
+}
+
+.stage-editor .enricher-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.2);
+}
+
+.stage-editor .form-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: var(--afflictioner-bg-dark);
+  border-radius: 8px;
+  border: 1px solid var(--afflictioner-border);
+}
+
+.stage-editor .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--afflictioner-border);
+}
+
+.stage-editor .section-header h4 {
+  margin: 0;
+  color: var(--afflictioner-text-light);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.stage-editor .add-button {
+  padding: 4px 10px;
+  background: var(--afflictioner-primary);
+  border: 1px solid var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stage-editor .add-button:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(139, 0, 0, 0.4);
+}
+
+.stage-editor .damage-list,
+.stage-editor .condition-list,
+.stage-editor .weakness-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stage-editor .damage-entry,
+.stage-editor .condition-entry,
+.stage-editor .weakness-entry {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 8px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid var(--afflictioner-border);
+  border-radius: 4px;
+}
+
+.stage-editor .damage-entry input,
+.stage-editor .condition-entry input,
+.stage-editor .weakness-entry input,
+.stage-editor .damage-entry select,
+.stage-editor .condition-entry select,
+.stage-editor .weakness-entry select {
+  padding: 4px 8px;
+  background: var(--afflictioner-bg-dark);
+  border: 1px solid var(--afflictioner-border);
+  border-radius: 4px;
+  color: var(--afflictioner-text-light);
+  font-size: 12px;
+}
+
+/* Specific damage input widths */
+.stage-editor .damage-entry .dice-count {
+  flex: 0 0 50px;
+}
+
+.stage-editor .damage-entry .dice-type {
+  flex: 0 0 70px;
+}
+
+.stage-editor .damage-entry .bonus-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.stage-editor .damage-entry .bonus-label {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+}
+
+.stage-editor .damage-entry .damage-bonus {
+  width: 50px;
+}
+
+.stage-editor .damage-entry .damage-type {
+  flex: 1;
+}
+
+/* Condition input widths */
+.stage-editor .condition-entry .condition-name {
+  flex: 1;
+}
+
+.stage-editor .condition-entry .condition-value {
+  flex: 0 0 80px;
+}
+
+/* Persistent damage specific fields */
+.stage-editor .condition-entry.has-persistent-damage {
+  flex-wrap: wrap;
+}
+
+.stage-editor .condition-entry.has-persistent-damage .condition-name {
+  flex: 1;
+  min-width: 150px;
+}
+
+/* Hide persistent damage fields by default */
+.stage-editor .condition-entry .persistent-formula,
+.stage-editor .condition-entry .persistent-type {
+  display: none;
+}
+
+/* Show persistent damage fields when persistent damage is selected */
+.stage-editor .condition-entry.has-persistent-damage .persistent-formula {
+  display: block;
+  flex: 0 0 80px;
+}
+
+.stage-editor .condition-entry.has-persistent-damage .persistent-type {
+  display: block;
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Hide regular value field when persistent damage is selected */
+.stage-editor .condition-entry.has-persistent-damage .condition-value {
+  display: none;
+}
+
+.stage-editor .remove-button {
+  padding: 4px 8px;
+  background: #7c2a2a;
+  border: 1px solid #8c3a3a;
+  color: var(--afflictioner-text-light);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.stage-editor .remove-button:hover {
+  background: #8c3a3a;
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(124, 42, 42, 0.4);
+}
+
+/* Stage editor footer buttons */
+.stage-editor .editor-footer {
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 2px solid var(--afflictioner-border);
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.stage-editor .primary-button {
+  padding: 10px 20px;
+  background: var(--afflictioner-primary);
+  border: 2px solid var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-editor .primary-button:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(139, 0, 0, 0.5);
+}
+
+.stage-editor .cancel-button {
+  padding: 10px 20px;
+  background: transparent;
+  border: 2px solid #666;
+  color: #aaa;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-editor .cancel-button:hover {
+  border-color: #888;
+  color: #ddd;
+  background: rgba(102, 102, 102, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Effects section */
+.stage-editor .effects-drop-zone {
+  border: 2px dashed var(--afflictioner-border);
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  background: var(--afflictioner-bg-medium);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.stage-editor .effects-drop-zone:hover {
+  border-color: var(--afflictioner-primary);
+  background: var(--afflictioner-bg-light);
+}
+
+.stage-editor .effects-drop-zone.drag-over {
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.2);
+}
+
+.stage-editor .effects-drop-zone i {
+  font-size: 24px;
+  color: var(--afflictioner-primary);
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.stage-editor .effects-drop-zone:hover i {
+  opacity: 1;
+}
+
+.stage-editor .effects-drop-zone.drag-over i {
+  color: #4CAF50;
+  animation: bounce-drop 0.6s ease-in-out infinite;
+}
+
+.stage-editor .effects-drop-zone p {
+  margin: 0;
+  color: #888;
+  font-size: 12px;
+}
+
+.stage-editor .clear-effects-btn {
+  padding: 4px 10px;
+  background: #7c2a2a;
+  border: 1px solid #8c3a3a;
+  color: var(--afflictioner-text-light);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stage-editor .clear-effects-btn:hover {
+  background: #8c3a3a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(124, 42, 42, 0.4);
+}
+
+.stage-editor .effects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stage-editor .effect-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid var(--afflictioner-border);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.stage-editor .effect-item:hover {
+  background: var(--afflictioner-bg-light);
+  border-color: var(--afflictioner-primary);
+}
+
+.stage-editor .effect-item img {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  border: 1px solid var(--afflictioner-border);
+}
+
+.stage-editor .effect-name {
+  flex: 1;
+  color: var(--afflictioner-text-light);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Edit button hover color */
+.pf2e-afflictioner .affliction-actions button[data-action="editAffliction"]:hover {
+  background: #7c5a2a;
+  border-color: #8c6a3a;
+}
+

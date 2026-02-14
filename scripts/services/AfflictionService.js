@@ -5,6 +5,8 @@
 import { DEGREE_OF_SUCCESS } from '../constants.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionParser } from './AfflictionParser.js';
+import * as AfflictionDefinitionStore from '../stores/AfflictionDefinitionStore.js';
+import { AfflictionEditorService } from './AfflictionEditorService.js';
 
 export class AfflictionService {
   /**
@@ -13,6 +15,15 @@ export class AfflictionService {
   static async promptInitialSave(token, afflictionData) {
     const actor = token.actor;
     if (!actor) return;
+
+    // Check for edited version FIRST
+    const key = AfflictionDefinitionStore.generateDefinitionKey(afflictionData);
+    const editedDef = AfflictionDefinitionStore.getEditedDefinition(key);
+
+    if (editedDef) {
+      console.log('AfflictionService: Applying edited definition', { key, editedDef });
+      afflictionData = AfflictionEditorService.applyEditedDefinition(afflictionData, editedDef);
+    }
 
     // Create affliction in "Initial Save" state
     const afflictionId = foundry.utils.randomID();
@@ -471,6 +482,39 @@ export class AfflictionService {
       }
     }
 
+    // Apply auto-effects if any
+    if (stage.autoEffects && Array.isArray(stage.autoEffects) && stage.autoEffects.length > 0) {
+      for (const effectData of stage.autoEffects) {
+        try {
+          const effectItem = await fromUuid(effectData.uuid);
+          if (effectItem && effectItem.type === 'effect') {
+            // Check if effect already exists on actor
+            const existingEffect = actor.items.find(i =>
+              i.type === 'effect' &&
+              i.name === effectItem.name &&
+              i.flags?.['pf2e-afflictioner']?.autoAppliedEffect === true
+            );
+
+            if (!existingEffect) {
+              // Create effect on actor
+              const effectSource = effectItem.toObject();
+              effectSource.flags = effectSource.flags || {};
+              effectSource.flags['pf2e-afflictioner'] = {
+                autoAppliedEffect: true,
+                afflictionId: affliction.id,
+                stageNumber: affliction.currentStage
+              };
+
+              await actor.createEmbeddedDocuments('Item', [effectSource]);
+              console.log('PF2e Afflictioner | Applied auto-effect:', effectItem.name);
+            }
+          }
+        } catch (error) {
+          console.error('PF2e Afflictioner | Error applying auto-effect:', error);
+        }
+      }
+    }
+
     // Create or update affliction effect with counter badge and rule elements
     const effectUuid = await this.createOrUpdateAfflictionEffect(actor, affliction, stage);
     if (effectUuid && !affliction.appliedEffectUuid) {
@@ -769,6 +813,29 @@ export class AfflictionService {
         }
       } catch (error) {
         console.error('PF2e Afflictioner | Error removing treatment effect:', error);
+      }
+    }
+
+    // Remove auto-applied effects from the old stage
+    // These are effects that were dragged onto the stage editor
+    if (oldStageData && oldStageData.autoEffects && Array.isArray(oldStageData.autoEffects)) {
+      for (const effectData of oldStageData.autoEffects) {
+        try {
+          // Find and remove auto-applied effects by matching UUID or name
+          const autoEffects = actor.itemTypes.effect.filter(e =>
+            e.flags?.['pf2e-afflictioner']?.autoAppliedEffect === true &&
+            e.flags?.['pf2e-afflictioner']?.afflictionId === affliction.id &&
+            (e.flags?.['pf2e-afflictioner']?.stageNumber === affliction.currentStage ||
+             e.name === effectData.name)
+          );
+
+          for (const effect of autoEffects) {
+            await effect.delete();
+            console.log('PF2e Afflictioner | Removed auto-applied effect:', effect.name);
+          }
+        } catch (error) {
+          console.error('PF2e Afflictioner | Error removing auto-effect:', error);
+        }
       }
     }
 

@@ -1,0 +1,340 @@
+/**
+ * Edited Afflictions Manager - UI for viewing and managing all edited afflictions
+ */
+
+import * as AfflictionDefinitionStore from '../stores/AfflictionDefinitionStore.js';
+import { AfflictionEditorDialog } from './AfflictionEditorDialog.js';
+import { AfflictionEditorService } from '../services/AfflictionEditorService.js';
+import { AfflictionParser } from '../services/AfflictionParser.js';
+import { AfflictionConflictDetector } from '../services/AfflictionConflictDetector.js';
+import { ConflictResolutionDialog } from './ConflictResolutionDialog.js';
+
+export class EditedAfflictionsManager extends foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.api.ApplicationV2
+) {
+  static DEFAULT_OPTIONS = {
+    id: 'pf2e-afflictioner-edited-manager',
+    classes: ['pf2e-afflictioner', 'edited-afflictions-manager'],
+    tag: 'div',
+    window: {
+      title: 'PF2E_AFFLICTIONER.EDITED_MANAGER.TITLE',
+      icon: 'fas fa-list',
+      resizable: true
+    },
+    position: {
+      width: 700,
+      height: 500
+    },
+    actions: {
+      editDefinition: EditedAfflictionsManager.editDefinition,
+      deleteDefinition: EditedAfflictionsManager.deleteDefinition,
+      resetDefinition: EditedAfflictionsManager.resetDefinition,
+      exportAllEdits: EditedAfflictionsManager.exportAllEdits,
+      importEdits: EditedAfflictionsManager.importEdits
+    }
+  };
+
+  static PARTS = {
+    form: {
+      template: 'modules/pf2e-afflictioner/templates/edited-afflictions-manager.hbs'
+    }
+  };
+
+  constructor(options = {}) {
+    super(options);
+
+    // GM-only access
+    if (!game.user.isGM) {
+      ui.notifications.error('Only GMs can access the Edited Afflictions Manager');
+      this.close();
+      return;
+    }
+  }
+
+  async _prepareContext(options) {
+    const allEdits = AfflictionDefinitionStore.getAllEditedDefinitions();
+    const editsList = [];
+
+    for (const [key, edit] of Object.entries(allEdits)) {
+      // Format edit data for display
+      const editInfo = {
+        key: key,
+        name: edit.name || 'Unknown',
+        type: edit.type || 'affliction',
+        dc: edit.dc || 15,
+        saveType: edit.saveType || 'fortitude',
+        onset: edit.onset ? `${edit.onset.value} ${edit.onset.unit}(s)` : 'None',
+        stageCount: edit.stages?.length || 0,
+        editedAt: edit.editedAt ? new Date(edit.editedAt).toLocaleDateString() : 'Unknown',
+        sourceItemUuid: edit.sourceItemUuid || null,
+        isCustom: !edit.sourceItemUuid
+      };
+
+      editsList.push(editInfo);
+    }
+
+    // Sort by name
+    editsList.sort((a, b) => a.name.localeCompare(b.name));
+
+    return {
+      edits: editsList,
+      hasEdits: editsList.length > 0
+    };
+  }
+
+  static async editDefinition(event, button) {
+    const dialog = this;
+    const key = button.dataset.key;
+
+    const editedDef = AfflictionDefinitionStore.getEditedDefinition(key);
+    if (!editedDef) {
+      ui.notifications.error('Edited definition not found');
+      return;
+    }
+
+    // Load original source if available
+    let afflictionData = editedDef;
+    if (editedDef.sourceItemUuid) {
+      try {
+        const loadedData = await AfflictionEditorService.prepareForEditing(editedDef.sourceItemUuid);
+        if (loadedData) {
+          // Merge with edited definition to preserve edits
+          afflictionData = AfflictionEditorService.applyEditedDefinition(loadedData, editedDef);
+        }
+      } catch (error) {
+        console.warn('Could not load source item, using stored definition', error);
+      }
+    }
+
+    // Open editor
+    new AfflictionEditorDialog(afflictionData).render(true);
+  }
+
+  static async deleteDefinition(event, button) {
+    const dialog = this;
+    const key = button.dataset.key;
+    const name = button.dataset.name;
+
+    // Confirm deletion
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      title: game.i18n.localize('PF2E_AFFLICTIONER.EDITED_MANAGER.DELETE'),
+      content: `<p>${game.i18n.format('PF2E_AFFLICTIONER.EDITED_MANAGER.CONFIRM_DELETE', { name })}</p>`,
+      yes: () => true,
+      no: () => false,
+      defaultYes: false
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await AfflictionDefinitionStore.removeEditedDefinition(key);
+      ui.notifications.info(`Removed edit for ${name}`);
+      await dialog.render({ force: true });
+    } catch (error) {
+      console.error('EditedAfflictionsManager: Error deleting definition', error);
+      ui.notifications.error('Failed to delete definition');
+    }
+  }
+
+  static async resetDefinition(event, button) {
+    // Same as delete - resets to default
+    return EditedAfflictionsManager.deleteDefinition.call(this, event, button);
+  }
+
+  static async exportAllEdits(event, button) {
+    const allEdits = AfflictionDefinitionStore.getAllEditedDefinitions();
+
+    if (Object.keys(allEdits).length === 0) {
+      ui.notifications.warn('No edited afflictions to export');
+      return;
+    }
+
+    // Create export data with metadata
+    const exportData = {
+      version: '1.0',
+      exportDate: new Date().toISOString(),
+      moduleVersion: game.modules.get('pf2e-afflictioner').version,
+      edits: allEdits
+    };
+
+    // Convert to JSON
+    const json = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pf2e-afflictioner-edits-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    ui.notifications.info(`Exported ${Object.keys(allEdits).length} edited affliction(s)`);
+  }
+
+  static async importEdits(event, button) {
+    const dialog = this;
+
+    // Create file input
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+
+    input.onchange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const importData = JSON.parse(text);
+
+        // Validate structure
+        if (!importData.edits || typeof importData.edits !== 'object') {
+          ui.notifications.error('Invalid import file format');
+          return;
+        }
+
+        // Analyze for conflicts
+        const currentEdits = AfflictionDefinitionStore.getAllEditedDefinitions();
+        const analysis = AfflictionConflictDetector.analyzeImport(
+          importData.edits,
+          currentEdits
+        );
+
+        // If no conflicts, show simple confirmation
+        if (analysis.conflicts.length === 0) {
+          const confirmed = await foundry.applications.api.DialogV2.confirm({
+            title: 'Import Edited Afflictions',
+            content: `<p>Import ${analysis.autoImport.length} affliction(s)?</p>
+                      <p><em>No conflicts detected - all will be imported.</em></p>`,
+            yes: () => true,
+            no: () => false,
+            defaultYes: true
+          });
+
+          if (!confirmed) return;
+
+          // Direct import
+          const mergedEdits = { ...currentEdits };
+          for (const item of analysis.autoImport) {
+            // Update metadata
+            const definition = foundry.utils.deepClone(item.definition);
+            definition.editedAt = Date.now();
+            definition.editedBy = game.user.id;
+            mergedEdits[item.key] = definition;
+          }
+
+          await game.settings.set('pf2e-afflictioner', 'editedAfflictions', mergedEdits);
+          ui.notifications.info(`Imported ${analysis.autoImport.length} affliction(s)`);
+          await dialog.render({ force: true });
+        } else {
+          // Open conflict resolution dialog
+          new ConflictResolutionDialog(analysis).render(true);
+        }
+
+      } catch (error) {
+        console.error('EditedAfflictionsManager: Error importing', error);
+        ui.notifications.error('Failed to import file. Check console for details.');
+      }
+    };
+
+    input.click();
+  }
+
+  // Enable drag and drop
+  _onRender(context, options) {
+    super._onRender?.(context, options);
+
+    const element = this.element;
+    if (!element) return;
+
+    // Check if already initialized (prevent duplicate listeners)
+    if (this._dropHandlersInitialized) return;
+    this._dropHandlersInitialized = true;
+
+    // Make the window a drop target
+    element.addEventListener('drop', this._onDrop.bind(this));
+    element.addEventListener('dragover', this._onDragOver.bind(this));
+    element.addEventListener('dragleave', this._onDragLeave.bind(this));
+  }
+
+  _onDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+
+    // Add visual feedback
+    const element = this.element;
+    if (element && !element.classList.contains('drag-over')) {
+      element.classList.add('drag-over');
+    }
+  }
+
+  _onDragLeave(event) {
+    // Only remove if leaving the entire element
+    if (!event.currentTarget.contains(event.relatedTarget)) {
+      const element = this.element;
+      if (element) {
+        element.classList.remove('drag-over');
+      }
+    }
+  }
+
+  async _onDrop(event) {
+    event.preventDefault();
+
+    // Remove drag-over class
+    const element = this.element;
+    if (element) {
+      element.classList.remove('drag-over');
+    }
+
+    let data;
+    try {
+      data = JSON.parse(event.dataTransfer.getData('text/plain'));
+    } catch {
+      return;
+    }
+
+    // Check if it's an item
+    if (data.type !== 'Item') {
+      ui.notifications.warn('Only items can be dropped here');
+      return;
+    }
+
+    // Load item
+    const item = await fromUuid(data.uuid);
+    if (!item) {
+      ui.notifications.error('Could not load item');
+      return;
+    }
+
+    // Check if it has poison/disease trait
+    const traits = item.system?.traits?.value || [];
+    if (!traits.includes('poison') && !traits.includes('disease')) {
+      ui.notifications.warn('Item must have poison or disease trait');
+      return;
+    }
+
+    // Parse affliction
+    const afflictionData = AfflictionParser.parseFromItem(item);
+    if (!afflictionData) {
+      ui.notifications.error('Could not parse affliction from item');
+      return;
+    }
+
+    // Check if there's already an edited version
+    const key = AfflictionDefinitionStore.generateDefinitionKey(afflictionData);
+    const existingEdit = AfflictionDefinitionStore.getEditedDefinition(key);
+
+    if (existingEdit) {
+      // Merge with existing edit
+      const mergedData = AfflictionEditorService.applyEditedDefinition(afflictionData, existingEdit);
+      new AfflictionEditorDialog(mergedData).render(true);
+      ui.notifications.info(`Editing existing customization for ${afflictionData.name}`);
+    } else {
+      // New edit
+      new AfflictionEditorDialog(afflictionData).render(true);
+      ui.notifications.info(`Creating new customization for ${afflictionData.name}`);
+    }
+  }
+}

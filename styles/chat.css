@@ -1,0 +1,165 @@
+/**
+ * PF2e Afflictioner - Chat Message Styles
+ * Save requests and treatment requests
+ */
+/* Save request styling in chat */
+.pf2e-afflictioner-save-request {
+  background: linear-gradient(135deg, rgba(139, 0, 0, 0.15) 0%, rgba(139, 0, 0, 0.05) 100%);
+  border: 2px solid rgba(139, 0, 0, 0.3);
+  border-left: 4px solid #8b0000;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.pf2e-afflictioner-save-request h3 {
+  color: #8b0000;
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pf2e-afflictioner-save-request h3 i {
+  animation: pulse-danger 2s ease-in-out infinite;
+}
+
+.pf2e-afflictioner-save-request p {
+  margin: 8px 0;
+  color: var(--color-text-dark-primary);
+}
+
+.pf2e-afflictioner-save-request button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: linear-gradient(135deg, #8b0000 0%, #a00000 100%);
+  border: 2px solid #6a0000;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.pf2e-afflictioner-save-request button:hover {
+  background: linear-gradient(135deg, #a00000 0%, #b81010 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(139, 0, 0, 0.5);
+}
+
+.pf2e-afflictioner-save-request button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(139, 0, 0, 0.4);
+}
+
+.pf2e-afflictioner-save-request button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pf2e-afflictioner-save-request button i {
+  margin-right: 6px;
+}
+
+/* Treatment request styling in chat */
+.pf2e-afflictioner-treatment-request {
+  background: linear-gradient(135deg, rgba(74, 124, 42, 0.15) 0%, rgba(74, 124, 42, 0.05) 100%);
+  border: 2px solid rgba(74, 124, 42, 0.3);
+  border-left: 4px solid var(--afflictioner-poison);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  box-shadow: 0 2px 6px rgba(74, 124, 42, 0.2);
+}
+
+.pf2e-afflictioner-treatment-request h3 {
+  color: var(--afflictioner-poison);
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.pf2e-afflictioner-treatment-request h3 i {
+  animation: pulse-treatment 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(74, 124, 42, 0.6));
+}
+
+@keyframes pulse-treatment {
+  0%, 100% {
+    color: var(--afflictioner-poison);
+    filter: drop-shadow(0 0 4px rgba(74, 124, 42, 0.6));
+  }
+  50% {
+    color: #5a9c3a;
+    filter: drop-shadow(0 0 8px rgba(90, 156, 58, 0.8));
+  }
+}
+
+.pf2e-afflictioner-treatment-request p {
+  margin: 8px 0;
+  color: var(--color-text-dark-primary);
+  line-height: 1.5;
+}
+
+.pf2e-afflictioner-treatment-request p em {
+  color: #6a8a4a;
+  font-size: 0.9em;
+  display: block;
+  margin-top: 4px;
+  padding: 6px;
+  background: rgba(74, 124, 42, 0.1);
+  border-radius: 4px;
+  border-left: 2px solid rgba(74, 124, 42, 0.3);
+}
+
+.pf2e-afflictioner-treatment-request hr {
+  border: none;
+  border-top: 1px solid rgba(74, 124, 42, 0.3);
+  margin: 10px 0;
+}
+
+.pf2e-afflictioner-treatment-request button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: linear-gradient(135deg, var(--afflictioner-poison) 0%, #5a9c3a 100%);
+  border: 2px solid #3a7c2a;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.pf2e-afflictioner-treatment-request button:hover {
+  background: linear-gradient(135deg, #5a9c3a 0%, #6abc4a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(74, 124, 42, 0.5);
+}
+
+.pf2e-afflictioner-treatment-request button:active {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(74, 124, 42, 0.4);
+}
+
+.pf2e-afflictioner-treatment-request button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  background: linear-gradient(135deg, #555 0%, #666 100%);
+}
+
+.pf2e-afflictioner-treatment-request button i {
+  margin-right: 6px;
+}
+

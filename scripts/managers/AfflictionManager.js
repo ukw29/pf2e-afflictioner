@@ -30,6 +30,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       addAffliction: AfflictionManager.addAffliction,
       removeAffliction: AfflictionManager.removeAffliction,
       clearAllAfflictions: AfflictionManager.clearAllAfflictions,
+      editAffliction: AfflictionManager.editAffliction,
       progressStage: AfflictionManager.progressStage,
       regressStage: AfflictionManager.regressStage,
       rollSave: AfflictionManager.rollSave,
@@ -588,9 +589,30 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     this.render({ force: true });
   }
 
+  static async editAffliction(event, button) {
+    const afflictionId = button.dataset.afflictionId;
+    const tokenId = button.dataset.tokenId;
+    const token = canvas.tokens.get(tokenId);
+
+    if (!token) {
+      ui.notifications.warn('Token not found');
+      return;
+    }
+
+    const affliction = AfflictionStore.getAffliction(token, afflictionId);
+    if (!affliction) {
+      ui.notifications.warn('Affliction not found');
+      return;
+    }
+
+    // Import and show editor dialog
+    const { AfflictionEditorDialog } = await import('./AfflictionEditorDialog.js');
+    new AfflictionEditorDialog(affliction).render(true);
+  }
+
   static async clearAllAfflictions(event, button) {
     // Confirm before clearing
-    const confirmed = await Dialog.confirm({
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
       title: game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL_CONFIRM_TITLE'),
       content: `<p>${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL_CONFIRM_CONTENT')}</p>`,
       yes: () => true,

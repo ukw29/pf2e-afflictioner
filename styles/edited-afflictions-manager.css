@@ -1,0 +1,226 @@
+/**
+ * PF2e Afflictioner - Edited Afflictions Manager Styles
+ * Manager for viewing and managing edited affliction definitions
+ */
+/* Edited Afflictions Manager */
+.edited-afflictions-manager {
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(40, 20, 20, 0.95) 100%);
+  border: 2px solid var(--afflictioner-border);
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.4);
+}
+
+.edited-afflictions-content {
+  padding: 15px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.edited-afflictions-manager .edit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  margin-bottom: 10px;
+  background: var(--afflictioner-bg-medium);
+  border: 1px solid var(--afflictioner-border);
+  border-left: 4px solid var(--afflictioner-primary);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.edited-afflictions-manager .edit-row:hover {
+  background: var(--afflictioner-bg-light);
+  border-left-color: var(--afflictioner-primary-hover);
+  transform: translateX(2px);
+}
+
+.edited-afflictions-manager .edit-info {
+  flex: 1;
+}
+
+.edited-afflictions-manager .edit-info h4 {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  color: var(--afflictioner-text-light);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edited-afflictions-manager .custom-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: #7c5a2a;
+  border-radius: 4px;
+  color: var(--afflictioner-text-light);
+  font-weight: normal;
+}
+
+.edited-afflictions-manager .edit-details {
+  display: flex;
+  gap: 15px;
+  font-size: 12px;
+  color: #b0b0b0;
+  flex-wrap: wrap;
+}
+
+.edited-afflictions-manager .edit-details strong {
+  color: var(--afflictioner-text-light);
+}
+
+.edited-afflictions-manager .edit-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.edited-afflictions-manager .edit-actions button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--afflictioner-border);
+  background: var(--afflictioner-bg-dark);
+  color: var(--afflictioner-text-light);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edited-afflictions-manager .edit-actions button:hover {
+  background: var(--afflictioner-primary);
+  border-color: var(--afflictioner-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(139, 0, 0, 0.4);
+}
+
+.edited-afflictions-manager .edit-actions button.delete-btn:hover {
+  background: #7c2a2a;
+  border-color: #8c3a3a;
+}
+
+.edited-afflictions-manager .no-edits {
+  text-align: center;
+  padding: 40px 20px;
+  color: #808080;
+  font-style: italic;
+  font-size: 14px;
+  background: var(--afflictioner-bg-dark);
+  border: 2px dashed var(--afflictioner-border);
+  border-radius: 8px;
+}
+
+/* Bulk actions */
+.edited-afflictions-manager .bulk-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: var(--afflictioner-bg-dark);
+  border-radius: 6px;
+  border: 1px solid var(--afflictioner-border);
+}
+
+.edited-afflictions-manager .export-btn,
+.edited-afflictions-manager .import-btn {
+  padding: 8px 16px;
+  border: 2px solid;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.edited-afflictions-manager .export-btn {
+  background: var(--afflictioner-primary);
+  border-color: var(--afflictioner-primary-hover);
+  color: var(--afflictioner-text-light);
+}
+
+.edited-afflictions-manager .export-btn:hover {
+  background: var(--afflictioner-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(139, 0, 0, 0.4);
+}
+
+.edited-afflictions-manager .import-btn {
+  background: #2a4a7c;
+  border-color: #3a5a8c;
+  color: var(--afflictioner-text-light);
+}
+
+.edited-afflictions-manager .import-btn:hover {
+  background: #3a5a8c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(42, 74, 124, 0.4);
+}
+
+/* Drop zone hint */
+.edited-afflictions-manager .drop-zone-hint {
+  text-align: center;
+  padding: 20px;
+  margin-bottom: 15px;
+  background: var(--afflictioner-bg-dark);
+  border: 2px dashed var(--afflictioner-border);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.edited-afflictions-manager .drop-zone-hint i {
+  font-size: 32px;
+  color: var(--afflictioner-primary);
+  margin-bottom: 8px;
+  opacity: 0.7;
+}
+
+.edited-afflictions-manager .drop-zone-hint p {
+  color: #888;
+  margin: 0;
+  font-size: 13px;
+}
+
+.edited-afflictions-manager .drop-zone-hint:hover {
+  border-color: var(--afflictioner-primary);
+  background: var(--afflictioner-bg-medium);
+}
+
+.edited-afflictions-manager .drop-zone-hint:hover i {
+  opacity: 1;
+}
+
+/* Drag over state */
+.edited-afflictions-manager.drag-over {
+  outline: 3px dashed #4CAF50 !important;
+  outline-offset: 4px;
+  background: linear-gradient(135deg,
+    rgba(20, 40, 20, 0.95) 0%,
+    rgba(40, 60, 40, 0.95) 100%) !important;
+  animation: pulse-drop-zone 1s ease-in-out infinite;
+}
+
+.edited-afflictions-manager.drag-over .drop-zone-hint {
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.2);
+}
+
+.edited-afflictions-manager.drag-over .drop-zone-hint i {
+  color: #4CAF50;
+  animation: bounce-drop 0.6s ease-in-out infinite;
+}
+
+@keyframes bounce-drop {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}

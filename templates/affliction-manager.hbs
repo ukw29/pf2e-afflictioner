@@ -27,6 +27,11 @@
             </div>
 
             <div class="affliction-actions">
+              <button type="button" data-action="editAffliction"
+                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.EDIT_AFFLICTION'}}">
+                <i class="fas fa-pencil-alt"></i>
+              </button>
               <button type="button" data-action="rollSave"
                       data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
                       data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_SAVE'}}">

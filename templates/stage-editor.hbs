@@ -1,0 +1,234 @@
+<div class="stage-editor-content">
+  <div class="stage-editor-header">
+    <h3>{{localize 'PF2E_AFFLICTIONER.EDITOR.STAGE_EDITOR_TITLE' number=stage.number}}</h3>
+  </div>
+
+  <!-- Duration (compact, at top) -->
+  <div class="form-group duration-group-compact">
+    <label>{{localize 'PF2E_AFFLICTIONER.EDITOR.DURATION'}}</label>
+    <input type="number" name="duration.value" value="{{stage.duration.value}}" min="1" placeholder="1" class="duration-value" />
+    <select name="duration.unit" class="duration-unit">
+      <option value="round" {{#if (eq stage.duration.unit "round")}}selected{{/if}}>Round(s)</option>
+      <option value="minute" {{#if (eq stage.duration.unit "minute")}}selected{{/if}}>Minute(s)</option>
+      <option value="hour" {{#if (eq stage.duration.unit "hour")}}selected{{/if}}>Hour(s)</option>
+      <option value="day" {{#if (eq stage.duration.unit "day")}}selected{{/if}}>Day(s)</option>
+    </select>
+  </div>
+
+  <!-- Effects text area -->
+  <div class="form-group effects-textarea-group">
+    <label for="stage-effects">{{localize 'PF2E_AFFLICTIONER.EDITOR.INSTRUCTIONS'}}</label>
+    <div class="effects-textarea-wrapper">
+      <textarea id="stage-effects" name="effects" rows="3" placeholder="Enter stage effects...">{{stage.effects}}</textarea>
+      <button type="button" data-action="parseEffectsText" class="parse-effects-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.PARSE_EFFECTS_TOOLTIP'}}">
+        <i class="fas fa-magic"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.PARSE_EFFECTS'}}
+      </button>
+    </div>
+  </div>
+
+  <!-- Auto-applied effects section -->
+  <div class="form-section effects-section">
+    <div class="section-header">
+      <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.AUTO_EFFECTS'}}</h4>
+      <button type="button" data-action="removeAllEffects" class="clear-effects-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.CLEAR_EFFECTS'}}">
+        <i class="fas fa-times"></i> Clear All
+      </button>
+    </div>
+
+    <div class="effects-drop-zone" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.DROP_EFFECTS_HINT'}}">
+      <i class="fas fa-magic"></i>
+      <p>{{localize 'PF2E_AFFLICTIONER.EDITOR.DROP_EFFECTS'}}</p>
+    </div>
+
+    {{#if stage.autoEffects.length}}
+      <div class="effects-list">
+        {{#each stage.autoEffects}}
+          <div class="effect-item" data-index="{{@index}}">
+            <img src="{{img}}" alt="{{name}}" />
+            <span class="effect-name">{{name}}</span>
+            <button type="button" data-action="removeEffect" data-index="{{@index}}" class="remove-button">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        {{/each}}
+      </div>
+    {{/if}}
+  </div>
+
+  <!-- Damage entries -->
+  <div class="form-section damage-section">
+    <div class="section-header">
+      <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.DAMAGE'}}</h4>
+      <button type="button" data-action="addDamage" class="add-button">
+        <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.ADD_DAMAGE'}}
+      </button>
+    </div>
+
+    <div class="damage-list">
+      {{#each stage.damage}}
+        <div class="damage-entry" data-index="{{@index}}">
+          <input type="number" name="damage.{{@index}}.diceCount" value="{{diceCount}}" placeholder="1" min="1" max="20" class="dice-count" />
+          <select name="damage.{{@index}}.diceType" class="dice-type">
+            <option value="">Die...</option>
+            <option value="d4" {{#if (eq diceType "d4")}}selected{{/if}}>d4</option>
+            <option value="d6" {{#if (eq diceType "d6")}}selected{{/if}}>d6</option>
+            <option value="d8" {{#if (eq diceType "d8")}}selected{{/if}}>d8</option>
+            <option value="d10" {{#if (eq diceType "d10")}}selected{{/if}}>d10</option>
+            <option value="d12" {{#if (eq diceType "d12")}}selected{{/if}}>d12</option>
+            <option value="d20" {{#if (eq diceType "d20")}}selected{{/if}}>d20</option>
+          </select>
+          <div class="bonus-wrapper">
+            <label class="bonus-label">Bonus:</label>
+            <input type="number" name="damage.{{@index}}.bonus" value="{{bonus}}" placeholder="+0" class="damage-bonus" />
+          </div>
+          <select name="damage.{{@index}}.damageType" class="damage-type">
+            <option value="">Type...</option>
+            <option value="acid" {{#if (eq damageType "acid")}}selected{{/if}}>Acid</option>
+            <option value="bleed" {{#if (eq damageType "bleed")}}selected{{/if}}>Bleed</option>
+            <option value="bludgeoning" {{#if (eq damageType "bludgeoning")}}selected{{/if}}>Bludgeoning</option>
+            <option value="cold" {{#if (eq damageType "cold")}}selected{{/if}}>Cold</option>
+            <option value="electricity" {{#if (eq damageType "electricity")}}selected{{/if}}>Electricity</option>
+            <option value="fire" {{#if (eq damageType "fire")}}selected{{/if}}>Fire</option>
+            <option value="force" {{#if (eq damageType "force")}}selected{{/if}}>Force</option>
+            <option value="mental" {{#if (eq damageType "mental")}}selected{{/if}}>Mental</option>
+            <option value="piercing" {{#if (eq damageType "piercing")}}selected{{/if}}>Piercing</option>
+            <option value="poison" {{#if (eq damageType "poison")}}selected{{/if}}>Poison</option>
+            <option value="slashing" {{#if (eq damageType "slashing")}}selected{{/if}}>Slashing</option>
+            <option value="sonic" {{#if (eq damageType "sonic")}}selected{{/if}}>Sonic</option>
+            <option value="spirit" {{#if (eq damageType "spirit")}}selected{{/if}}>Spirit</option>
+            <option value="vitality" {{#if (eq damageType "vitality")}}selected{{/if}}>Vitality</option>
+            <option value="void" {{#if (eq damageType "void")}}selected{{/if}}>Void</option>
+            <option value="untyped" {{#if (eq damageType "untyped")}}selected{{/if}}>Untyped</option>
+          </select>
+          <button type="button" data-action="removeDamage" data-index="{{@index}}" class="remove-button">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <!-- Condition entries -->
+  <div class="form-section condition-section">
+    <div class="section-header">
+      <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.CONDITIONS'}}</h4>
+      <button type="button" data-action="addCondition" class="add-button">
+        <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.ADD_CONDITION'}}
+      </button>
+    </div>
+
+    <div class="condition-list">
+      {{#each stage.conditions}}
+        <div class="condition-entry {{#if (eq name 'persistent damage')}}has-persistent-damage{{/if}}" data-index="{{@index}}">
+          <select name="condition.{{@index}}.name" class="condition-name" onchange="this.closest('.condition-entry').classList.toggle('has-persistent-damage', this.value === 'persistent damage')">
+            <option value="">Select condition...</option>
+            <option value="blinded" {{#if (eq name "blinded")}}selected{{/if}}>Blinded</option>
+            <option value="clumsy" {{#if (eq name "clumsy")}}selected{{/if}}>Clumsy</option>
+            <option value="confused" {{#if (eq name "confused")}}selected{{/if}}>Confused</option>
+            <option value="dazzled" {{#if (eq name "dazzled")}}selected{{/if}}>Dazzled</option>
+            <option value="deafened" {{#if (eq name "deafened")}}selected{{/if}}>Deafened</option>
+            <option value="doomed" {{#if (eq name "doomed")}}selected{{/if}}>Doomed</option>
+            <option value="drained" {{#if (eq name "drained")}}selected{{/if}}>Drained</option>
+            <option value="dying" {{#if (eq name "dying")}}selected{{/if}}>Dying</option>
+            <option value="enfeebled" {{#if (eq name "enfeebled")}}selected{{/if}}>Enfeebled</option>
+            <option value="fascinated" {{#if (eq name "fascinated")}}selected{{/if}}>Fascinated</option>
+            <option value="fatigued" {{#if (eq name "fatigued")}}selected{{/if}}>Fatigued</option>
+            <option value="fleeing" {{#if (eq name "fleeing")}}selected{{/if}}>Fleeing</option>
+            <option value="frightened" {{#if (eq name "frightened")}}selected{{/if}}>Frightened</option>
+            <option value="grabbed" {{#if (eq name "grabbed")}}selected{{/if}}>Grabbed</option>
+            <option value="immobilized" {{#if (eq name "immobilized")}}selected{{/if}}>Immobilized</option>
+            <option value="paralyzed" {{#if (eq name "paralyzed")}}selected{{/if}}>Paralyzed</option>
+            <option value="persistent damage" {{#if (eq name "persistent damage")}}selected{{/if}}>Persistent Damage</option>
+            <option value="prone" {{#if (eq name "prone")}}selected{{/if}}>Prone</option>
+            <option value="restrained" {{#if (eq name "restrained")}}selected{{/if}}>Restrained</option>
+            <option value="sickened" {{#if (eq name "sickened")}}selected{{/if}}>Sickened</option>
+            <option value="slowed" {{#if (eq name "slowed")}}selected{{/if}}>Slowed</option>
+            <option value="stunned" {{#if (eq name "stunned")}}selected{{/if}}>Stunned</option>
+            <option value="stupefied" {{#if (eq name "stupefied")}}selected{{/if}}>Stupefied</option>
+            <option value="unconscious" {{#if (eq name "unconscious")}}selected{{/if}}>Unconscious</option>
+            <option value="wounded" {{#if (eq name "wounded")}}selected{{/if}}>Wounded</option>
+          </select>
+
+          <!-- Persistent damage specific fields (always rendered, shown via CSS) -->
+          <input type="text" name="condition.{{@index}}.persistentFormula" value="{{persistentFormula}}" placeholder="1d6" class="persistent-formula" />
+          <select name="condition.{{@index}}.persistentType" class="persistent-type">
+            <option value="">Type...</option>
+            <option value="acid" {{#if (eq persistentType "acid")}}selected{{/if}}>Acid</option>
+            <option value="bleed" {{#if (eq persistentType "bleed")}}selected{{/if}}>Bleed</option>
+            <option value="bludgeoning" {{#if (eq persistentType "bludgeoning")}}selected{{/if}}>Bludgeoning</option>
+            <option value="cold" {{#if (eq persistentType "cold")}}selected{{/if}}>Cold</option>
+            <option value="electricity" {{#if (eq persistentType "electricity")}}selected{{/if}}>Electricity</option>
+            <option value="fire" {{#if (eq persistentType "fire")}}selected{{/if}}>Fire</option>
+            <option value="force" {{#if (eq persistentType "force")}}selected{{/if}}>Force</option>
+            <option value="mental" {{#if (eq persistentType "mental")}}selected{{/if}}>Mental</option>
+            <option value="piercing" {{#if (eq persistentType "piercing")}}selected{{/if}}>Piercing</option>
+            <option value="poison" {{#if (eq persistentType "poison")}}selected{{/if}}>Poison</option>
+            <option value="slashing" {{#if (eq persistentType "slashing")}}selected{{/if}}>Slashing</option>
+            <option value="sonic" {{#if (eq persistentType "sonic")}}selected{{/if}}>Sonic</option>
+            <option value="spirit" {{#if (eq persistentType "spirit")}}selected{{/if}}>Spirit</option>
+            <option value="untyped" {{#if (eq persistentType "untyped")}}selected{{/if}}>Untyped</option>
+            <option value="vitality" {{#if (eq persistentType "vitality")}}selected{{/if}}>Vitality</option>
+            <option value="void" {{#if (eq persistentType "void")}}selected{{/if}}>Void</option>
+          </select>
+
+          <!-- Regular condition value (always rendered, shown via CSS) -->
+          <input type="number" name="condition.{{@index}}.value" value="{{value}}" placeholder="Value" min="0" max="4" class="condition-value" />
+
+          <button type="button" data-action="removeCondition" data-index="{{@index}}" class="remove-button">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <!-- Weakness entries -->
+  <div class="form-section weakness-section">
+    <div class="section-header">
+      <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.WEAKNESS'}}</h4>
+      <button type="button" data-action="addWeakness" class="add-button">
+        <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.ADD_WEAKNESS'}}
+      </button>
+    </div>
+
+    <div class="weakness-list">
+      {{#each stage.weakness}}
+        <div class="weakness-entry" data-index="{{@index}}">
+          <select name="weakness.{{@index}}.type">
+            <option value="">Select type...</option>
+            <option value="acid" {{#if (eq type "acid")}}selected{{/if}}>Acid</option>
+            <option value="bleed" {{#if (eq type "bleed")}}selected{{/if}}>Bleed</option>
+            <option value="bludgeoning" {{#if (eq type "bludgeoning")}}selected{{/if}}>Bludgeoning</option>
+            <option value="cold" {{#if (eq type "cold")}}selected{{/if}}>Cold</option>
+            <option value="electricity" {{#if (eq type "electricity")}}selected{{/if}}>Electricity</option>
+            <option value="fire" {{#if (eq type "fire")}}selected{{/if}}>Fire</option>
+            <option value="force" {{#if (eq type "force")}}selected{{/if}}>Force</option>
+            <option value="mental" {{#if (eq type "mental")}}selected{{/if}}>Mental</option>
+            <option value="piercing" {{#if (eq type "piercing")}}selected{{/if}}>Piercing</option>
+            <option value="poison" {{#if (eq type "poison")}}selected{{/if}}>Poison</option>
+            <option value="slashing" {{#if (eq type "slashing")}}selected{{/if}}>Slashing</option>
+            <option value="sonic" {{#if (eq type "sonic")}}selected{{/if}}>Sonic</option>
+            <option value="spirit" {{#if (eq type "spirit")}}selected{{/if}}>Spirit</option>
+            <option value="vitality" {{#if (eq type "vitality")}}selected{{/if}}>Vitality</option>
+            <option value="void" {{#if (eq type "void")}}selected{{/if}}>Void</option>
+            <option value="untyped" {{#if (eq type "untyped")}}selected{{/if}}>Untyped</option>
+          </select>
+          <input type="number" name="weakness.{{@index}}.value" value="{{value}}" placeholder="Value" min="1" />
+          <button type="button" data-action="removeWeakness" data-index="{{@index}}" class="remove-button">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="editor-footer">
+    <button type="button" data-action="saveStage" class="primary-button">
+      <i class="fas fa-save"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.SAVE_CHANGES'}}
+    </button>
+    <button type="button" data-action="cancelStageEdit" class="cancel-button">
+      <i class="fas fa-times"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.CANCEL'}}
+    </button>
+  </div>
+</div>

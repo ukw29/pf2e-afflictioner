@@ -1,0 +1,31 @@
+/**
+ * PF2e Afflictioner - Common Styles
+ * Base dialog styling used across all components
+ */
+
+.pf2e-afflictioner {
+  font-family: var(--font-primary);
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(40, 20, 20, 0.95) 100%);
+  border: 2px solid var(--afflictioner-border);
+  box-shadow: 0 0 20px rgba(139, 0, 0, 0.4);
+}
+
+/* Scrollbar styling for all dialogs */
+.pf2e-afflictioner ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pf2e-afflictioner ::-webkit-scrollbar-track {
+  background: var(--afflictioner-bg-dark);
+  border-radius: 4px;
+}
+
+.pf2e-afflictioner ::-webkit-scrollbar-thumb {
+  background: var(--afflictioner-primary);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.pf2e-afflictioner ::-webkit-scrollbar-thumb:hover {
+  background: var(--afflictioner-primary-hover);
+}

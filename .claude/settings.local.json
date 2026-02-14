@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(\"c:\\\\Users\\\\User\\\\AppData\\\\Local\\\\FoundryVTT\\\\Data\\\\modules\\\\pf2e-afflictioner\\\\styles\\\\base.css\":*)",
+      "Bash(perl -i -pe:*)",
+      "Bash(ls:*)",
+      "Read(//c/Users/User/AppData/Local/FoundryVTT/Data/modules/pf2e-afflictioner/**)"
     ]
   }
 }

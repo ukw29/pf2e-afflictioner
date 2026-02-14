@@ -51,6 +51,15 @@ export const DEFAULT_SETTINGS = {
     default: false,
     config: true,
     restricted: true
+  },
+  'editedAfflictions': {
+    name: 'Edited Afflictions',
+    hint: 'Stores GM-edited affliction definitions',
+    scope: 'world',
+    type: Object,
+    default: {},
+    config: false,  // Hidden from standard settings UI
+    restricted: true
   }
 };
 
