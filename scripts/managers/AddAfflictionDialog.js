@@ -126,55 +126,9 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
         return;
       }
 
-      // Add to token
-      const afflictionId = foundry.utils.randomID();
-      const combat = game.combat;
-
-      const affliction = {
-        id: afflictionId,
-        ...afflictionData,
-        currentStage: afflictionData.onset ? 0 : 1, // Start at stage 1 if no onset
-        inOnset: !!afflictionData.onset,
-        onsetRemaining: AfflictionParser.durationToSeconds(afflictionData.onset),
-        nextSaveRound: combat ? combat.round : null,
-        nextSaveInitiative: null,
-        stageStartRound: combat ? combat.round : null,
-        durationElapsed: 0,
-        treatmentBonus: 0,
-        treatedThisStage: false,
-        addedTimestamp: Date.now(),
-        addedInCombat: !!combat,
-        combatId: combat?.id
-      };
-
-      // Apply initial effects
+      // Prompt for initial save - this will handle the full affliction flow
       const { AfflictionService } = await import('../services/AfflictionService.js');
-
-      if (afflictionData.onset) {
-        // Onset: Create effect with badge 0
-        const effectUuid = await AfflictionService.createOrUpdateAfflictionEffect(
-          this.token.actor,
-          affliction,
-          { effects: '', rawText: `Onset: ${afflictionData.onset.value} ${afflictionData.onset.unit}(s)` }
-        );
-        if (effectUuid) {
-          affliction.appliedEffectUuid = effectUuid;
-        }
-      } else if (afflictionData.stages && afflictionData.stages.length > 0) {
-        // No onset: Start at stage 1
-        const firstStage = afflictionData.stages[0];
-        if (combat && firstStage.duration) {
-          affliction.nextSaveRound = combat.round + firstStage.duration.value;
-        }
-
-        // Apply initial stage effects
-        await AfflictionService.applyStageEffects(this.token, affliction, firstStage);
-      }
-
-      await AfflictionStore.addAffliction(this.token, affliction);
-      await VisualService.addAfflictionIndicator(this.token);
-
-      ui.notifications.info(`Added ${afflictionData.name} to ${this.token.name}`);
+      await AfflictionService.promptInitialSave(this.token, afflictionData);
 
       // Close dialog
       this.close();
@@ -235,50 +189,16 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
       return;
     }
 
-    // Parse and add affliction
+    // Parse affliction
     const afflictionData = AfflictionParser.parseFromItem(item);
     if (!afflictionData) {
       ui.notifications.error('Could not parse affliction from item');
       return;
     }
 
-    // Add to token
-    const afflictionId = foundry.utils.randomID();
-    const combat = game.combat;
-
-    const affliction = {
-      id: afflictionId,
-      ...afflictionData,
-      currentStage: afflictionData.onset ? 0 : 1, // Start at stage 1 if no onset
-      inOnset: !!afflictionData.onset,
-      onsetRemaining: AfflictionParser.durationToSeconds(afflictionData.onset),
-      nextSaveRound: combat ? combat.round : null,
-      nextSaveInitiative: null,
-      stageStartRound: combat ? combat.round : null,
-      durationElapsed: 0,
-      treatmentBonus: 0,
-      treatedThisStage: false,
-      addedTimestamp: Date.now(),
-      addedInCombat: !!combat,
-      combatId: combat?.id
-    };
-
-    // If no onset, set next save based on first stage duration
-    if (!afflictionData.onset && afflictionData.stages && afflictionData.stages.length > 0) {
-      const firstStage = afflictionData.stages[0];
-      if (combat && firstStage.duration) {
-        affliction.nextSaveRound = combat.round + firstStage.duration.value;
-      }
-
-      // Apply initial stage effects
-      const { AfflictionService } = await import('../services/AfflictionService.js');
-      await AfflictionService.applyStageEffects(this.token, affliction, firstStage);
-    }
-
-    await AfflictionStore.addAffliction(this.token, affliction);
-    await VisualService.addAfflictionIndicator(this.token);
-
-    ui.notifications.info(`Added ${afflictionData.name} to ${this.token.name}`);
+    // Prompt for initial save - this will handle the full affliction flow
+    const { AfflictionService } = await import('../services/AfflictionService.js');
+    await AfflictionService.promptInitialSave(this.token, afflictionData);
 
     this.close();
   }

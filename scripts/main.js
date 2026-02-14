@@ -54,6 +54,11 @@ Hooks.once('ready', async () => {
       indicator.refresh();
     });
 
+    // Refresh when token selection changes
+    Hooks.on('controlToken', () => {
+      indicator.refresh();
+    });
+
     // Initial refresh
     indicator.refresh();
   }

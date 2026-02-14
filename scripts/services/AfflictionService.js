@@ -14,68 +14,22 @@ export class AfflictionService {
     const actor = token.actor;
     if (!actor) return;
 
-    const dialogContent = `
-      <p>${game.i18n.format('PF2E_AFFLICTIONER.DIALOG.INITIAL_SAVE_CONTENT', {
-        actorName: actor.name,
-        afflictionName: afflictionData.name
-      })}</p>
-      <p><strong>${game.i18n.format('PF2E_AFFLICTIONER.DIALOG.SAVE_DC', {
-        dc: afflictionData.dc
-      })}</strong></p>
-    `;
-
-    new Dialog({
-      title: game.i18n.format('PF2E_AFFLICTIONER.DIALOG.INITIAL_SAVE_TITLE', {
-        afflictionName: afflictionData.name
-      }),
-      content: dialogContent,
-      buttons: {
-        roll: {
-          icon: '<i class="fas fa-dice-d20"></i>',
-          label: game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.ROLL_SAVE'),
-          callback: async () => {
-            // Roll Fortitude save
-            const save = await actor.saves.fortitude.roll({ dc: afflictionData.dc });
-            await this.handleInitialSave(token, afflictionData, save.total, afflictionData.dc);
-          }
-        },
-        later: {
-          icon: '<i class="fas fa-clock"></i>',
-          label: game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.ROLL_LATER')
-        }
-      },
-      default: 'roll'
-    }).render(true);
-  }
-
-  /**
-   * Handle result of initial save
-   */
-  static async handleInitialSave(token, afflictionData, saveTotal, dc) {
-    const degree = this.calculateDegreeOfSuccess(saveTotal, dc);
-
-    if (degree === DEGREE_OF_SUCCESS.SUCCESS || degree === DEGREE_OF_SUCCESS.CRITICAL_SUCCESS) {
-      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.RESISTED', {
-        tokenName: token.name,
-        afflictionName: afflictionData.name
-      }));
-      return;
-    }
-
-    // Failure: become afflicted
+    // Create affliction in "Initial Save" state
     const afflictionId = foundry.utils.randomID();
     const combat = game.combat;
 
     const affliction = {
       id: afflictionId,
       ...afflictionData,
-      currentStage: 0, // onset stage
-      inOnset: !!afflictionData.onset,
-      onsetRemaining: AfflictionParser.durationToSeconds(afflictionData.onset),
-      nextSaveRound: combat ? combat.round : null,
-      nextSaveInitiative: combat ? combat.combatant.initiative : null,
+      currentStage: -1, // Special "Initial Save" stage
+      inOnset: false,
+      needsInitialSave: true,
+      onsetRemaining: 0,
+      nextSaveRound: null,
+      nextSaveInitiative: null,
       stageStartRound: combat ? combat.round : null,
       durationElapsed: 0,
+      nextSaveTimestamp: null,
       treatmentBonus: 0,
       treatedThisStage: false,
       addedTimestamp: Date.now(),
@@ -83,31 +37,165 @@ export class AfflictionService {
       combatId: combat?.id
     };
 
-    // Calculate next save timing
-    if (afflictionData.onset) {
-      // Save happens after onset expires
-      const onsetRounds = Math.ceil(affliction.onsetRemaining / 6);
-      affliction.nextSaveRound = combat.round + onsetRounds;
-    } else {
-      // No onset - go straight to stage 1
-      const firstStage = afflictionData.stages[0];
-      affliction.currentStage = 1;
-      affliction.inOnset = false;
-      affliction.nextSaveRound = combat.round + firstStage.duration.value;
-
-      // Apply stage 1 effects
-      await this.applyStageEffects(token, affliction, firstStage);
-    }
-
+    // Add affliction to store
     await AfflictionStore.addAffliction(token, affliction);
 
     // Add visual indicator
     const { VisualService } = await import('./VisualService.js');
     await VisualService.addAfflictionIndicator(token);
 
+    // Create initial save effect
+    const effectUuid = await this.createOrUpdateAfflictionEffect(
+      token.actor,
+      affliction,
+      { effects: '', rawText: 'Awaiting initial save' }
+    );
+    if (effectUuid) {
+      affliction.appliedEffectUuid = effectUuid;
+      await AfflictionStore.updateAffliction(token, affliction.id, {
+        appliedEffectUuid: effectUuid
+      });
+    }
+
+    // Build chat message content
+    const content = `
+      <div class="pf2e-afflictioner-save-request">
+        <h3><i class="fas fa-biohazard"></i> ${afflictionData.name} - Initial Save</h3>
+        <p><strong>${actor.name}</strong> has been exposed to <strong>${afflictionData.name}</strong></p>
+        <p>Make a <strong>Fortitude save (DC ${afflictionData.dc})</strong> to resist the affliction</p>
+        <hr>
+        <button class="affliction-roll-initial-save"
+                data-token-id="${token.id}"
+                data-affliction-id="${afflictionId}"
+                data-dc="${afflictionData.dc}"
+                style="width: 100%; padding: 8px; margin-top: 10px;">
+          <i class="fas fa-dice-d20"></i> Roll Fortitude Save
+        </button>
+      </div>
+    `;
+
+    // Create chat message
+    await ChatMessage.create({
+      content: content,
+      speaker: ChatMessage.getSpeaker({ token: token }),
+      whisper: actor.hasPlayerOwner ? game.users.filter(u => actor.testUserPermission(u, 'OWNER')).map(u => u.id) : []
+    });
+  }
+
+  /**
+   * Handle result of initial save
+   */
+  static async handleInitialSave(token, affliction, saveTotal, dc) {
+    const degree = this.calculateDegreeOfSuccess(saveTotal, dc);
+
+    if (degree === DEGREE_OF_SUCCESS.SUCCESS || degree === DEGREE_OF_SUCCESS.CRITICAL_SUCCESS) {
+      // Success: Remove the affliction
+      const oldStageData = null; // No stage data for initial save
+      await AfflictionStore.removeAffliction(token, affliction.id);
+      await this.removeStageEffects(token, affliction, oldStageData, null);
+
+      // Remove visual indicator if no more afflictions
+      const remainingAfflictions = AfflictionStore.getAfflictions(token);
+      if (Object.keys(remainingAfflictions).length === 0) {
+        const { VisualService } = await import('./VisualService.js');
+        await VisualService.removeAfflictionIndicator(token);
+      }
+
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.RESISTED', {
+        tokenName: token.name,
+        afflictionName: affliction.name
+      }));
+      return;
+    }
+
+    // Failure or Critical Failure: advance to onset or stage
+    const combat = game.combat;
+
+    // Determine starting stage based on onset and degree of success
+    let startingStage = 0; // onset stage
+    let stageAdvancement = 1; // How many stages to advance after onset (1 for failure, 2 for crit failure)
+
+    if (affliction.onset) {
+      // Has onset: Start in onset (stage 0), but remember how many stages to advance after
+      startingStage = 0;
+      stageAdvancement = degree === DEGREE_OF_SUCCESS.CRITICAL_FAILURE ? 2 : 1;
+      console.log(`PF2e Afflictioner | Initial save degree: ${degree}, stageAdvancement set to: ${stageAdvancement}`);
+    } else {
+      // No onset: Failure = stage 1, Critical Failure = stage 2
+      startingStage = degree === DEGREE_OF_SUCCESS.CRITICAL_FAILURE ? 2 : 1;
+      stageAdvancement = 1; // Not used when no onset
+    }
+
+    // Update affliction from initial save state to onset/stage
+    const updates = {
+      currentStage: startingStage,
+      needsInitialSave: false,
+      inOnset: !!affliction.onset,
+      onsetRemaining: AfflictionParser.durationToSeconds(affliction.onset),
+      stageAdvancement: stageAdvancement, // Store for onset completion
+      nextSaveRound: combat ? combat.round : null,
+      nextSaveInitiative: combat ? combat.combatant?.initiative : null,
+      stageStartRound: combat ? combat.round : null,
+      nextSaveTimestamp: null
+    };
+
+    console.log(`PF2e Afflictioner | Updates object:`, updates);
+
+    // Calculate next save timing and apply effects
+    if (affliction.onset) {
+      // Has onset: Save happens after onset expires
+      if (combat) {
+        const onsetRounds = Math.ceil(updates.onsetRemaining / 6);
+        updates.nextSaveRound = combat.round + onsetRounds;
+      } else {
+        updates.nextSaveTimestamp = game.time.worldTime + updates.onsetRemaining;
+      }
+
+      // Update affliction
+      await AfflictionStore.updateAffliction(token, affliction.id, updates);
+      const updatedAffliction = AfflictionStore.getAffliction(token, affliction.id);
+      console.log(`PF2e Afflictioner | After update, affliction.stageAdvancement:`, updatedAffliction.stageAdvancement);
+
+      // Update effect to show onset
+      await this.createOrUpdateAfflictionEffect(
+        token.actor,
+        updatedAffliction,
+        { effects: '', rawText: `Onset: ${affliction.onset.value} ${affliction.onset.unit}(s)` }
+      );
+    } else {
+      // No onset: Go directly to stage 1 or 2
+      const initialStage = affliction.stages[startingStage - 1];
+      if (!initialStage) {
+        ui.notifications.error(`Stage ${startingStage} not found for ${affliction.name}`);
+        return;
+      }
+
+      // Set next save timing
+      if (combat) {
+        const durationSeconds = AfflictionParser.durationToSeconds(initialStage.duration);
+        const durationRounds = Math.ceil(durationSeconds / 6);
+        updates.nextSaveRound = combat.round + durationRounds;
+      } else {
+        const durationSeconds = AfflictionParser.durationToSeconds(initialStage.duration);
+        updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
+      }
+
+      // Update affliction
+      await AfflictionStore.updateAffliction(token, affliction.id, updates);
+      const updatedAffliction = AfflictionStore.getAffliction(token, affliction.id);
+
+      // Apply initial stage effects
+      await this.applyStageEffects(token, updatedAffliction, initialStage);
+
+      // If initial stage has damage, post damage to chat
+      if (initialStage.damage && initialStage.damage.length > 0) {
+        await this.promptDamage(token, updatedAffliction);
+      }
+    }
+
     ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.AFFLICTED', {
       tokenName: token.name,
-      afflictionName: afflictionData.name
+      afflictionName: affliction.name
     }));
   }
 
@@ -120,7 +208,7 @@ export class AfflictionService {
     for (const [id, affliction] of Object.entries(afflictions)) {
       // Check if save is due this round on this initiative
       if (affliction.nextSaveRound === combat.round &&
-          affliction.nextSaveInitiative === combat.combatant.initiative) {
+        affliction.nextSaveInitiative === combat.combatant.initiative) {
         await this.promptSave(token, affliction);
       }
     }
@@ -149,6 +237,62 @@ export class AfflictionService {
     // Create chat message
     await ChatMessage.create({
       content: content,
+      speaker: ChatMessage.getSpeaker({ token: token }),
+      whisper: actor.hasPlayerOwner ? game.users.filter(u => actor.testUserPermission(u, 'OWNER')).map(u => u.id) : []
+    });
+  }
+
+  /**
+   * Prompt for stage damage via chat message
+   */
+  static async promptDamage(token, affliction) {
+    const actor = token.actor;
+
+    // Get current stage
+    const currentStageIndex = affliction.currentStage - 1;
+    if (currentStageIndex < 0 || !affliction.stages || !affliction.stages[currentStageIndex]) {
+      ui.notifications.warn('No active stage to roll damage for');
+      return;
+    }
+
+    const stage = affliction.stages[currentStageIndex];
+    if (!stage.damage || stage.damage.length === 0) {
+      ui.notifications.info(`${affliction.name} Stage ${affliction.currentStage} has no damage to roll`);
+      return;
+    }
+
+    // Build damage with @Damage enrichment for clickable damage links
+    const damageLinks = stage.damage.map(d => {
+      const formula = typeof d === 'string' ? d : d.formula;
+      const type = typeof d === 'object' ? d.type : 'untyped';
+
+      // Clean formula
+      const cleanFormula = formula.trim().replace(/\[.*$/, '');
+
+      // Create @Damage enrichment
+      return type !== 'untyped'
+        ? `@Damage[${cleanFormula}[${type}]]`
+        : `@Damage[${cleanFormula}]`;
+    }).join(', ');
+
+    // Build chat message content
+    let content = `
+      <div class="pf2e-afflictioner-save-request">
+        <h3><i class="fas fa-heart-broken"></i> ${affliction.name} Damage</h3>
+        <p><strong>${actor.name}</strong> takes damage from affliction</p>
+        <p>Current Stage: ${affliction.currentStage}</p>
+        <p><strong>Damage:</strong> ${damageLinks}</p>
+        <p><em>Click the damage link above to roll and apply</em></p>
+        <hr>
+        <button class="affliction-target-token" data-token-id="${token.id}" style="width: 100%; padding: 8px; margin-top: 10px; background: #2a4a7c; border: 2px solid #3a5a8c; color: white; border-radius: 6px; cursor: pointer;">
+          <i class="fas fa-crosshairs"></i> Target ${actor.name}
+        </button>
+      </div>
+    `;
+
+    // Create chat message
+    await ChatMessage.create({
+      content,
       speaker: ChatMessage.getSpeaker({ token: token }),
       whisper: actor.hasPlayerOwner ? game.users.filter(u => actor.testUserPermission(u, 'OWNER')).map(u => u.id) : []
     });
@@ -185,8 +329,11 @@ export class AfflictionService {
 
     // Stage 0 = cured (only possible from automatic saves)
     if (newStage === 0) {
+      // Get old stage data before removing
+      const oldStageData = affliction.stages[affliction.currentStage - 1];
+
       await AfflictionStore.removeAffliction(token, affliction.id);
-      await this.removeStageEffects(token, affliction);
+      await this.removeStageEffects(token, affliction, oldStageData, null);
 
       // Remove visual indicator
       const { VisualService } = await import('./VisualService.js');
@@ -232,10 +379,24 @@ export class AfflictionService {
       updates.onsetRemaining = 0;
     }
 
-    // Only update round-based tracking if in combat
-    if (combat && newStageData) {
-      updates.nextSaveRound = combat.round + (newStageData.duration?.value || 1);
-      updates.stageStartRound = combat.round;
+    // Update tracking based on combat state
+    if (newStageData) {
+      if (combat) {
+        // In combat - use round-based tracking
+        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        const durationRounds = Math.ceil(durationSeconds / 6);
+        updates.nextSaveRound = combat.round + durationRounds;
+        updates.stageStartRound = combat.round;
+      } else {
+        // Out of combat - use world time timestamp tracking
+        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
+        console.log('AfflictionService | Setting nextSaveTimestamp for stage change:', {
+          currentWorldTime: game.time.worldTime,
+          durationSeconds,
+          nextSaveTimestamp: updates.nextSaveTimestamp
+        });
+      }
     }
 
     await AfflictionStore.updateAffliction(token, affliction.id, updates);
@@ -243,12 +404,17 @@ export class AfflictionService {
     // Re-fetch updated affliction for correct badge value
     const updatedAffliction = AfflictionStore.getAffliction(token, affliction.id);
 
-    // Remove old stage effects (passing new stage to preserve overlapping conditions)
-    await this.removeStageEffects(token, updatedAffliction, newStageData);
+    // Remove old stage effects (passing old and new stage data)
+    await this.removeStageEffects(token, updatedAffliction, oldStageData, newStageData);
 
     // Apply new stage effects with updated affliction
     if (newStageData) {
       await this.applyStageEffects(token, updatedAffliction, newStageData);
+
+      // If new stage has damage, prompt immediately
+      if (newStageData.damage && newStageData.damage.length > 0) {
+        await this.promptDamage(token, updatedAffliction);
+      }
     }
 
     ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.STAGE_CHANGED', {
@@ -273,15 +439,9 @@ export class AfflictionService {
       return;
     }
 
-    // Apply damage
-    for (const damageStr of stage.damage || []) {
-      try {
-        const damageRoll = await new Roll(damageStr).evaluate({ async: true });
-        await actor.applyDamage({ damage: damageRoll.total, type: 'untyped' });
-      } catch (error) {
-        console.error('PF2e Afflictioner | Error applying damage:', error);
-      }
-    }
+    // Note: Damage is NOT auto-applied on stage change
+    // In PF2e, affliction damage is taken over time during the stage, not when changing stages
+    // The GM should use the "Roll Damage" button to apply damage when appropriate
 
     // Apply conditions (SET to specific value, not increment)
     for (const condition of stage.conditions || []) {
@@ -413,6 +573,7 @@ export class AfflictionService {
 
     // Create new effect
     try {
+      // Build rules from bonuses
       const rules = bonuses.map(bonus => {
         const rule = {
           key: 'FlatModifier',
@@ -424,6 +585,23 @@ export class AfflictionService {
         if (bonus.predicate) rule.predicate = bonus.predicate;
         return rule;
       });
+
+      // Add weakness rules if present in stage
+      if (stage.weakness && stage.weakness.length > 0) {
+        console.log('AfflictionService | Adding weakness rules:', stage.weakness);
+        for (const weak of stage.weakness) {
+          const weaknessRule = {
+            key: 'Weakness',
+            type: weak.type,
+            value: weak.value,
+            label: `${affliction.name} (Weakness)`
+          };
+          console.log('AfflictionService | Weakness rule:', weaknessRule);
+          rules.push(weaknessRule);
+        }
+      }
+
+      console.log('AfflictionService | Final rules array:', rules);
 
       // Get source item image
       let itemImg = 'icons/svg/hazard.svg'; // default
@@ -487,6 +665,7 @@ export class AfflictionService {
       const effect = await fromUuid(affliction.appliedEffectUuid);
       if (!effect) return null;
 
+      // Build rules from bonuses
       const rules = bonuses.map(bonus => {
         const rule = {
           key: 'FlatModifier',
@@ -498,6 +677,23 @@ export class AfflictionService {
         if (bonus.predicate) rule.predicate = bonus.predicate;
         return rule;
       });
+
+      // Add weakness rules if present in stage
+      if (stage.weakness && stage.weakness.length > 0) {
+        console.log('AfflictionService | Updating with weakness rules:', stage.weakness);
+        for (const weak of stage.weakness) {
+          const weaknessRule = {
+            key: 'Weakness',
+            type: weak.type,
+            value: weak.value,
+            label: `${affliction.name} (Weakness)`
+          };
+          console.log('AfflictionService | Weakness rule for update:', weaknessRule);
+          rules.push(weaknessRule);
+        }
+      }
+
+      console.log('AfflictionService | Update rules array:', rules);
 
       // Build updated stage description
       const stageDesc = affliction.inOnset
@@ -522,21 +718,45 @@ export class AfflictionService {
 
   /**
    * Remove stage effects (cleanup conditions and effect items)
-   * @param {Object} newStageData - New stage to transition to (to preserve overlapping conditions)
+   * @param {Object} oldStageData - Old stage being transitioned from (null if removing entirely)
+   * @param {Object} newStageData - New stage to transition to (null if removing entirely)
    */
-  static async removeStageEffects(token, affliction, newStageData = null) {
+  static async removeStageEffects(token, affliction, oldStageData = null, newStageData = null) {
     const actor = token.actor;
     if (!actor) return;
 
     // Only delete affliction effect if removing affliction entirely (no new stage)
-    if (!newStageData && affliction.appliedEffectUuid) {
-      try {
-        const effect = await fromUuid(affliction.appliedEffectUuid);
-        if (effect) {
-          await effect.delete();
+    if (!newStageData) {
+      let effectRemoved = false;
+
+      // Try to remove by UUID first
+      if (affliction.appliedEffectUuid) {
+        try {
+          const effect = await fromUuid(affliction.appliedEffectUuid);
+          if (effect) {
+            await effect.delete();
+            console.log('PF2e Afflictioner | Removed effect by UUID:', affliction.appliedEffectUuid);
+            effectRemoved = true;
+          }
+        } catch (error) {
+          console.warn('PF2e Afflictioner | Could not remove effect by UUID:', error);
         }
-      } catch (error) {
-        console.error('PF2e Afflictioner | Error removing effect item:', error);
+      }
+
+      // Fallback: Search for effect by affliction ID in flags
+      if (!effectRemoved) {
+        try {
+          const effects = actor.itemTypes.effect.filter(e =>
+            e.flags['pf2e-afflictioner']?.afflictionId === affliction.id
+          );
+
+          for (const effect of effects) {
+            await effect.delete();
+            console.log('PF2e Afflictioner | Removed effect by flag search:', effect.name);
+          }
+        } catch (error) {
+          console.error('PF2e Afflictioner | Error removing effect by flag search:', error);
+        }
       }
     }
 
@@ -552,28 +772,44 @@ export class AfflictionService {
       }
     }
 
-    const currentStage = affliction.stages[affliction.currentStage - 1];
-    if (!currentStage) return;
+    // If no old stage data provided, try to get it from the affliction
+    // (This handles legacy calls where oldStageData wasn't passed)
+    const oldStage = oldStageData || affliction.stages[affliction.currentStage - 1];
+    if (!oldStage) return;
 
     // Get conditions in new stage (to preserve them)
-    const newConditions = new Set();
+    const newConditions = new Map(); // Use Map to store condition name -> value
     if (newStageData && newStageData.conditions) {
       for (const cond of newStageData.conditions) {
-        newConditions.add(cond.name.toLowerCase());
+        newConditions.set(cond.name.toLowerCase(), cond.value || null);
       }
     }
 
-    // Remove conditions that don't exist in new stage
-    for (const condition of currentStage.conditions || []) {
+    // Remove or update conditions from old stage
+    for (const condition of oldStage.conditions || []) {
       const conditionSlug = condition.name.toLowerCase();
 
-      // Skip if condition exists in new stage
-      if (newConditions.has(conditionSlug)) continue;
+      // If condition doesn't exist in new stage, remove it entirely
+      if (!newConditions.has(conditionSlug)) {
+        try {
+          await actor.decreaseCondition(conditionSlug, { forceRemove: true });
+        } catch (error) {
+          console.error('PF2e Afflictioner | Error removing condition:', error);
+        }
+      } else {
+        // Condition exists in both stages - check if value changed
+        const newValue = newConditions.get(conditionSlug);
+        const oldValue = condition.value || null;
 
-      try {
-        await actor.decreaseCondition(conditionSlug, { forceRemove: true });
-      } catch (error) {
-        console.error('PF2e Afflictioner | Error removing condition:', error);
+        // If value decreased or was removed, update the condition
+        if (oldValue !== null && (newValue === null || newValue < oldValue)) {
+          try {
+            // Remove the old condition entirely, it will be re-added with new value
+            await actor.decreaseCondition(conditionSlug, { forceRemove: true });
+          } catch (error) {
+            console.error('PF2e Afflictioner | Error updating condition:', error);
+          }
+        }
       }
     }
   }
@@ -589,16 +825,35 @@ export class AfflictionService {
         const newRemaining = affliction.onsetRemaining - 6; // 6 seconds per round
 
         if (newRemaining <= 0) {
-          // Onset complete - advance to stage 1
-          const firstStage = affliction.stages[0];
+          // Onset complete - advance to stage based on initial save result
+          // stageAdvancement: 1 for failure, 2 for critical failure
+          console.log(`PF2e Afflictioner | Onset complete for ${affliction.name}, stageAdvancement:`, affliction.stageAdvancement);
+          const targetStage = affliction.stageAdvancement || 1;
+          console.log(`PF2e Afflictioner | Target stage:`, targetStage);
+          const stageData = affliction.stages[targetStage - 1];
+
+          if (!stageData) {
+            console.error(`PF2e Afflictioner | Stage ${targetStage} not found for ${affliction.name}`);
+            return;
+          }
+
+          const durationSeconds = AfflictionParser.durationToSeconds(stageData.duration);
+          const durationRounds = Math.ceil(durationSeconds / 6);
           await AfflictionStore.updateAffliction(token, id, {
             inOnset: false,
-            currentStage: 1,
+            currentStage: targetStage,
             onsetRemaining: 0,
-            nextSaveRound: combat.round + firstStage.duration.value
+            nextSaveRound: combat.round + durationRounds
           });
 
-          await this.applyStageEffects(token, affliction, firstStage);
+          // Get updated affliction after stage change
+          const updatedAffliction = AfflictionStore.getAffliction(token, id);
+          await this.applyStageEffects(token, updatedAffliction, stageData);
+
+          // If stage has damage, post damage to chat
+          if (stageData.damage && stageData.damage.length > 0) {
+            await this.promptDamage(token, updatedAffliction);
+          }
         } else {
           await AfflictionStore.updateAffliction(token, id, {
             onsetRemaining: newRemaining

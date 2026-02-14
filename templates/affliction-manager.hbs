@@ -13,13 +13,13 @@
               <h4>
                 {{name}} ({{type}})
                 {{#if hasWarning}}
-                  <i class="fas fa-exclamation-triangle" style="color: #ff6b00;" title="{{localize 'PF2E_AFFLICTIONER.MANAGER.MANUAL_HANDLING_REQUIRED'}}"></i>
+                  <i class="fas fa-exclamation-triangle" style="color: #ff6b00;" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.MANUAL_HANDLING_REQUIRED'}}"></i>
                 {{/if}}
               </h4>
               <div class="affliction-details">
                 <span class="stage">
                   {{stageDisplay}}
-                  <i class="fas fa-info-circle stage-info" title="{{stageTooltip}}"></i>
+                  <i class="fas fa-info-circle stage-info" data-tooltip="{{stageTooltip}}"></i>
                 </span>
                 <span class="next-save">{{localize 'PF2E_AFFLICTIONER.MANAGER.NEXT_SAVE'}}: {{nextSaveDisplay}}</span>
                 <span class="treatment">{{treatmentDisplay}}</span>
@@ -29,27 +29,34 @@
             <div class="affliction-actions">
               <button type="button" data-action="rollSave"
                       data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_SAVE'}}">
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_SAVE'}}">
                 <i class="fas fa-dice-d20"></i>
               </button>
+              {{#if hasDamage}}
+              <button type="button" data-action="rollDamage"
+                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_DAMAGE'}}">
+                <i class="fas fa-heart-broken"></i>
+              </button>
+              {{/if}}
               <button type="button" data-action="treatAffliction"
                       data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.TREAT'}}">
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.TREAT'}}">
                 <i class="fas fa-medkit"></i>
               </button>
               <button type="button" data-action="progressStage"
                       data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.PROGRESS_STAGE'}}">
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.PROGRESS_STAGE'}}">
                 <i class="fas fa-arrow-up"></i>
               </button>
               <button type="button" data-action="regressStage"
                       data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.REGRESS_STAGE'}}">
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.REGRESS_STAGE'}}">
                 <i class="fas fa-arrow-down"></i>
               </button>
               <button type="button" data-action="removeAffliction"
                       data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      title="{{localize 'PF2E_AFFLICTIONER.MANAGER.REMOVE_AFFLICTION'}}">
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.REMOVE_AFFLICTION'}}">
                 <i class="fas fa-times"></i>
               </button>
             </div>
@@ -62,8 +69,13 @@
   {{/if}}
 
   <div class="manager-footer">
-    <button type="button" data-action="addAffliction">
+    <button type="button" data-action="addAffliction" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ADD_AFFLICTION'}}">
       <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.MANAGER.ADD_AFFLICTION'}}
     </button>
+    {{#if hasAfflictions}}
+    <button type="button" data-action="clearAllAfflictions" class="clear-all-button" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL'}}">
+      <i class="fas fa-trash-alt"></i> {{localize 'PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL'}}
+    </button>
+    {{/if}}
   </div>
 </div>
