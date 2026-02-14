@@ -6,7 +6,8 @@ export const MODULE_ID = 'pf2e-afflictioner';
 
 export const AFFLICTION_TYPES = {
   POISON: 'poison',
-  DISEASE: 'disease'
+  DISEASE: 'disease',
+  CURSE: 'curse'
 };
 
 export const DEGREE_OF_SUCCESS = {
@@ -27,7 +28,7 @@ export const DEFAULT_SETTINGS = {
   },
   'autoDetectAfflictions': {
     name: 'Auto-Detect Afflictions',
-    hint: 'Automatically detect poison/disease items and prompt for initial saves',
+    hint: 'Automatically detect poison/disease/curse items and prompt for initial saves',
     scope: 'world',
     type: Boolean,
     default: true,

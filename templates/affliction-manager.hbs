@@ -12,6 +12,12 @@
             <div class="affliction-info">
               <h4>
                 {{name}} ({{type}})
+                {{#if isVirulent}}
+                  <span style="color: #c45500; font-size: 0.85em; font-weight: normal;" data-tooltip="Success has no effect, critical success reduces by 1 stage">[Virulent]</span>
+                {{/if}}
+                {{#if hasMultipleExposure}}
+                  <span style="color: #0066cc; font-size: 0.85em; font-weight: normal;" data-tooltip="Re-exposure increases stage by {{multipleExposureIncrease}}">[Multiple Exposure +{{multipleExposureIncrease}}]</span>
+                {{/if}}
                 {{#if hasWarning}}
                   <i class="fas fa-exclamation-triangle" style="color: #ff6b00;" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.MANUAL_HANDLING_REQUIRED'}}"></i>
                 {{/if}}

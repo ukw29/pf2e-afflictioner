@@ -11,12 +11,16 @@ export class AfflictionParser {
    * @returns {Object|null} parsed affliction data
    */
   static parseFromItem(item) {
-    // Check for poison/disease trait
+    // Check for poison/disease/curse trait
     const traits = item.system?.traits?.value || [];
     const type = traits.includes('poison') ? 'poison' :
-                 traits.includes('disease') ? 'disease' : null;
+                 traits.includes('disease') ? 'disease' :
+                 traits.includes('curse') ? 'curse' : null;
 
     if (!type) return null;
+
+    // Check for virulent trait
+    const isVirulent = traits.includes('virulent');
 
     // Check for structured affliction data first (PF2e native afflictions)
     if (item.system?.stage) {
@@ -35,6 +39,8 @@ export class AfflictionParser {
       onset: this.extractOnset(description),
       stages: stages,
       maxDuration: this.extractMaxDuration(description),
+      isVirulent: isVirulent,
+      multipleExposure: this.extractMultipleExposure(description),
       sourceItemUuid: item.uuid
     };
   }
@@ -45,6 +51,10 @@ export class AfflictionParser {
   static parseStructuredAffliction(item) {
     const stageData = item.system?.stage || 1;
     const dc = item.system?.save?.dc || item.system?.save?.value || game.settings.get('pf2e-afflictioner', 'defaultDC');
+
+    // Check for virulent trait
+    const traits = item.system?.traits?.value || [];
+    const isVirulent = traits.includes('virulent');
 
     // Build stages array from structured data
     const stages = [];
@@ -66,13 +76,23 @@ export class AfflictionParser {
       }
     }
 
+    const description = item.system?.description?.value || '';
+
+    // Determine type from traits
+    const itemTraits = item.system?.traits?.value || [];
+    const afflictionType = itemTraits.includes('poison') ? 'poison' :
+                          itemTraits.includes('disease') ? 'disease' :
+                          itemTraits.includes('curse') ? 'curse' : 'poison';
+
     return {
       name: item.name,
-      type: item.system?.traits?.value?.includes('poison') ? 'poison' : 'disease',
+      type: afflictionType,
       dc: dc,
       onset: item.system?.onset ? this.parseDuration(item.system.onset) : null,
       stages: stages,
       maxDuration: item.system?.maxDuration ? this.parseDuration(item.system.maxDuration) : null,
+      isVirulent: isVirulent,
+      multipleExposure: this.extractMultipleExposure(description),
       sourceItemUuid: item.uuid
     };
   }
@@ -438,5 +458,61 @@ export class AfflictionParser {
     const unit = duration.unit.toLowerCase();
     const multiplier = DURATION_MULTIPLIERS[unit] || DURATION_MULTIPLIERS['round'];
     return duration.value * multiplier;
+  }
+
+  /**
+   * Extract multiple exposure rules from description
+   * Parses patterns like:
+   * - "Each time you're exposed while already afflicted, you increase the stage by 1"
+   * - "Multiple exposures increase the stage by 1"
+   * - "Each additional exposure advances the stage by 2"
+   *
+   * Returns object with:
+   * - enabled: boolean
+   * - stageIncrease: number of stages to advance on re-exposure
+   * - minStage: minimum stage required for re-exposure to apply (null if any stage)
+   * - rawText: original text for reference
+   */
+  static extractMultipleExposure(description) {
+    if (!description) return null;
+
+    // Strip HTML tags for cleaner matching
+    const plainText = description.replace(/<[^>]+>/g, ' ');
+
+    // Pattern 1: "each time you're exposed" or "each additional exposure"
+    const pattern1 = /(?:each\s+(?:time\s+you(?:'re|are)\s+exposed|additional\s+exposure)).*?(?:increase|advance).*?(?:stage|stages)\s*(?:by\s*)?(\d+)/i;
+    const match1 = plainText.match(pattern1);
+
+    if (match1) {
+      const stageIncrease = parseInt(match1[1]) || 1;
+
+      // Check if there's a minimum stage requirement
+      const minStageMatch = plainText.match(/(?:while|at|when)\s+(?:already\s+)?(?:at\s+)?stage\s+(\d+)/i);
+      const minStage = minStageMatch ? parseInt(minStageMatch[1]) : null;
+
+      return {
+        enabled: true,
+        stageIncrease: stageIncrease,
+        minStage: minStage,
+        rawText: match1[0]
+      };
+    }
+
+    // Pattern 2: "multiple exposures" variant
+    const pattern2 = /multiple\s+exposures.*?(?:increase|advance).*?(?:stage|stages)\s*(?:by\s*)?(\d+)/i;
+    const match2 = plainText.match(pattern2);
+
+    if (match2) {
+      const stageIncrease = parseInt(match2[1]) || 1;
+
+      return {
+        enabled: true,
+        stageIncrease: stageIncrease,
+        minStage: null,
+        rawText: match2[0]
+      };
+    }
+
+    return null;
   }
 }

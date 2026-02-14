@@ -1,13 +1,20 @@
 # PF2e Afflictioner
 
-Automated affliction (poison/disease) manager for Pathfinder 2e in FoundryVTT.
+Automated affliction (poison/disease/curse) manager for Pathfinder 2e in FoundryVTT.
 
 ## Features
 
-- **Auto-detection**: Automatically detects when poison/disease items are used and prompts for initial saves
+- **Auto-detection**: Automatically detects when poison/disease/curse items are used and prompts for initial saves
+- **Virulent Trait**: Properly implements virulent trait (requires two consecutive successes to reduce stage by 1, critical success reduces by 1 instead of 2)
+- **Multiple Exposure**:
+
+  - **Poisons**: New exposure increases stage by 1 (or 2 on crit fail) without affecting duration
+  - **Curses/Diseases**: Multiple exposures have no effect (unless custom rules specified)
+  - **Custom Rules**: Parses and applies affliction-specific multiple exposure rules from item descriptions
+
 - **Stage Tracking**: Tracks affliction stages, onset, and duration per token
 - **Automatic Saves**: Prompts for saves on the correct initiative based on stage duration
-- **Treatment Support**: Integrates "Treat Poison/Disease" Medicine checks with bonuses
+- **Treatment Support**: Integrates "Treat Poison/Disease/Curse" Medicine checks with bonuses
 - **Visual Indicators**: Shows biohazard icon on afflicted tokens
 - **Manager UI**: Comprehensive UI for manual management of afflictions
 - **Manual Handling**: Flags stages with complex instructions for GM review
@@ -16,7 +23,7 @@ Automated affliction (poison/disease) manager for Pathfinder 2e in FoundryVTT.
 
 ### Automatic Workflow
 
-1. GM uses a poison/disease item in combat (drag to hotbar and use)
+1. GM uses a poison/disease/curse item in combat (drag to hotbar and use)
 2. Target token(s) with the affliction
 3. Module prompts for initial Fortitude saves
 4. On failure, affliction is added to token with visual indicator

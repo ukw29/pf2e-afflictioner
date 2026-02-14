@@ -24,6 +24,31 @@ export class AfflictionService {
       afflictionData = AfflictionEditorService.applyEditedDefinition(afflictionData, editedDef);
     }
 
+    // Check for existing affliction with the same name (multiple exposure)
+    const existingAffliction = this.findExistingAffliction(token, afflictionData.name);
+
+    if (existingAffliction) {
+      // Handle multiple exposure based on affliction type
+      if (afflictionData.multipleExposure?.enabled) {
+        // Custom multiple exposure rules (from description)
+        await this.handleMultipleExposure(token, existingAffliction, afflictionData);
+        return;
+      } else if (afflictionData.type === 'poison') {
+        // Default poison behavior: new exposure affects stage based on initial save
+        // We continue with normal initial save, but flag it as re-exposure
+        afflictionData._isReExposure = true;
+        afflictionData._existingAfflictionId = existingAffliction.id;
+      } else {
+        // Curses and diseases: multiple exposures have no effect
+        ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.MULTIPLE_EXPOSURE_NO_EFFECT_DEFAULT', {
+          tokenName: token.name,
+          afflictionName: afflictionData.name,
+          type: afflictionData.type
+        }));
+        return;
+      }
+    }
+
     // Create affliction in "Initial Save" state
     const afflictionId = foundry.utils.randomID();
     const combat = game.combat;
@@ -123,9 +148,11 @@ export class AfflictionService {
    */
   static async handleInitialSave(token, affliction, saveTotal, dc) {
     const degree = this.calculateDegreeOfSuccess(saveTotal, dc);
+    const isReExposure = affliction._isReExposure;
+    const existingAfflictionId = affliction._existingAfflictionId;
 
     if (degree === DEGREE_OF_SUCCESS.SUCCESS || degree === DEGREE_OF_SUCCESS.CRITICAL_SUCCESS) {
-      // Success: Remove the affliction
+      // Success: Remove the affliction (or the temporary re-exposure tracking)
       const oldStageData = null; // No stage data for initial save
       await AfflictionStore.removeAffliction(token, affliction.id);
       await this.removeStageEffects(token, affliction, oldStageData, null);
@@ -144,7 +171,24 @@ export class AfflictionService {
       return;
     }
 
-    // Failure or Critical Failure: advance to onset or stage
+    // Failure or Critical Failure
+    // Check if this is a poison re-exposure
+    if (isReExposure && existingAfflictionId && affliction.type === 'poison') {
+      // Poison re-exposure: increase existing affliction's stage without affecting duration
+      const existingAffliction = AfflictionStore.getAffliction(token, existingAfflictionId);
+      if (existingAffliction) {
+        // Remove the temporary affliction created for the initial save
+        await AfflictionStore.removeAffliction(token, affliction.id);
+        await this.removeStageEffects(token, affliction, null, null);
+
+        // Increase the existing affliction's stage by 1 (failure) or 2 (critical failure)
+        const stageIncrease = degree === DEGREE_OF_SUCCESS.CRITICAL_FAILURE ? 2 : 1;
+        await this.handlePoisonReExposure(token, existingAffliction, stageIncrease);
+        return;
+      }
+    }
+
+    // Normal affliction behavior (not a re-exposure)
     const combat = game.combat;
 
     // Determine starting stage based on onset and degree of success
@@ -267,10 +311,11 @@ export class AfflictionService {
     // Build player message content (may hide DC)
     const playerContent = `
       <div class="pf2e-afflictioner-save-request">
-        <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save Required</h3>
+        <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save Required${affliction.isVirulent ? ' <span style="color: #c45500; font-size: 0.9em;">(Virulent)</span>' : ''}</h3>
         <p><strong>${actor.name}</strong> must make a <strong>Fortitude save</strong></p>
         ${showDCToPlayers ? `<p><strong>DC:</strong> ${affliction.dc}</p>` : ''}
         <p>Current Stage: ${affliction.currentStage}</p>
+        ${affliction.isVirulent ? `<p><em style="color: #c45500;">Virulent: Success has no effect, critical success reduces by only 1 stage</em></p>` : ''}
         ${affliction.treatmentBonus ? `<p><em>Treatment bonus active (${affliction.treatmentBonus > 0 ? '+' : ''}${affliction.treatmentBonus})</em></p>` : ''}
         <hr>
         <button class="affliction-roll-save" data-token-id="${token.id}" data-affliction-id="${affliction.id}" data-dc="${affliction.dc}" style="width: 100%; padding: 8px; margin-top: 10px;">
@@ -298,9 +343,10 @@ export class AfflictionService {
       if (!showDCToPlayers && actor.hasPlayerOwner) {
         const gmContent = `
           <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000;">
-            <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save (GM Info)</h3>
+            <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save (GM Info)${affliction.isVirulent ? ' <span style="color: #c45500;">(Virulent)</span>' : ''}</h3>
             <p><strong>DC:</strong> ${affliction.dc}</p>
             <p>Current Stage: ${affliction.currentStage}</p>
+            ${affliction.isVirulent ? `<p><em style="color: #c45500;">Virulent: Success has no effect, critical success reduces by only 1 stage</em></p>` : ''}
             ${affliction.treatmentBonus ? `<p><em>Treatment bonus: ${affliction.treatmentBonus > 0 ? '+' : ''}${affliction.treatmentBonus}</em></p>` : ''}
           </div>
         `;
@@ -380,20 +426,54 @@ export class AfflictionService {
     const combat = game.combat;
 
     let stageChange = 0;
+    let newVirulentConsecutiveSuccesses = affliction.virulentConsecutiveSuccesses || 0;
+    let showVirulentMessage = false;
 
-    switch (degree) {
-      case DEGREE_OF_SUCCESS.CRITICAL_SUCCESS:
-        stageChange = -2;
-        break;
-      case DEGREE_OF_SUCCESS.SUCCESS:
-        stageChange = -1;
-        break;
-      case DEGREE_OF_SUCCESS.FAILURE:
-        stageChange = 1;
-        break;
-      case DEGREE_OF_SUCCESS.CRITICAL_FAILURE:
-        stageChange = 2;
-        break;
+    // Virulent trait modifies save outcomes
+    if (affliction.isVirulent) {
+      switch (degree) {
+        case DEGREE_OF_SUCCESS.CRITICAL_SUCCESS:
+          stageChange = -1; // Virulent: Critical success reduces by 1 instead of 2
+          newVirulentConsecutiveSuccesses = 0; // Reset counter
+          break;
+        case DEGREE_OF_SUCCESS.SUCCESS:
+          // Virulent: Must succeed twice consecutively to reduce stage by 1
+          if (newVirulentConsecutiveSuccesses >= 1) {
+            // Second consecutive success: reduce stage by 1
+            stageChange = -1;
+            newVirulentConsecutiveSuccesses = 0; // Reset counter after reduction
+          } else {
+            // First success: no effect yet, but track it
+            stageChange = 0;
+            newVirulentConsecutiveSuccesses++;
+            showVirulentMessage = true;
+          }
+          break;
+        case DEGREE_OF_SUCCESS.FAILURE:
+          stageChange = 1;
+          newVirulentConsecutiveSuccesses = 0; // Reset counter
+          break;
+        case DEGREE_OF_SUCCESS.CRITICAL_FAILURE:
+          stageChange = 2;
+          newVirulentConsecutiveSuccesses = 0; // Reset counter
+          break;
+      }
+    } else {
+      // Normal save outcomes
+      switch (degree) {
+        case DEGREE_OF_SUCCESS.CRITICAL_SUCCESS:
+          stageChange = -2;
+          break;
+        case DEGREE_OF_SUCCESS.SUCCESS:
+          stageChange = -1;
+          break;
+        case DEGREE_OF_SUCCESS.FAILURE:
+          stageChange = 1;
+          break;
+        case DEGREE_OF_SUCCESS.CRITICAL_FAILURE:
+          stageChange = 2;
+          break;
+      }
     }
 
     // Manual operations clamp to stage 1, automatic saves can cure (stage 0)
@@ -444,7 +524,8 @@ export class AfflictionService {
     const updates = {
       currentStage: finalStage,
       treatmentBonus: 0, // reset after use
-      treatedThisStage: false
+      treatedThisStage: false,
+      virulentConsecutiveSuccesses: newVirulentConsecutiveSuccesses
     };
 
     // Clear onset flag if advancing from onset
@@ -487,6 +568,14 @@ export class AfflictionService {
       if (newStageData.damage && newStageData.damage.length > 0) {
         await this.promptDamage(token, updatedAffliction);
       }
+    }
+
+    // Show virulent consecutive success message if needed
+    if (showVirulentMessage) {
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.VIRULENT_CONSECUTIVE_SUCCESS', {
+        tokenName: token.name,
+        afflictionName: affliction.name
+      }));
     }
 
     ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.STAGE_CHANGED', {
@@ -1092,6 +1181,174 @@ export class AfflictionService {
         durationElapsed: newElapsed
       });
     }
+  }
+
+  /**
+   * Handle poison re-exposure (default behavior)
+   * Increases stage by stageIncrease without affecting duration
+   */
+  static async handlePoisonReExposure(token, existingAffliction, stageIncrease) {
+    const newStage = Math.min(
+      existingAffliction.currentStage + stageIncrease,
+      existingAffliction.stages.length
+    );
+
+    if (newStage === existingAffliction.currentStage) {
+      ui.notifications.warn(`${token.name} is already at maximum stage of ${existingAffliction.name}`);
+      return;
+    }
+
+    // Get old and new stage data
+    const oldStageData = existingAffliction.stages[existingAffliction.currentStage - 1];
+    const newStageData = existingAffliction.stages[newStage - 1];
+
+    // Update affliction stage (duration unchanged)
+    const updates = {
+      currentStage: newStage
+    };
+
+    await AfflictionStore.updateAffliction(token, existingAffliction.id, updates);
+
+    // Re-fetch updated affliction
+    const updatedAffliction = AfflictionStore.getAffliction(token, existingAffliction.id);
+
+    // Remove old stage effects and apply new ones
+    await this.removeStageEffects(token, updatedAffliction, oldStageData, newStageData);
+    if (newStageData) {
+      await this.applyStageEffects(token, updatedAffliction, newStageData);
+
+      // If new stage has damage, prompt immediately
+      if (newStageData.damage && newStageData.damage.length > 0) {
+        await this.promptDamage(token, updatedAffliction);
+      }
+    }
+
+    // Notify user
+    ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.POISON_RE_EXPOSURE', {
+      tokenName: token.name,
+      afflictionName: existingAffliction.name,
+      stageIncrease: stageIncrease
+    }));
+
+    // Create chat message
+    const content = `
+      <div class="pf2e-afflictioner-save-request" style="border-color: #8b008b;">
+        <h3><i class="fas fa-biohazard"></i> ${existingAffliction.name} - Poison Re-Exposure</h3>
+        <p><strong>${token.name}</strong> is exposed to <strong>${existingAffliction.name}</strong> again</p>
+        <p>Failed initial save: Stage increased by ${stageIncrease} (now Stage ${newStage})</p>
+        <p><em>Maximum duration unchanged</em></p>
+      </div>
+    `;
+
+    await ChatMessage.create({
+      content,
+      speaker: ChatMessage.getSpeaker({ token: token }),
+      whisper: game.users.filter(u => u.isGM).map(u => u.id)
+    });
+  }
+
+  /**
+   * Find existing affliction on token by name
+   */
+  static findExistingAffliction(token, afflictionName) {
+    const afflictions = AfflictionStore.getAfflictions(token);
+
+    for (const [id, affliction] of Object.entries(afflictions)) {
+      if (affliction.name === afflictionName) {
+        return affliction;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Handle multiple exposure to the same affliction
+   */
+  static async handleMultipleExposure(token, existingAffliction, afflictionData) {
+    const multipleExposure = afflictionData.multipleExposure;
+
+    // Check if current stage meets minimum requirement
+    if (multipleExposure.minStage !== null && existingAffliction.currentStage < multipleExposure.minStage) {
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.MULTIPLE_EXPOSURE_NO_EFFECT', {
+        tokenName: token.name,
+        afflictionName: afflictionData.name,
+        minStage: multipleExposure.minStage
+      }));
+      return;
+    }
+
+    // Advance stage by the specified amount
+    const newStage = Math.min(
+      existingAffliction.currentStage + multipleExposure.stageIncrease,
+      existingAffliction.stages.length
+    );
+
+    // Get old and new stage data
+    const oldStageData = existingAffliction.stages[existingAffliction.currentStage - 1];
+    const newStageData = existingAffliction.stages[newStage - 1];
+
+    const combat = game.combat;
+
+    // Update affliction stage
+    const updates = {
+      currentStage: newStage,
+      stageStartRound: combat ? combat.round : existingAffliction.stageStartRound
+    };
+
+    // Update save timing based on new stage
+    if (newStageData) {
+      if (combat) {
+        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        const durationRounds = Math.ceil(durationSeconds / 6);
+        updates.nextSaveRound = combat.round + durationRounds;
+        const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
+        updates.nextSaveInitiative = tokenCombatant?.initiative;
+      } else {
+        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
+      }
+    }
+
+    await AfflictionStore.updateAffliction(token, existingAffliction.id, updates);
+
+    // Re-fetch updated affliction
+    const updatedAffliction = AfflictionStore.getAffliction(token, existingAffliction.id);
+
+    // Remove old stage effects and apply new ones
+    await this.removeStageEffects(token, updatedAffliction, oldStageData, newStageData);
+    if (newStageData) {
+      await this.applyStageEffects(token, updatedAffliction, newStageData);
+
+      // If new stage has damage, prompt immediately
+      if (newStageData.damage && newStageData.damage.length > 0) {
+        await this.promptDamage(token, updatedAffliction);
+      }
+    }
+
+    // Notify user
+    ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.MULTIPLE_EXPOSURE', {
+      tokenName: token.name,
+      afflictionName: afflictionData.name,
+      stageIncrease: multipleExposure.stageIncrease,
+      newStage: newStage
+    }));
+
+    // Create chat message
+    const content = `
+      <div class="pf2e-afflictioner-save-request" style="border-color: #c45500;">
+        <h3><i class="fas fa-biohazard"></i> ${afflictionData.name} - Multiple Exposure</h3>
+        <p><strong>${token.name}</strong> is exposed to <strong>${afflictionData.name}</strong> again</p>
+        <p>Stage increased by ${multipleExposure.stageIncrease} (now Stage ${newStage})</p>
+        ${multipleExposure.rawText ? `<p><em>${multipleExposure.rawText}</em></p>` : ''}
+      </div>
+    `;
+
+    await ChatMessage.create({
+      content,
+      speaker: ChatMessage.getSpeaker({ token: token }),
+      whisper: game.users.filter(u => u.isGM).map(u => u.id)
+    });
   }
 
   /**

@@ -322,7 +322,10 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
               treatmentDisplay: this.formatTreatment(aff),
               hasWarning: aff.stages[aff.currentStage - 1]?.requiresManualHandling || false,
               hasDamage: hasDamage,
-              stageTooltip: this.formatStageTooltip(aff)
+              stageTooltip: this.formatStageTooltip(aff),
+              isVirulent: aff.isVirulent || false,
+              hasMultipleExposure: aff.multipleExposure?.enabled || false,
+              multipleExposureIncrease: aff.multipleExposure?.stageIncrease || 0
             };
           })
         });

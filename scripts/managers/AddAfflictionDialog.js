@@ -46,17 +46,17 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
   }
 
   async _prepareContext(options) {
-    // Get all items with poison/disease traits from actor
+    // Get all items with poison/disease/curse traits from actor
     const afflictionItems = [];
     if (this.token?.actor) {
       for (const item of this.token.actor.items) {
         const traits = item.system?.traits?.value || [];
-        if (traits.includes('poison') || traits.includes('disease')) {
+        if (traits.includes('poison') || traits.includes('disease') || traits.includes('curse')) {
           afflictionItems.push({
             id: item.id,
             uuid: item.uuid,
             name: item.name,
-            type: traits.includes('poison') ? 'poison' : 'disease',
+            type: traits.includes('poison') ? 'poison' : traits.includes('disease') ? 'disease' : 'curse',
             img: item.img
           });
         }
@@ -182,10 +182,10 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
     const item = await fromUuid(data.uuid);
     if (!item) return;
 
-    // Check if it has poison/disease trait
+    // Check if it has poison/disease/curse trait
     const traits = item.system?.traits?.value || [];
-    if (!traits.includes('poison') && !traits.includes('disease')) {
-      ui.notifications.warn('Item must have poison or disease trait');
+    if (!traits.includes('poison') && !traits.includes('disease') && !traits.includes('curse')) {
+      ui.notifications.warn('Item must have poison, disease, or curse trait');
       return;
     }
 

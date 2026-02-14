@@ -32,7 +32,7 @@
     "DIALOG": {
       "ADD_AFFLICTION_TITLE": "Add Affliction",
       "ADD_TO": "Add Affliction to",
-      "DROP_ITEM": "Drag and drop an item with poison or disease trait here",
+      "DROP_ITEM": "Drag and drop an item with poison, disease, or curse trait here",
       "ACTOR_ITEMS": "From Actor",
       "COMPENDIUM_ITEMS": "From Compendiums",
       "NO_ITEMS": "No affliction items found. Drag an item here or use manual entry.",
@@ -91,7 +91,7 @@
     "EDITED_MANAGER": {
       "TITLE": "Edited Afflictions",
       "NO_EDITS": "No edited afflictions found. Use the edit button in the Affliction Manager to customize afflictions.",
-      "DROP_HINT": "Drag and drop a poison or disease item here to customize it",
+      "DROP_HINT": "Drag and drop a poison, disease, or curse item here to customize it",
       "EDIT": "Edit",
       "DELETE": "Delete",
       "RESET": "Reset to Default",
@@ -112,7 +112,12 @@
       "TREATMENT_NONE": "Treatment had no effect",
       "ALREADY_TREATED": "This affliction has already been treated this stage",
       "SELECT_TOKEN": "Select a token to perform treatment",
-      "MANUAL_EFFECTS": "Stage effects require manual handling - please apply effects to {tokenName}"
+      "MANUAL_EFFECTS": "Stage effects require manual handling - please apply effects to {tokenName}",
+      "MULTIPLE_EXPOSURE": "{tokenName} is exposed to {afflictionName} again - stage increased by {stageIncrease} to stage {newStage}!",
+      "MULTIPLE_EXPOSURE_NO_EFFECT": "{tokenName} is exposed to {afflictionName} again, but current stage is too low (minimum stage {minStage} required)",
+      "MULTIPLE_EXPOSURE_NO_EFFECT_DEFAULT": "{tokenName} is exposed to {afflictionName} ({type}) again, but multiple exposures have no effect",
+      "POISON_RE_EXPOSURE": "{tokenName} is exposed to {afflictionName} again - poison stage increased by {stageIncrease}!",
+      "VIRULENT_CONSECUTIVE_SUCCESS": "{tokenName} succeeded against {afflictionName} (virulent) - one more success needed to reduce stage"
     },
     "CONFLICT": {
       "TITLE": "Import Conflicts",

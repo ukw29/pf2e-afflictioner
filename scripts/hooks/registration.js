@@ -7,7 +7,7 @@ import { AfflictionParser } from '../services/AfflictionParser.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 
 export function registerAfflictionHooks() {
-  // Damage roll hook - detect poison/disease items
+  // Damage roll hook - detect poison/disease/curse items
   Hooks.on('pf2e.rollDamage', onDamageRoll);
 
   // Chat message creation - detect strikes with afflictions
@@ -80,9 +80,9 @@ async function onCreateChatMessage(message, options, userId) {
 
   if (!item) return;
 
-  // Check if origin item has affliction (poison/disease trait)
+  // Check if origin item has affliction (poison/disease/curse trait)
   const traits = item.system?.traits?.value || [];
-  if (!traits.includes('poison') && !traits.includes('disease')) return;
+  if (!traits.includes('poison') && !traits.includes('disease') && !traits.includes('curse')) return;
 
   const afflictionData = AfflictionParser.parseFromItem(item);
   if (!afflictionData) return;
@@ -615,7 +615,7 @@ async function addApplyAfflictionButton(message, htmlElement) {
   let item = actor.items.find(i => {
     if (i.name === afflictionNote.title) {
       const traits = i.system?.traits?.value || [];
-      return traits.includes('poison') || traits.includes('disease');
+      return traits.includes('poison') || traits.includes('disease') || traits.includes('curse');
     }
     return false;
   });
@@ -684,12 +684,12 @@ async function addAfflictionDragSupport(message, htmlElement) {
   // Check if already initialized (prevent duplicate listeners)
   if (htmlElement.dataset.afflictionDragEnabled === 'true') return;
 
-  // Check if message contains an item with poison/disease trait
+  // Check if message contains an item with poison/disease/curse trait
   const item = message.getAssociatedItem?.();
   if (!item) return;
 
   const traits = item.system?.traits?.value || [];
-  if (!traits.includes('poison') && !traits.includes('disease')) return;
+  if (!traits.includes('poison') && !traits.includes('disease') && !traits.includes('curse')) return;
 
   // Parse affliction data
   const afflictionData = AfflictionParser.parseFromItem(item);
