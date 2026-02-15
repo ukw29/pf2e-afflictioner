@@ -8,6 +8,7 @@
 
 import { MODULE_ID, DURATION_MULTIPLIERS } from '../constants.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
+import { AfflictionParser } from '../services/AfflictionParser.js';
 
 class AfflictionMonitorIndicator {
   static #instance = null;
