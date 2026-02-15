@@ -53,6 +53,15 @@ export const DEFAULT_SETTINGS = {
     config: true,
     restricted: true
   },
+  'integrateWithStoryframe': {
+    name: 'Integrate with Storyframe',
+    hint: 'Send save and counteract rolls through Storyframe module',
+    scope: 'world',
+    type: Boolean,
+    default: false,
+    config: true,
+    restricted: true
+  },
   'editedAfflictions': {
     name: 'Edited Afflictions',
     hint: 'Stores GM-edited affliction definitions',

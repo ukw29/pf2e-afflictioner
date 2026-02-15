@@ -96,35 +96,40 @@ export class AfflictionService {
     // Check PF2e metagame setting for showing DCs to players
     const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
 
-    // Build player message content (may hide DC)
-    const playerContent = `
-      <div class="pf2e-afflictioner-save-request">
-        <h3><i class="fas fa-biohazard"></i> ${afflictionData.name} - Initial Save</h3>
-        <p><strong>${actor.name}</strong> has been exposed to <strong>${afflictionData.name}</strong></p>
-        <p>Make a <strong>Fortitude save${showDCToPlayers ? ` (DC ${afflictionData.dc})` : ''}</strong> to resist the affliction</p>
-        <hr>
-        <button class="affliction-roll-initial-save"
-                data-token-id="${token.id}"
-                data-affliction-id="${afflictionId}"
-                data-dc="${afflictionData.dc}"
-                style="width: 100%; padding: 8px; margin-top: 10px;">
-          <i class="fas fa-dice-d20"></i> Roll Fortitude Save
-        </button>
-      </div>
-    `;
+    // Try storyframe integration first
+    const { StoryframeIntegrationService } = await import('./StoryframeIntegrationService.js');
+    const sentToStoryframe = await StoryframeIntegrationService.sendSaveRequest(token, affliction, 'initial');
 
-    // Create chat message
-    // Send player message to players only (exclude GMs)
-    const playerWhisper = actor.hasPlayerOwner
-      ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
-      : [];
+    if (!sentToStoryframe) {
+      // Fallback: Build player message content with button (may hide DC)
+      const playerContent = `
+        <div class="pf2e-afflictioner-save-request">
+          <h3><i class="fas fa-biohazard"></i> ${afflictionData.name} - Initial Save</h3>
+          <p><strong>${actor.name}</strong> has been exposed to <strong>${afflictionData.name}</strong></p>
+          <p>Make a <strong>Fortitude save${showDCToPlayers ? ` (DC ${afflictionData.dc})` : ''}</strong> to resist the affliction</p>
+          <hr>
+          <button class="affliction-roll-initial-save"
+                  data-token-id="${token.id}"
+                  data-affliction-id="${afflictionId}"
+                  data-dc="${afflictionData.dc}"
+                  style="width: 100%; padding: 8px; margin-top: 10px;">
+            <i class="fas fa-dice-d20"></i> Roll Fortitude Save
+          </button>
+        </div>
+      `;
 
-    if (playerWhisper.length > 0 || !actor.hasPlayerOwner) {
-      await ChatMessage.create({
-        content: playerContent,
-        speaker: ChatMessage.getSpeaker({ token: token }),
-        whisper: playerWhisper
-      });
+      // Send player message to players only (exclude GMs)
+      const playerWhisper = actor.hasPlayerOwner
+        ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
+        : [];
+
+      if (playerWhisper.length > 0 || !actor.hasPlayerOwner) {
+        await ChatMessage.create({
+          content: playerContent,
+          speaker: ChatMessage.getSpeaker({ token: token }),
+          whisper: playerWhisper
+        });
+      }
     }
 
     // Send GM-only message with DC info (only if DCs are hidden from players)
@@ -310,24 +315,27 @@ export class AfflictionService {
     // Check PF2e metagame setting for showing DCs to players
     const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
 
-    // Build player message content (may hide DC)
-    const playerContent = `
-      <div class="pf2e-afflictioner-save-request">
-        <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save Required${affliction.isVirulent ? ' <span style="color: #c45500; font-size: 0.75em;">(Virulent)</span>' : ''}</h3>
-        <p><strong>${actor.name}</strong> must make a <strong>Fortitude save</strong></p>
-        ${showDCToPlayers ? `<p><strong>DC:</strong> ${affliction.dc}</p>` : ''}
-        <p>Current Stage: ${affliction.currentStage}</p>
-        ${affliction.isVirulent ? `<p><em style="color: #c45500; font-size: 0.75em;">Virulent: Success has no effect, critical success reduces by only 1 stage</em></p>` : ''}
-        ${affliction.treatmentBonus ? `<p><em>Treatment bonus active (${affliction.treatmentBonus > 0 ? '+' : ''}${affliction.treatmentBonus})</em></p>` : ''}
-        <hr>
-        <button class="affliction-roll-save" data-token-id="${token.id}" data-affliction-id="${affliction.id}" data-dc="${affliction.dc}" style="width: 100%; padding: 8px; margin-top: 10px;">
-          <i class="fas fa-dice-d20"></i> Roll Fortitude Save
-        </button>
-      </div>
-    `;
+    // Try storyframe integration first
+    const { StoryframeIntegrationService } = await import('./StoryframeIntegrationService.js');
+    const sentToStoryframe = await StoryframeIntegrationService.sendSaveRequest(token, affliction, 'stage');
 
-    // Create chat message
-    try {
+    if (!sentToStoryframe) {
+      // Fallback: Build player message content with button (may hide DC)
+      const playerContent = `
+        <div class="pf2e-afflictioner-save-request">
+          <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save Required${affliction.isVirulent ? ' <span style="color: #c45500; font-size: 0.75em;">(Virulent)</span>' : ''}</h3>
+          <p><strong>${actor.name}</strong> must make a <strong>Fortitude save</strong></p>
+          ${showDCToPlayers ? `<p><strong>DC:</strong> ${affliction.dc}</p>` : ''}
+          <p>Current Stage: ${affliction.currentStage}</p>
+          ${affliction.isVirulent ? `<p><em style="color: #c45500; font-size: 0.75em;">Virulent: Success has no effect, critical success reduces by only 1 stage</em></p>` : ''}
+          ${affliction.treatmentBonus ? `<p><em>Treatment bonus active (${affliction.treatmentBonus > 0 ? '+' : ''}${affliction.treatmentBonus})</em></p>` : ''}
+          <hr>
+          <button class="affliction-roll-save" data-token-id="${token.id}" data-affliction-id="${affliction.id}" data-dc="${affliction.dc}" style="width: 100%; padding: 8px; margin-top: 10px;">
+            <i class="fas fa-dice-d20"></i> Roll Fortitude Save
+          </button>
+        </div>
+      `;
+
       // Send player message to players only (exclude GMs)
       const playerWhisper = actor.hasPlayerOwner
         ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
@@ -340,6 +348,10 @@ export class AfflictionService {
           whisper: playerWhisper
         });
       }
+    }
+
+    // Create chat message
+    try {
 
       // Send GM-only message with DC info (only if DCs are hidden from players)
       if (!showDCToPlayers && actor.hasPlayerOwner) {
@@ -1075,7 +1087,7 @@ export class AfflictionService {
             await actor.decreaseCondition(conditionSlug, { forceRemove: true });
           }
         } catch (error) {
-          console.debug(`PF2e Afflictioner | Fallback condition removal for ${conditionSlug}`);
+          console.error(`PF2e Afflictioner | Fallback condition removal for ${conditionSlug}`);
         }
       }
     }

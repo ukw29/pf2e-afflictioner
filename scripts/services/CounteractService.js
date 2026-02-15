@@ -135,38 +135,64 @@ export class CounteractService {
     // Check PF2e metagame setting for showing DCs to players
     const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
 
-    // Build player message content (simplified - no rank details)
-    const playerContent = `
-      <div class="pf2e-afflictioner-counteract-request">
-        <h3><i class="fas fa-shield-alt"></i> Counteract: ${affliction.name}</h3>
-        <p><strong>${afflictedActor.name}</strong> - Attempt to counteract affliction</p>
-        ${showDCToPlayers ? `<p><strong>${skillDisplay} Check DC:</strong> ${dc}</p>` : ''}
-        <hr>
-        <button class="affliction-roll-counteract"
-                data-token-id="${token.id}"
-                data-affliction-id="${affliction.id}"
-                data-counteract-rank="${counteractRank}"
-                data-affliction-rank="${afflictionRank}"
-                data-dc="${dc}"
-                data-skill="${skill}"
-                style="width: 100%; padding: 8px; margin-top: 10px; background: #4a7c2a; border: 2px solid #5a8c3a; color: white; border-radius: 6px; cursor: pointer;">
-          <i class="fas fa-dice-d20"></i> Roll ${skillDisplay} Check
-        </button>
-      </div>
-    `;
+    // Try storyframe integration first (if casterActor provided)
+    let sentToStoryframe = false;
+    if (casterActor) {
+      const { StoryframeIntegrationService } = await import('./StoryframeIntegrationService.js');
 
-    // Determine who to whisper to (caster if provided, otherwise GM only for manual counteract)
-    const playerWhisper = casterActor?.hasPlayerOwner
-      ? game.users.filter(u => !u.isGM && casterActor.testUserPermission(u, 'OWNER')).map(u => u.id)
-      : [];
+      // Convert full skill name to slug
+      const skillSlugMap = {
+        'acrobatics': 'acr', 'arcana': 'arc', 'athletics': 'ath', 'crafting': 'cra',
+        'deception': 'dec', 'diplomacy': 'dip', 'intimidation': 'itm', 'medicine': 'med',
+        'nature': 'nat', 'occultism': 'occ', 'performance': 'prf', 'religion': 'rel',
+        'society': 'soc', 'stealth': 'ste', 'survival': 'sur', 'thievery': 'thi'
+      };
+      const skillSlug = skillSlugMap[skill] || 'med';
 
-    // Send message to caster or GM
-    if (playerWhisper.length > 0 || !casterActor) {
-      await ChatMessage.create({
-        content: playerContent,
-        speaker: ChatMessage.getSpeaker({ token }),
-        whisper: playerWhisper.length > 0 ? playerWhisper : game.users.filter(u => u.isGM).map(u => u.id)
-      });
+      sentToStoryframe = await StoryframeIntegrationService.sendCounteractRequest(
+        token,
+        affliction,
+        casterActor,
+        skillSlug,
+        counteractRank,
+        afflictionRank
+      );
+    }
+
+    if (!sentToStoryframe) {
+      // Fallback: Build player message content with button
+      const playerContent = `
+        <div class="pf2e-afflictioner-counteract-request">
+          <h3><i class="fas fa-shield-alt"></i> Counteract: ${affliction.name}</h3>
+          <p><strong>${afflictedActor.name}</strong> - Attempt to counteract affliction</p>
+          ${showDCToPlayers ? `<p><strong>${skillDisplay} Check DC:</strong> ${dc}</p>` : ''}
+          <hr>
+          <button class="affliction-roll-counteract"
+                  data-token-id="${token.id}"
+                  data-affliction-id="${affliction.id}"
+                  data-counteract-rank="${counteractRank}"
+                  data-affliction-rank="${afflictionRank}"
+                  data-dc="${dc}"
+                  data-skill="${skill}"
+                  style="width: 100%; padding: 8px; margin-top: 10px; background: #4a7c2a; border: 2px solid #5a8c3a; color: white; border-radius: 6px; cursor: pointer;">
+            <i class="fas fa-dice-d20"></i> Roll ${skillDisplay} Check
+          </button>
+        </div>
+      `;
+
+      // Determine who to whisper to (caster if provided, otherwise GM only for manual counteract)
+      const playerWhisper = casterActor?.hasPlayerOwner
+        ? game.users.filter(u => !u.isGM && casterActor.testUserPermission(u, 'OWNER')).map(u => u.id)
+        : [];
+
+      // Send message to caster or GM
+      if (playerWhisper.length > 0 || !casterActor) {
+        await ChatMessage.create({
+          content: playerContent,
+          speaker: ChatMessage.getSpeaker({ token }),
+          whisper: playerWhisper.length > 0 ? playerWhisper : game.users.filter(u => u.isGM).map(u => u.id)
+        });
+      }
     }
 
     // Send GM-only message with DC info (only if DCs are hidden from players and caster is a player)

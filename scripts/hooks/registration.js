@@ -428,7 +428,17 @@ function onRenderChatMessage(message, html) {
         return;
       }
 
-      // Roll the save
+      // Try storyframe integration first
+      const { StoryframeIntegrationService } = await import('../services/StoryframeIntegrationService.js');
+      const sentToStoryframe = await StoryframeIntegrationService.sendSaveRequest(token, affliction, 'initial');
+
+      if (sentToStoryframe) {
+        // Disable button - result will be handled via polling
+        btn.disabled = true;
+        return;
+      }
+
+      // Fallback: Roll the save via chat button
       const actor = token.actor;
       const save = await actor.saves.fortitude.roll({ dc: { value: dc } });
 
@@ -462,7 +472,17 @@ function onRenderChatMessage(message, html) {
         return;
       }
 
-      // Roll the save
+      // Try storyframe integration first
+      const { StoryframeIntegrationService } = await import('../services/StoryframeIntegrationService.js');
+      const sentToStoryframe = await StoryframeIntegrationService.sendSaveRequest(token, affliction, 'stage');
+
+      if (sentToStoryframe) {
+        // Disable button - result will be handled via polling
+        btn.disabled = true;
+        return;
+      }
+
+      // Fallback: Roll the save via chat button
       const actor = token.actor;
       const save = await actor.saves.fortitude.roll({ dc: { value: dc } });
 
@@ -650,6 +670,24 @@ function onRenderChatMessage(message, html) {
         return;
       }
 
+      // Try storyframe integration first
+      const { StoryframeIntegrationService } = await import('../services/StoryframeIntegrationService.js');
+      const sentToStoryframe = await StoryframeIntegrationService.sendCounteractRequest(
+        token,
+        affliction,
+        casterActor,
+        skill,
+        counteractRank,
+        afflictionRank
+      );
+
+      if (sentToStoryframe) {
+        // Disable button - result will be handled via polling
+        btn.disabled = true;
+        return;
+      }
+
+      // Fallback: Roll via chat button
       const roll = await casterActor.skills[skill].roll({ dc: { value: dc } });
 
       // Get degree from roll

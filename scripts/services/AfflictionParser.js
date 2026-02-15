@@ -87,7 +87,7 @@ export class AfflictionParser {
     return {
       name: item.name,
       type: afflictionType,
-      dc: dc,
+      dc,
       onset: item.system?.onset ? this.parseDuration(item.system.onset) : null,
       stages: stages,
       maxDuration: item.system?.maxDuration ? this.parseDuration(item.system.maxDuration) : null,

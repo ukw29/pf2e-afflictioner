@@ -27,6 +27,18 @@ Hooks.once('ready', async () => {
   const { SocketService } = await import('./services/SocketService.js');
   SocketService.initialize();
 
+  // Initialize storyframe integration service
+  const { StoryframeIntegrationService } = await import('./services/StoryframeIntegrationService.js');
+  game.afflictioner = game.afflictioner || {};
+  game.afflictioner.storyframeService = new StoryframeIntegrationService();
+
+  // Poll storyframe for results every 2 seconds if integration is active
+  setInterval(async () => {
+    if (StoryframeIntegrationService.isAvailable()) {
+      await game.afflictioner.storyframeService.pollResults();
+    }
+  }, 2000);
+
   // Initialize monitor indicator for GMs
   if (game.user.isGM) {
     const { default: indicator } = await import('./ui/AfflictionMonitorIndicator.js');

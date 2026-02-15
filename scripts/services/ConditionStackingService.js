@@ -321,7 +321,7 @@ export class ConditionStackingService {
       await actor.decreaseCondition(conditionSlug, { forceRemove: true });
     } catch (error) {
       // Condition might not exist, that's fine
-      console.debug(`PF2e Afflictioner | Condition ${conditionSlug} not found for removal`);
+      console.error(`PF2e Afflictioner | Condition ${conditionSlug} not found for removal`);
     }
   }
 }

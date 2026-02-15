@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-alpha.4] - 2026-02-15
+
+### Added
+
+- **Storyframe Integration**: Optional integration with Storyframe module
+  - New setting: "Integrate with Storyframe" (world, GM only)
+  - When enabled, sends save and counteract rolls through Storyframe's pending roll system
+  - Players receive roll prompts in Storyframe UI instead of chat buttons
+  - Automatically falls back to chat buttons if player offline or Storyframe unavailable
+  - Prompts GM to add actors as Storyframe participants if needed
+  - Results processed via polling and routed to existing affliction handlers
+
 ## [1.0.0-alpha.3] - 2026-02-15
 
 ### Added
