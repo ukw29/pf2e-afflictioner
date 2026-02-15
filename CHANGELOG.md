@@ -5,6 +5,69 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-alpha.3] - 2026-02-15
+
+### Added
+
+- **Condition Stacking (PF2e Rules)**: Implements official condition stacking rules
+  - Tracks multiple condition instances with different values from different afflictions
+  - Applies highest value when multiple sources exist
+  - Automatically downgrades to next highest when top value expires
+  - Example: slowed 2 (1 round) + slowed 1 (6 rounds) = slowed 2 for round 1, then slowed 1 for rounds 2-6
+  - Stored in actor flags: `pf2e-afflictioner.conditionInstances`
+
+- **Maximum Duration Expiration**: World time support for afflictions with maximum duration
+  - Afflictions with max duration now expire correctly in both combat and world time
+  - Combat: Uses elapsed rounds vs max duration
+  - World time: Uses elapsed time vs max duration in seconds
+
+- **Clickable Affliction Indicator**: Token names in indicator tooltip are now clickable
+  - Click token name to open Affliction Manager filtered to that token
+  - Tooltip stays visible when hovering over it
+  - Improved hover behavior with 200ms delay
+
+### Fixed
+
+- **Duration Display**: Show durations in appropriate units instead of always minutes
+  - Days for 24+ hours, hours for 1-23 hours, minutes for 1-59 minutes, seconds for < 1 minute
+  - Applied to onset timers, save countdowns, and all duration displays
+  - Example: "4320m" now shows as "3d"
+
+- **Dice Roll Duration**: Fixed 1d4 rolling 0 due to Foundry v11+ async evaluation
+  - Added fallback manual dice simulation when roll.evaluate() fails
+  - Custom chat message ensures correct total is displayed
+
+- **Onset Save Timing**: Fixed save prompts during onset period
+  - No save prompts during onset - only when onset completes or stage duration expires
+  - Added `inOnset` checks to both combat and world time save logic
+  - Reset `durationElapsed` when onset completes to start stage duration fresh
+
+- **World Time Save Prompts**: Always send chat prompts when saves are due during world time
+  - Previously only sent if `autoPromptSaves` setting enabled
+  - Now consistent with combat save behavior
+
+- **Treatment Target Selection**: Treatment actions now use targeted tokens
+  - Shows afflictions from targeted token(s), not all tokens
+  - Falls back to all tokens if no targets selected
+
+- **Affliction Editor (Foundry v13+ Compatibility)**:
+  - Fixed FormDataExtended reference for Foundry v13+
+  - Fixed TextEditor reference for Foundry v13+
+  - Fixed form data extraction to handle flat structure (condition.0.name vs nested arrays)
+  - Conditions, damage, and weakness now save correctly
+
+- **Stage Change Edge Cases**:
+  - Cap target stage when onset completes if affliction has fewer stages than expected
+  - Prevents "Stage 2 not found" errors when afflictions are edited to have fewer stages
+
+- **Affliction Indicator Display**: Show "Initial Save" instead of "Stage -1" for afflictions awaiting initial save
+
+- **Backward Compatibility**: Conditions from old afflictions (before stacking service) are now cleaned up properly on removal
+
+### Changed
+
+- Treatment buttons now prioritize targeted tokens over all tokens on canvas
+
 ## [1.0.0-alpha.2] - 2026-02-14
 
 ### Added
