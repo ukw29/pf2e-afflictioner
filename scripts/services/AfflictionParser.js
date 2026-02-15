@@ -263,16 +263,42 @@ export class AfflictionParser {
 
   /**
    * Parse duration text into structured format
+   * Automatically rolls dice and posts to chat
    */
   static parseDuration(text) {
-    // Handle dice: "1d4 rounds"
+    // Handle dice: "1d4 rounds" - roll and post to chat
     const diceMatch = text.match(/(\d+d\d+)\s+(\w+)/i);
     if (diceMatch) {
-      const roll = new Roll(diceMatch[1]);
-      const evaluated = roll.evaluateSync();
+      const formula = diceMatch[1];
+      const unit = diceMatch[2].toLowerCase().replace(/s$/, ''); // Remove plural 's'
+
+      // Roll the dice synchronously
+      const roll = new Roll(formula);
+      roll.evaluate({ async: false });
+
+      // Ensure roll evaluated properly (Foundry v11+ compatibility)
+      let total = roll.total;
+      if (!total || total < 1) {
+        // Fallback: manually simulate dice roll
+        const [numDice, dieSize] = formula.split('d').map(Number);
+        total = 0;
+        for (let i = 0; i < numDice; i++) {
+          total += Math.floor(Math.random() * dieSize) + 1;
+        }
+      }
+
+      // Post to chat (GM only) - use custom message to ensure correct total
+      ChatMessage.create({
+        flavor: `Duration: ${formula} ${unit}(s)`,
+        content: `<div class="dice-roll"><div class="dice-result"><h4 class="dice-formula">${formula}</h4><div class="dice-total">${total}</div></div></div>`,
+        whisper: game.users.filter(u => u.isGM).map(u => u.id)
+      });
+
+      ui.notifications.info(`Rolled ${formula} for duration: ${total} ${unit}(s)`);
+
       return {
-        value: evaluated.total,
-        unit: diceMatch[2].toLowerCase().replace(/s$/, ''), // Remove plural 's'
+        value: total,
+        unit: unit,
         isDice: true
       };
     }
@@ -299,6 +325,24 @@ export class AfflictionParser {
     const damageEntries = [];
     const seenFormulas = new Set(); // Prevent duplicates
 
+    // Check for "or" damage (e.g., "3d6 cold or fire damage")
+    const orDamagePattern = /(\d+d\d+(?:\s*[+-]\s*\d+)?)\s+(\w+)\s+or\s+(\w+)\s+damage/gi;
+    const orMatches = text.matchAll(orDamagePattern);
+    for (const match of orMatches) {
+      const formula = match[1].trim();
+      const type1 = match[2].trim().toLowerCase();
+      const type2 = match[3].trim().toLowerCase();
+
+      if (!seenFormulas.has(formula)) {
+        damageEntries.push({
+          formula,
+          type: type1,
+          isChoice: true,
+          alternativeType: type2
+        });
+        seenFormulas.add(formula);
+      }
+    }
 
     // First, extract @Damage[...] notation (PF2e format)
     // Two formats: @Damage[1d6[poison]] with type, or @Damage[1d6] without type
@@ -331,7 +375,8 @@ export class AfflictionParser {
     }
 
     // Then, extract plain text damage patterns like "1d6 poison", "2d8+5 fire"
-    const plainDamageMatches = text.matchAll(/(\d+d\d+(?:\s*[+-]\s*\d+)?)\s+(acid|bludgeoning|cold|electricity|fire|force|mental|piercing|poison|slashing|sonic|bleed|persistent)/gi);
+    // Skip if already matched by "or" pattern
+    const plainDamageMatches = text.matchAll(/(\d+d\d+(?:\s*[+-]\s*\d+)?)\s+(acid|bludgeoning|cold|electricity|fire|force|mental|piercing|poison|slashing|sonic|bleed|persistent)(?!\s+or)/gi);
     for (const match of plainDamageMatches) {
       const formula = match[1].trim();
       const type = match[2].trim().toLowerCase();
@@ -458,6 +503,24 @@ export class AfflictionParser {
     const unit = duration.unit.toLowerCase();
     const multiplier = DURATION_MULTIPLIERS[unit] || DURATION_MULTIPLIERS['round'];
     return duration.value * multiplier;
+  }
+
+  /**
+   * Format seconds into human-readable duration string
+   * @param {number} seconds - Duration in seconds
+   * @returns {string} Formatted duration (e.g., "3d", "2h", "45m", "30s")
+   */
+  static formatDuration(seconds) {
+    if (!seconds || seconds < 0) return '0s';
+
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor(seconds / 60);
+
+    if (days > 0) return `${days}d`;
+    if (hours > 0) return `${hours}h`;
+    if (minutes > 0) return `${minutes}m`;
+    return `${seconds}s`;
   }
 
   /**

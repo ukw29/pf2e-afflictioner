@@ -60,7 +60,7 @@ export class TreatmentService {
 
     // Create effect with rule element for treatment bonus
     if (bonus !== 0) {
-      const effectUuid = await this.createTreatmentEffect(actor, affliction, bonus);
+      const effectUuid = await this.createTreatmentEffect(actor, affliction, bonus, degree);
 
       await AfflictionStore.updateAffliction(token, affliction.id, {
         treatmentBonus: bonus,
@@ -94,19 +94,28 @@ export class TreatmentService {
   /**
    * Create treatment effect with rule element
    */
-  static async createTreatmentEffect(actor, affliction, bonus) {
+  static async createTreatmentEffect(actor, affliction, bonus, degree) {
     try {
+      // Format degree name for display
+      const degreeNames = {
+        'criticalSuccess': 'Critical Success',
+        'success': 'Success',
+        'criticalFailure': 'Critical Failure'
+      };
+      const degreeName = degreeNames[degree] || '';
+      const effectName = `${affliction.name} (Treatment: ${degreeName})`;
+
       const rules = [{
         key: 'FlatModifier',
         selector: 'saving-throw',
         type: 'circumstance',
         value: bonus,
-        label: `Treatment: ${affliction.name}`
+        label: effectName
       }];
 
       const effectData = {
         type: 'effect',
-        name: `Treatment: ${affliction.name}`,
+        name: effectName,
         system: {
           tokenIcon: { show: true },
           duration: {

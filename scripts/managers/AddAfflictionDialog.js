@@ -139,9 +139,80 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
   }
 
   static async addManual(event, button) {
-    // Show manual entry form
-    ui.notifications.info('Manual entry - Coming soon');
-    // TODO: Implement manual entry form
+    // Create a basic affliction template and prompt for details
+    const template = `
+      <form>
+        <div class="form-group">
+          <label>Affliction Name</label>
+          <input type="text" name="name" value="Custom Affliction" required />
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select name="type">
+            <option value="poison">Poison</option>
+            <option value="disease">Disease</option>
+            <option value="curse">Curse</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>DC</label>
+          <input type="number" name="dc" value="15" min="1" max="50" required />
+        </div>
+        <div class="form-group">
+          <label>Number of Stages</label>
+          <input type="number" name="stages" value="3" min="1" max="10" required />
+        </div>
+      </form>
+    `;
+
+    const result = await foundry.applications.api.DialogV2.prompt({
+      window: { title: 'Manual Affliction Entry' },
+      content: template,
+      ok: {
+        label: 'Create',
+        callback: (event, button, dialog) => new FormDataExtended(button.form).object
+      }
+    });
+
+    if (!result) return;
+
+    // Create basic affliction data
+    const stageCount = parseInt(result.stages) || 3;
+    const stages = [];
+    for (let i = 1; i <= stageCount; i++) {
+      stages.push({
+        number: i,
+        effects: `Stage ${i} effects`,
+        rawText: `Stage ${i}: Effects to be defined`,
+        duration: { value: 1, unit: 'hour', isDice: false },
+        damage: [],
+        conditions: [],
+        weakness: [],
+        requiresManualHandling: false
+      });
+    }
+
+    const afflictionData = {
+      name: result.name || 'Custom Affliction',
+      type: result.type || 'poison',
+      dc: parseInt(result.dc) || 15,
+      saveType: 'fortitude',
+      stages: stages,
+      onset: null,
+      maxDuration: null,
+      isVirulent: false,
+      multipleExposure: null
+    };
+
+    // Prompt for initial save
+    const { AfflictionService } = await import('../services/AfflictionService.js');
+    await AfflictionService.promptInitialSave(this.token, afflictionData);
+
+    // Close dialog
+    this.close();
+
+    // Notify user they can edit the affliction
+    ui.notifications.info('Affliction added. Use the edit button to customize stages and effects.');
   }
 
   static async formHandler(event, form, formData) {

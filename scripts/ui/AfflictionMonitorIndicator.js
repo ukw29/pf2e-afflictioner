@@ -117,14 +117,14 @@ class AfflictionMonitorIndicator {
     return false;
   }
 
-  async openManager() {
+  async openManager(tokenId = null) {
     if (!game.user?.isGM) return;
     try {
       const { AfflictionManager } = await import('../managers/AfflictionManager.js');
       if (AfflictionManager.currentInstance) {
         AfflictionManager.currentInstance.close();
       }
-      new AfflictionManager().render(true);
+      new AfflictionManager({ filterTokenId: tokenId }).render(true);
     } catch (e) {
       console.error('PF2e Afflictioner | Failed to open manager:', e);
     }
@@ -164,7 +164,7 @@ class AfflictionMonitorIndicator {
 
     // Hover tooltip
     el.addEventListener('mouseenter', () => this.#showTooltip());
-    el.addEventListener('mouseleave', () => this.#hideTooltip());
+    el.addEventListener('mouseleave', () => this.#scheduleHideTooltip());
 
     // Click to open manager
     el.addEventListener('click', async (ev) => {
@@ -230,13 +230,33 @@ class AfflictionMonitorIndicator {
     this._tooltipEl = tip;
     this.#renderTooltipContents();
 
+    // Prevent tooltip from hiding when hovering over it
+    tip.addEventListener('mouseenter', () => {
+      if (this._hideTooltipTimeout) {
+        clearTimeout(this._hideTooltipTimeout);
+        this._hideTooltipTimeout = null;
+      }
+    });
+    tip.addEventListener('mouseleave', () => {
+      this.#scheduleHideTooltip();
+    });
+
     document.body.appendChild(tip);
     const rect = this._el.getBoundingClientRect();
     tip.style.left = rect.right + 8 + 'px';
     tip.style.top = Math.max(8, rect.top - 8) + 'px';
   }
 
+  #scheduleHideTooltip() {
+    if (this._hideTooltipTimeout) clearTimeout(this._hideTooltipTimeout);
+    this._hideTooltipTimeout = setTimeout(() => this.#hideTooltip(), 200);
+  }
+
   #hideTooltip() {
+    if (this._hideTooltipTimeout) {
+      clearTimeout(this._hideTooltipTimeout);
+      this._hideTooltipTimeout = null;
+    }
     if (this._tooltipEl?.parentElement) this._tooltipEl.parentElement.removeChild(this._tooltipEl);
     this._tooltipEl = null;
   }
@@ -250,8 +270,12 @@ class AfflictionMonitorIndicator {
 
     const formatTime = (a) => {
       if (a.inOnset) {
-        const remaining = Math.ceil(a.onsetRemaining / 60);
-        return `Onset: ${remaining}m`;
+        return `Onset: ${AfflictionParser.formatDuration(a.onsetRemaining)}`;
+      }
+
+      // Handle special stage values
+      if (a.currentStage === -1 || a.needsInitialSave) {
+        return 'Initial Save';
       }
 
       const stage = a.stages?.[a.currentStage - 1];
@@ -260,13 +284,15 @@ class AfflictionMonitorIndicator {
           const remaining = a.nextSaveRound - combat.round;
           return remaining <= 0 ? 'Save NOW' : `${remaining} rounds until save`;
         } else {
-          const totalDuration = stage.duration.value * (DURATION_MULTIPLIERS[stage.duration.unit] || 60);
+          const unit = stage.duration.unit?.toLowerCase() || 'round';
+          const multiplier = DURATION_MULTIPLIERS[unit] || DURATION_MULTIPLIERS['round'];
+          const totalDuration = stage.duration.value * multiplier;
           const elapsed = a.durationElapsed || 0;
-          const remaining = Math.ceil((totalDuration - elapsed) / 60);
-          return remaining <= 0 ? 'Save DUE' : `${remaining}m until save`;
+          const remainingSeconds = Math.max(0, totalDuration - elapsed);
+          return remainingSeconds <= 0 ? 'Save DUE' : `${AfflictionParser.formatDuration(remainingSeconds)} until save`;
         }
       }
-      return 'Stage ' + a.currentStage;
+      return a.currentStage > 0 ? `Stage ${a.currentStage}` : 'No Stage';
     };
 
     let content = '';
@@ -297,7 +323,7 @@ class AfflictionMonitorIndicator {
 
         return `
           <div class="tip-group">
-            <div class="token-header"><i class="fas fa-user"></i> ${t.name}</div>
+            <div class="token-header clickable" data-token-id="${t.tokenId}"><i class="fas fa-user"></i> ${t.name}</div>
             ${afflictions}
           </div>
         `;
@@ -313,9 +339,18 @@ class AfflictionMonitorIndicator {
         ${content}
       </div>
       <div class="tip-footer">
-        <div class="footer-text">Click to open Affliction Manager</div>
+        <div class="footer-text">Click token name to open manager for that token</div>
       </div>
     `;
+
+    // Add click handlers for token headers
+    this._tooltipEl.querySelectorAll('.token-header.clickable').forEach(header => {
+      header.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const tokenId = header.dataset.tokenId;
+        await this.openManager(tokenId);
+      });
+    });
   }
 
   #ensureStyles() {
@@ -464,6 +499,17 @@ class AfflictionMonitorIndicator {
         margin-bottom: 6px;
         padding-bottom: 4px;
         border-bottom: 1px solid rgba(139, 0, 0, 0.3);
+      }
+      .pf2e-afflictioner-tooltip .token-header.clickable {
+        cursor: pointer;
+        transition: color 0.15s ease, background-color 0.15s ease;
+        padding: 4px 8px;
+        margin: 0 -8px 6px -8px;
+        border-radius: 4px;
+      }
+      .pf2e-afflictioner-tooltip .token-header.clickable:hover {
+        color: #fff;
+        background-color: rgba(139, 0, 0, 0.3);
       }
       .pf2e-afflictioner-tooltip .affliction-item {
         padding: 4px 0 4px 16px;

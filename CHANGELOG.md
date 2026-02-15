@@ -51,8 +51,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `POISON_RE_EXPOSURE`: For poison stage increase notification
   - `VIRULENT_CONSECUTIVE_SUCCESS`: First successful save against virulent affliction
 
+- **Manual Affliction Entry**: Create custom afflictions directly via "Manual Entry" button
+  - Prompts for name, type, DC, and number of stages
+  - Creates template affliction that can be customized via editor
+
+- **"OR" Damage Parsing**: Automatically detect and display damage choices
+  - Parses patterns like "3d6 cold or fire damage"
+  - Shows both options as clickable damage links
+  - Vertical layout with "Choose one:" header for clarity
+
+- **Counteract Button**: New button in Affliction Manager to counteract afflictions
+  - Prompts for counteract rank and check result
+  - Calculates affliction counteract rank (half level, rounded up)
+  - Uses official counteract rules to determine success
+  - Reduces stage by 1 on success, cures if at stage 1
+  - Supports spells like Cleanse Affliction
+
+- **Treat Poison/Disease Integration**: Automatic integration with native PF2e actions
+  - Detects when Treat Poison/Treat Disease is used
+  - Shows "Apply Treatment To:" buttons for matching afflictions
+  - Automatically applies treatment bonus based on check result
+  - Green-highlighted selection UI appears in chat
+
+### Fixed
+
+- **Max/Min Stage Bugs**:
+  - Fixed incorrect "stage changed" notification when already at max/min stage
+  - Added early return when stage doesn't actually change
+  - Prevent misleading "Stage 2 (was Stage 2)" messages
+
+- **Stage Button Controls**:
+  - Disabled increase stage button when at maximum stage
+  - Disabled decrease stage button when at stage 1
+  - Added visual disabled state (30% opacity, grayed out)
+  - Added tooltips for stage limits
+
+- **Virulent Manual Control**:
+  - Manual stage decrease now works immediately for virulent afflictions
+  - GM has full control via buttons without consecutive success requirement
+  - Virulent logic only applies to automatic save rolls
+
 ### Changed
 
+- Treatment effect names now include result: "Affliction (Treatment: Critical Success)"
+- Clearer labeling for treatment circumstance bonuses/penalties
+- Reduced virulent tooltip text size to 85% for better fit
+- Updated stage control logic to check limits before processing
 - Updated all trait detection logic to include curse trait
 - Updated `AFFLICTION_TYPES` constant to include `CURSE: 'curse'`
 - Revised README.md to accurately describe PF2e affliction mechanics
@@ -92,5 +136,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Visual indicators
 - Manager UI
 
-[Unreleased]: https://github.com/yourusername/pf2e-afflictioner/compare/v1.0.0-alpha.2...HEAD
 [1.0.0-alpha.2]: https://github.com/yourusername/pf2e-afflictioner/releases/tag/v1.0.0-alpha.2

@@ -16,7 +16,6 @@
   color: #8b0000;
   margin: 0 0 10px 0;
   font-size: 16px;
-  display: flex;
   align-items: center;
   gap: 8px;
 }
@@ -93,7 +92,8 @@
 }
 
 @keyframes pulse-treatment {
-  0%, 100% {
+  0%,
+  100% {
     color: var(--afflictioner-poison);
     filter: drop-shadow(0 0 4px rgba(74, 124, 42, 0.6));
   }
@@ -163,3 +163,66 @@
   margin-right: 6px;
 }
 
+/* Counteract request styling in chat */
+.pf2e-afflictioner-counteract-request {
+  background: linear-gradient(135deg, rgba(74, 124, 42, 0.15) 0%, rgba(74, 124, 42, 0.05) 100%);
+  border: 2px solid rgba(74, 124, 42, 0.3);
+  border-left: 4px solid #4a7c2a;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  box-shadow: 0 2px 6px rgba(74, 124, 42, 0.2);
+}
+
+.pf2e-afflictioner-counteract-request h3 {
+  color: #4a7c2a;
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.pf2e-afflictioner-counteract-request p {
+  margin: 6px 0;
+  color: var(--color-text-dark-primary);
+  line-height: 1.4;
+}
+
+.pf2e-afflictioner-counteract-request button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background: linear-gradient(135deg, #4a7c2a 0%, #5a8c3a 100%);
+  border: 2px solid #3a6c2a;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.pf2e-afflictioner-counteract-request button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5a8c3a 0%, #6a9c4a 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(74, 124, 42, 0.5);
+}
+
+.pf2e-afflictioner-counteract-request button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 3px 6px rgba(74, 124, 42, 0.4);
+}
+
+.pf2e-afflictioner-counteract-request button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  background: linear-gradient(135deg, #555 0%, #666 100%);
+  pointer-events: none;
+}
+
+.pf2e-afflictioner-counteract-request button i {
+  margin-right: 6px;
+}

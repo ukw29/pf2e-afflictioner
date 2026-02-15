@@ -55,14 +55,21 @@
                       data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.TREAT'}}">
                 <i class="fas fa-medkit"></i>
               </button>
+              <button type="button" data-action="counteractAffliction"
+                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                      data-tooltip="Counteract affliction (e.g., Cleanse Affliction spell)">
+                <i class="fas fa-shield-alt"></i>
+              </button>
               <button type="button" data-action="progressStage"
                       data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.PROGRESS_STAGE'}}">
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.PROGRESS_STAGE'}}"
+                      {{#unless canProgressStage}}disabled{{/unless}}>
                 <i class="fas fa-arrow-up"></i>
               </button>
               <button type="button" data-action="regressStage"
                       data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.REGRESS_STAGE'}}">
+                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.REGRESS_STAGE'}}"
+                      {{#unless canRegressStage}}disabled{{/unless}}>
                 <i class="fas fa-arrow-down"></i>
               </button>
               <button type="button" data-action="removeAffliction"

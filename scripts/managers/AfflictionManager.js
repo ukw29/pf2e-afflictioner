@@ -6,6 +6,7 @@ import { MODULE_ID } from '../constants.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
 import { TreatmentService } from '../services/TreatmentService.js';
+import { CounteractService } from '../services/CounteractService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
 
 export class AfflictionManager extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -35,7 +36,8 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       regressStage: AfflictionManager.regressStage,
       rollSave: AfflictionManager.rollSave,
       rollDamage: AfflictionManager.rollDamage,
-      treatAffliction: AfflictionManager.treatAffliction
+      treatAffliction: AfflictionManager.treatAffliction,
+      counteractAffliction: AfflictionManager.counteractAffliction
     }
   };
 
@@ -325,7 +327,9 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
               stageTooltip: this.formatStageTooltip(aff),
               isVirulent: aff.isVirulent || false,
               hasMultipleExposure: aff.multipleExposure?.enabled || false,
-              multipleExposureIncrease: aff.multipleExposure?.stageIncrease || 0
+              multipleExposureIncrease: aff.multipleExposure?.stageIncrease || 0,
+              canProgressStage: aff.currentStage < aff.stages.length,
+              canRegressStage: aff.currentStage > 1
             };
           })
         });
@@ -343,8 +347,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
     // Check if we're in onset
     if (affliction.inOnset && affliction.onsetRemaining) {
-      const minutes = Math.ceil(affliction.onsetRemaining / 60);
-      return `Onset: ${minutes}m`;
+      return `Onset: ${AfflictionParser.formatDuration(affliction.onsetRemaining)}`;
     }
 
     // Get current stage to determine display format
@@ -382,17 +385,11 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     if (!combat) {
       // Use timestamp if available (timestamp is in game world time seconds)
       if (affliction.nextSaveTimestamp) {
-        const remainingSeconds = affliction.nextSaveTimestamp - game.time.worldTime;
+        const remainingSeconds = Math.max(0, affliction.nextSaveTimestamp - game.time.worldTime);
 
         if (remainingSeconds <= 0) return 'Save due!';
 
-        const hours = Math.floor(remainingSeconds / 3600);
-        const minutes = Math.ceil((remainingSeconds % 3600) / 60);
-
-        if (hours > 0) {
-          return `${hours}h ${minutes}m until save`;
-        }
-        return `${minutes}m until save`;
+        return `${AfflictionParser.formatDuration(remainingSeconds)} until save`;
       }
 
       // Fall back to showing full duration (for very old afflictions without proper tracking)
@@ -510,7 +507,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
   static async addAffliction(event, button) {
     // Get selected token or first token with afflictions
     const token = canvas.tokens.controlled[0] ||
-                  (this.filterTokenId ? canvas.tokens.get(this.filterTokenId) : null);
+      (this.filterTokenId ? canvas.tokens.get(this.filterTokenId) : null);
 
     if (!token) {
       ui.notifications.warn('Please select a token first');
@@ -649,6 +646,16 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
     if (token) {
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
+
+      // Check if already at max stage
+      if (affliction.currentStage >= affliction.stages.length) {
+        ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.MAX_STAGE', {
+          tokenName: token.name,
+          afflictionName: affliction.name
+        }));
+        return;
+      }
+
       // Force regular failure (+1 stage): save 10, DC 15
       await AfflictionService.handleStageSave(token, affliction, 10, 15, true);
       this.render({ force: true });
@@ -662,6 +669,13 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
     if (token) {
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
+
+      // Check if already at min stage (stage 1)
+      if (affliction.currentStage <= 1) {
+        ui.notifications.info(`${token.name} is already at stage 1 of ${affliction.name}. Use "Remove Affliction" to cure.`);
+        return;
+      }
+
       // Force regular success (-1 stage): save 15, DC 10
       await AfflictionService.handleStageSave(token, affliction, 15, 10, true);
       this.render({ force: true });
@@ -699,5 +713,24 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
       await TreatmentService.promptTreatment(token, affliction);
     }
+  }
+
+  static async counteractAffliction(event, button) {
+    const afflictionId = button.dataset.afflictionId;
+    const tokenId = button.dataset.tokenId;
+    const token = canvas.tokens.get(tokenId);
+
+    if (!token) {
+      ui.notifications.warn('Token not found');
+      return;
+    }
+
+    const affliction = AfflictionStore.getAffliction(token, afflictionId);
+    if (!affliction) {
+      ui.notifications.warn('Affliction not found');
+      return;
+    }
+
+    await CounteractService.promptCounteract(token, affliction);
   }
 }

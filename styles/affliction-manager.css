@@ -177,6 +177,23 @@
   font-size: 14px;
 }
 
+/* Disabled button state */
+.pf2e-afflictioner .affliction-actions button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: var(--afflictioner-bg-dark);
+  border-color: #444;
+  color: #666;
+  pointer-events: none;
+}
+
+.pf2e-afflictioner .affliction-actions button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  background: var(--afflictioner-bg-dark);
+  border-color: #444;
+}
+
 /* Specific button colors */
 .pf2e-afflictioner .affliction-actions button[data-action="rollSave"]:hover {
   background: #2a4a7c;

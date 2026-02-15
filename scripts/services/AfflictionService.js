@@ -129,10 +129,8 @@ export class AfflictionService {
     // Send GM-only message with DC info (only if DCs are hidden from players)
     if (!showDCToPlayers && actor.hasPlayerOwner) {
       const gmContent = `
-        <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000;">
-          <h3><i class="fas fa-biohazard"></i> ${afflictionData.name} - Initial Save (GM Info)</h3>
-          <p><strong>${actor.name}</strong> has been exposed to <strong>${afflictionData.name}</strong></p>
-          <p>Make a <strong>Fortitude save (DC ${afflictionData.dc})</strong> to resist the affliction</p>
+        <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000; padding: 8px;">
+          <p style="margin: 0;"><strong>${afflictionData.name} - DC ${afflictionData.dc}</strong> (GM Info)</p>
         </div>
       `;
       await ChatMessage.create({
@@ -286,12 +284,15 @@ export class AfflictionService {
     const afflictions = AfflictionStore.getAfflictions(token);
 
     for (const [id, affliction] of Object.entries(afflictions)) {
+      // Skip if still in onset period
+      if (affliction.inOnset) continue;
+
       // Check if save is due or overdue
       // If we're past the scheduled round, definitely prompt
       // If we're in the scheduled round, check initiative matches
       const isOverdue = combat.round > affliction.nextSaveRound;
       const isDueNow = combat.round === affliction.nextSaveRound &&
-                       affliction.nextSaveInitiative === combat.combatant.initiative;
+        affliction.nextSaveInitiative === combat.combatant.initiative;
 
       if (isOverdue || isDueNow) {
         await this.promptSave(token, affliction);
@@ -311,11 +312,11 @@ export class AfflictionService {
     // Build player message content (may hide DC)
     const playerContent = `
       <div class="pf2e-afflictioner-save-request">
-        <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save Required${affliction.isVirulent ? ' <span style="color: #c45500; font-size: 0.9em;">(Virulent)</span>' : ''}</h3>
+        <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save Required${affliction.isVirulent ? ' <span style="color: #c45500; font-size: 0.75em;">(Virulent)</span>' : ''}</h3>
         <p><strong>${actor.name}</strong> must make a <strong>Fortitude save</strong></p>
         ${showDCToPlayers ? `<p><strong>DC:</strong> ${affliction.dc}</p>` : ''}
         <p>Current Stage: ${affliction.currentStage}</p>
-        ${affliction.isVirulent ? `<p><em style="color: #c45500;">Virulent: Success has no effect, critical success reduces by only 1 stage</em></p>` : ''}
+        ${affliction.isVirulent ? `<p><em style="color: #c45500; font-size: 0.75em;">Virulent: Success has no effect, critical success reduces by only 1 stage</em></p>` : ''}
         ${affliction.treatmentBonus ? `<p><em>Treatment bonus active (${affliction.treatmentBonus > 0 ? '+' : ''}${affliction.treatmentBonus})</em></p>` : ''}
         <hr>
         <button class="affliction-roll-save" data-token-id="${token.id}" data-affliction-id="${affliction.id}" data-dc="${affliction.dc}" style="width: 100%; padding: 8px; margin-top: 10px;">
@@ -342,12 +343,8 @@ export class AfflictionService {
       // Send GM-only message with DC info (only if DCs are hidden from players)
       if (!showDCToPlayers && actor.hasPlayerOwner) {
         const gmContent = `
-          <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000;">
-            <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save (GM Info)${affliction.isVirulent ? ' <span style="color: #c45500;">(Virulent)</span>' : ''}</h3>
-            <p><strong>DC:</strong> ${affliction.dc}</p>
-            <p>Current Stage: ${affliction.currentStage}</p>
-            ${affliction.isVirulent ? `<p><em style="color: #c45500;">Virulent: Success has no effect, critical success reduces by only 1 stage</em></p>` : ''}
-            ${affliction.treatmentBonus ? `<p><em>Treatment bonus: ${affliction.treatmentBonus > 0 ? '+' : ''}${affliction.treatmentBonus}</em></p>` : ''}
+          <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000; padding: 8px;">
+            <p style="margin: 0;"><strong>${affliction.name} - DC ${affliction.dc}</strong> (GM Info) - Stage ${affliction.currentStage}</p>
           </div>
         `;
         await ChatMessage.create({
@@ -384,9 +381,23 @@ export class AfflictionService {
     const damageLinks = stage.damage.map(d => {
       const formula = typeof d === 'string' ? d : d.formula;
       const type = typeof d === 'object' ? d.type : 'untyped';
+      const isChoice = typeof d === 'object' && d.isChoice;
+      const altType = typeof d === 'object' ? d.alternativeType : null;
 
       // Clean formula
       const cleanFormula = formula.trim().replace(/\[.*$/, '');
+
+      // If this is a choice damage, show both options
+      if (isChoice && altType) {
+        const link1 = `@Damage[${cleanFormula}[${type}]]`;
+        const link2 = `@Damage[${cleanFormula}[${altType}]]`;
+        return `<div style="background: rgba(255, 165, 0, 0.15); padding: 8px; border-radius: 4px; border-left: 3px solid #992001; margin: 4px 0;">
+          <div style="font-weight: bold; color: #ff3300; margin-bottom: 4px; font-size: 0.9em;">Choose one:</div>
+          <div style="margin-left: 8px;">${link1}</div>
+          <div style="margin: 4px 0 0 8px;"><strong style="color: #ff3300;">OR</strong></div>
+          <div style="margin-left: 8px;">${link2}</div>
+        </div>`;
+      }
 
       // Create @Damage enrichment
       return type !== 'untyped'
@@ -429,8 +440,8 @@ export class AfflictionService {
     let newVirulentConsecutiveSuccesses = affliction.virulentConsecutiveSuccesses || 0;
     let showVirulentMessage = false;
 
-    // Virulent trait modifies save outcomes
-    if (affliction.isVirulent) {
+    // Virulent trait modifies save outcomes (but not for manual stage control)
+    if (affliction.isVirulent && !isManual) {
       switch (degree) {
         case DEGREE_OF_SUCCESS.CRITICAL_SUCCESS:
           stageChange = -1; // Virulent: Critical success reduces by 1 instead of 2
@@ -459,7 +470,7 @@ export class AfflictionService {
           break;
       }
     } else {
-      // Normal save outcomes
+      // Normal save outcomes (or manual control)
       switch (degree) {
         case DEGREE_OF_SUCCESS.CRITICAL_SUCCESS:
           stageChange = -2;
@@ -532,6 +543,7 @@ export class AfflictionService {
     if (affliction.inOnset && finalStage > 0) {
       updates.inOnset = false;
       updates.onsetRemaining = 0;
+      updates.durationElapsed = 0;  // Reset duration tracking for new stage
     }
 
     // Update tracking based on combat state
@@ -578,6 +590,13 @@ export class AfflictionService {
       }));
     }
 
+    // Check if stage actually changed
+    const oldStage = affliction.currentStage || 0;
+    if (finalStage === oldStage) {
+      // Stage didn't change (capped at max or min)
+      return;
+    }
+
     ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.STAGE_CHANGED', {
       tokenName: token.name,
       stage: finalStage,
@@ -585,7 +604,6 @@ export class AfflictionService {
     }));
 
     // Create chat message for stage change
-    const oldStage = affliction.currentStage || 0;
     const oldStageText = oldStage === 0 ? 'Initial Exposure' : `Stage ${oldStage}`;
     const stageDirection = finalStage > oldStage ? 'increased' : 'decreased';
     const stageIcon = finalStage > oldStage ? 'fa-arrow-up' : 'fa-arrow-down';
@@ -843,9 +861,16 @@ export class AfflictionService {
       let itemImg = 'icons/svg/hazard.svg'; // default
       if (affliction.sourceItemUuid) {
         try {
+          // Suppress notifications for missing items
+          const notify = ui.notifications.notify;
+          ui.notifications.notify = () => { };
           const sourceItem = await fromUuid(affliction.sourceItemUuid);
+          ui.notifications.notify = notify;
           if (sourceItem?.img) itemImg = sourceItem.img;
-        } catch { }
+        } catch {
+          // Restore notifications on error
+          ui.notifications.notify = ui.notifications.notify.bind?.(ui.notifications) || ui.notifications.notify;
+        }
       }
 
       // Build stage description
@@ -1094,6 +1119,7 @@ export class AfflictionService {
             inOnset: false,
             currentStage: targetStage,
             onsetRemaining: 0,
+            durationElapsed: 0,  // Reset for consistency
             nextSaveRound: combat.round + durationRounds,
             nextSaveInitiative: tokenCombatant?.initiative
           });
@@ -1148,6 +1174,11 @@ export class AfflictionService {
    * Check if affliction needs save based on world time elapsed
    */
   static async checkWorldTimeSave(token, affliction, deltaSeconds) {
+    // Skip if still in onset period
+    if (affliction.inOnset) {
+      return;
+    }
+
     // Skip if no current stage
     if (!affliction.currentStage || affliction.currentStage === 0) return;
 
@@ -1163,18 +1194,13 @@ export class AfflictionService {
 
     // Check if save is due
     if (newElapsed >= stageDurationSeconds) {
-      // Notify GM that save is due
-      ui.notifications.info(`${token.name} needs a save against ${affliction.name} (${Math.floor(newElapsed / 3600)}h elapsed)`);
-
       // Reset elapsed time
       await AfflictionStore.updateAffliction(token, affliction.id, {
         durationElapsed: 0
       });
 
-      // Optionally auto-prompt save
-      if (game.settings.get('pf2e-afflictioner', 'autoPromptSaves')) {
-        await this.promptSave(token, affliction);
-      }
+      // Always prompt save in chat during world time updates
+      await this.promptSave(token, affliction);
     } else {
       // Update elapsed time
       await AfflictionStore.updateAffliction(token, affliction.id, {

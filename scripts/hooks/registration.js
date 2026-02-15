@@ -4,6 +4,7 @@
 
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
+import { CounteractService } from '../services/CounteractService.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 
 export function registerAfflictionHooks() {
@@ -261,10 +262,15 @@ async function onWorldTimeUpdate(worldTime, delta) {
             continue;
           }
 
+          // Calculate next save time for world time tracking
+          const stageDurationSeconds = AfflictionParser.durationToSeconds(stageData.duration);
+
           await AfflictionStore.updateAffliction(token, id, {
             inOnset: false,
             currentStage: targetStage,
-            onsetRemaining: 0
+            onsetRemaining: 0,
+            durationElapsed: 0,  // Reset duration tracking for new stage
+            nextSaveTimestamp: game.time.worldTime + stageDurationSeconds
           });
 
           // Re-fetch affliction with updated currentStage
@@ -369,6 +375,12 @@ function onRenderChatMessage(message, html) {
 
   // Add "Apply Affliction" button to chat messages with affliction notes
   addApplyAfflictionButton(message, root);
+
+  // Add treatment affliction selection for Treat Poison/Disease actions
+  addTreatmentAfflictionSelection(message, root);
+
+  // Add counteract affliction selection for counteract spells (Cleanse Affliction, etc.)
+  addCounteractAfflictionSelection(message, root);
 
   // Handle initial save buttons (affliction already in "Initial Save" state)
   const rollInitialSaveButtons = root.querySelectorAll('.affliction-roll-initial-save');
@@ -578,6 +590,53 @@ function onRenderChatMessage(message, html) {
       btn.disabled = true;
     });
   });
+
+  // Handle roll counteract buttons
+  const rollCounteractButtons = root.querySelectorAll('.affliction-roll-counteract');
+  rollCounteractButtons.forEach(button => {
+    button.addEventListener('click', async (event) => {
+      const btn = event.currentTarget;
+      const tokenId = btn.dataset.tokenId;
+      const afflictionId = btn.dataset.afflictionId;
+      const counteractRank = parseInt(btn.dataset.counteractRank);
+      const afflictionRank = parseInt(btn.dataset.afflictionRank);
+      const dc = parseInt(btn.dataset.dc);
+      const skill = btn.dataset.skill || 'medicine';
+
+      const token = canvas.tokens.get(tokenId);
+      if (!token) {
+        ui.notifications.warn('Token not found');
+        return;
+      }
+
+      const affliction = AfflictionStore.getAffliction(token, afflictionId);
+      if (!affliction) {
+        ui.notifications.warn('Affliction not found');
+        return;
+      }
+
+      // Get caster (whoever has the spell or is doing the counteract)
+      const caster = canvas.tokens.controlled[0] || token;
+      const casterActor = caster.actor;
+
+      // Roll counteract check with selected skill
+      if (!casterActor.skills?.[skill]) {
+        ui.notifications.warn(`No ${skill} skill found. Select the caster token first.`);
+        return;
+      }
+
+      const roll = await casterActor.skills[skill].roll({ dc: { value: dc } });
+
+      // Get degree from roll
+      const degree = AfflictionService.calculateDegreeOfSuccess(roll.total, dc);
+
+      // Handle counteract result
+      await CounteractService.handleCounteractResult(token, affliction, counteractRank, afflictionRank, degree);
+
+      // Disable button after use
+      btn.disabled = true;
+    });
+  });
 }
 
 /**
@@ -734,3 +793,230 @@ async function addAfflictionDragSupport(message, htmlElement) {
   htmlElement.addEventListener('dragstart', onDragStart);
   htmlElement.addEventListener('dragend', onDragEnd);
 }
+
+/**
+ * Add affliction selection buttons to Treat Poison/Disease chat messages
+ */
+async function addTreatmentAfflictionSelection(message, htmlElement) {
+  // Only for GMs
+  if (!game.user.isGM) return;
+
+  // Check if already initialized
+  if (htmlElement.dataset.treatmentSelectionEnabled === 'true') return;
+
+  // Check if this is a skill check for Medicine
+  const flags = message.flags?.pf2e;
+  if (!flags?.context?.type || flags.context.type !== 'skill-check') return;
+
+  // Check if it's specifically Treat Poison or Treat Disease (in options array)
+  const options = flags.context?.options || [];
+  const isTreatPoison = options.includes('action:treat-poison');
+  const isTreatDisease = options.includes('action:treat-disease');
+
+  if (!isTreatPoison && !isTreatDisease) return;
+
+  // Get the roll total
+  const rollTotal = message.rolls?.[0]?.total;
+  if (typeof rollTotal !== 'number') return;
+
+  // Get the actor who performed the treatment (the roller)
+  const actorId = flags.context?.actor;
+  if (!actorId) return;
+
+  const actor = game.actors.get(actorId);
+  if (!actor) return;
+
+  // Check if canvas is ready
+  if (!canvas?.tokens) {
+    return;
+  }
+
+  // Get ALL tokens with matching afflictions (not just the treater)
+  const afflictionType = isTreatPoison ? 'poison' : 'disease';
+  const tokensWithAfflictions = [];
+
+  for (const token of canvas.tokens.placeables) {
+    const afflictions = AfflictionStore.getAfflictions(token);
+    const matching = Object.values(afflictions).filter(a => a.type === afflictionType);
+    if (matching.length > 0) {
+      tokensWithAfflictions.push({ token, afflictions: matching });
+    }
+  }
+
+  if (tokensWithAfflictions.length === 0) return;
+
+  // Mark as initialized
+  htmlElement.dataset.treatmentSelectionEnabled = 'true';
+
+  // Find where to add the buttons (try both selectors)
+  const messageContent = htmlElement.querySelector('.message-content') || htmlElement.querySelector('.card-content');
+  if (!messageContent) return;
+
+  // Create selection UI
+  const selectionDiv = document.createElement('div');
+  selectionDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: rgba(74, 124, 42, 0.15); border-left: 3px solid #4a7c2a; border-radius: 4px;';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'font-weight: bold; color: #4a7c2a; margin-bottom: 8px;';
+  header.innerHTML = '<i class="fas fa-medkit"></i> Apply Treatment To:';
+  selectionDiv.appendChild(header);
+
+  // Add button for each token's afflictions
+  for (const { token, afflictions: matchingAfflictions } of tokensWithAfflictions) {
+    for (const affliction of matchingAfflictions) {
+      const button = document.createElement('button');
+      button.style.cssText = 'width: 100%; padding: 6px; margin: 4px 0; background: #4a7c2a; border: 1px solid #5a8c3a; color: white; border-radius: 4px; cursor: pointer;';
+      const stageDisplay = affliction.currentStage === -1 ? 'Initial Save' : `Stage ${affliction.currentStage}`;
+      button.innerHTML = `${token.name}: ${affliction.name} (${stageDisplay})`;
+
+      button.addEventListener('click', async () => {
+        try {
+          // Apply treatment with the roll total and affliction DC
+          const { TreatmentService } = await import('../services/TreatmentService.js');
+          await TreatmentService.handleTreatmentResult(token, affliction, rollTotal, affliction.dc);
+
+          button.disabled = true;
+          button.style.opacity = '0.5';
+          button.innerHTML = `<i class="fas fa-check"></i> ${token.name}: ${affliction.name} - Treatment Applied`;
+        } catch (error) {
+          console.error('Error applying treatment:', error);
+          ui.notifications.error('Failed to apply treatment');
+        }
+      });
+
+      selectionDiv.appendChild(button);
+    }
+  }
+
+  messageContent.appendChild(selectionDiv);
+}
+
+/**
+ * Add affliction selection buttons to counteract spell messages (Cleanse Affliction, etc.)
+ */
+async function addCounteractAfflictionSelection(message, htmlElement) {
+  // Only for GMs and players
+  if (!message) return;
+
+  // Check if already initialized
+  if (htmlElement.dataset.counteractSelectionEnabled === 'true') return;
+
+  // Check if this is a spell message (check origin type)
+  const originType = message.flags?.pf2e?.origin?.type;
+  if (originType !== 'spell') return;
+
+  // Get item from message data
+  const itemUuid = message.flags?.pf2e?.origin?.uuid;
+  if (!itemUuid) return;
+
+  let item;
+  try {
+    item = await fromUuid(itemUuid);
+  } catch {
+    return;
+  }
+
+  if (!item) return;
+
+  // Check if spell has healing trait and is counteract spell
+  const traits = item.system?.traits?.value || [];
+  const isCounteractSpell = traits.includes('healing') &&
+    (item.name.toLowerCase().includes('cleanse') || item.name.toLowerCase().includes('counteract'));
+
+  if (!isCounteractSpell) return;
+
+  // Get the spell rank (check castRank first, then heightened level, then base level)
+  const spellRank = message.flags?.pf2e?.origin?.castRank ||
+                    item.system?.location?.heightenedLevel ||
+                    item.system?.level?.value || 1;
+
+  // Check if canvas is ready
+  if (!canvas?.tokens) {
+    return;
+  }
+
+  // Get all tokens with afflictions (no target in message for willing creature spells)
+  const tokensWithAfflictions = canvas.tokens.placeables.filter(t => {
+    const afflictions = AfflictionStore.getAfflictions(t);
+    return Object.keys(afflictions).length > 0;
+  });
+
+  if (tokensWithAfflictions.length === 0) return;
+
+  // Mark as initialized
+  htmlElement.dataset.counteractSelectionEnabled = 'true';
+
+  // Find where to add the buttons (try both selectors)
+  const messageContent = htmlElement.querySelector('.message-content') || htmlElement.querySelector('.card-content');
+  if (!messageContent) return;
+
+  // Create selection UI
+  const selectionDiv = document.createElement('div');
+  selectionDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: rgba(74, 124, 42, 0.15); border-left: 3px solid #4a7c2a; border-radius: 4px;';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'font-weight: bold; color: #4a7c2a; margin-bottom: 8px;';
+  header.innerHTML = `<i class="fas fa-shield-alt"></i> Counteract Affliction (Rank ${spellRank}):`;
+  selectionDiv.appendChild(header);
+
+  // Add button for each token with afflictions
+  for (const token of tokensWithAfflictions) {
+    const afflictions = AfflictionStore.getAfflictions(token);
+    const allAfflictions = Object.values(afflictions);
+
+    for (const affliction of allAfflictions) {
+      const button = document.createElement('button');
+      button.style.cssText = 'width: 100%; padding: 6px; margin: 4px 0; background: #4a7c2a; border: 1px solid #5a8c3a; color: white; border-radius: 4px; cursor: pointer;';
+      const stageDisplay = affliction.currentStage === -1 ? 'Initial Save' : `Stage ${affliction.currentStage}`;
+      button.innerHTML = `${token.name}: ${affliction.name} (${affliction.type}, ${stageDisplay})`;
+
+      button.addEventListener('click', async () => {
+      try {
+        // Auto-fill the counteract prompt with spell rank
+        const { CounteractService } = await import('../services/CounteractService.js');
+
+        // Get affliction rank for the prompt
+        const { level: afflictionLevel, rank: afflictionRank } = await CounteractService.calculateAfflictionRank(affliction);
+
+        // Create auto-filled template
+        const template = `
+          <form>
+            <input type="hidden" name="counteractRank" value="${spellRank}" />
+            <input type="hidden" name="dc" value="${affliction.dc}" />
+            <input type="hidden" name="skill" value="medicine" />
+            <div style="padding: 10px; background: rgba(74, 124, 42, 0.1); border-left: 3px solid #4a7c2a; border-radius: 4px;">
+              <p style="margin: 0; font-size: 0.9em;"><strong>Spell:</strong> ${item.name} (Rank ${spellRank})</p>
+              <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>Target:</strong> ${affliction.name} (Level ${afflictionLevel}, Rank ${afflictionRank})</p>
+              <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>Check:</strong> Medicine vs DC ${affliction.dc}</p>
+            </div>
+          </form>
+        `;
+
+        const confirmed = await foundry.applications.api.DialogV2.confirm({
+          window: { title: 'Counteract Affliction' },
+          content: template,
+          yes: { label: 'Create Counteract Prompt' },
+          no: { label: 'Cancel' }
+        });
+
+        if (!confirmed) return;
+
+        // Get caster actor from message
+        const casterId = message.flags?.pf2e?.context?.actor || message.speaker?.actor;
+        const casterActor = casterId ? game.actors.get(casterId) : null;
+
+        // Create counteract prompt with auto-detected values
+        await CounteractService.promptCounteract(token, affliction, casterActor);
+      } catch (error) {
+        console.error('Error creating counteract prompt:', error);
+        ui.notifications.error('Failed to create counteract prompt');
+      }
+    });
+
+    selectionDiv.appendChild(button);
+    }
+  }
+
+  messageContent.appendChild(selectionDiv);
+}
+
