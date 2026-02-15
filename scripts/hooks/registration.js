@@ -831,11 +831,16 @@ async function addTreatmentAfflictionSelection(message, htmlElement) {
     return;
   }
 
-  // Get ALL tokens with matching afflictions (not just the treater)
+  // Get targeted tokens with matching afflictions
   const afflictionType = isTreatPoison ? 'poison' : 'disease';
   const tokensWithAfflictions = [];
 
-  for (const token of canvas.tokens.placeables) {
+  // Check for targeted tokens first
+  const tokensToCheck = game.user.targets.size > 0
+    ? Array.from(game.user.targets)
+    : canvas.tokens.placeables;
+
+  for (const token of tokensToCheck) {
     const afflictions = AfflictionStore.getAfflictions(token);
     const matching = Object.values(afflictions).filter(a => a.type === afflictionType);
     if (matching.length > 0) {
