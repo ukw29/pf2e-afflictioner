@@ -113,6 +113,43 @@ export class ConditionStackingService {
   }
 
   /**
+   * Remove orphaned instances (from afflictions that no longer exist)
+   */
+  static async cleanupOrphanedInstances(token) {
+    const actor = token.actor;
+    if (!actor) return;
+
+    const allInstances = await this._getAllConditionInstances(actor);
+    if (Object.keys(allInstances).length === 0) return;
+
+    // Get all active affliction IDs for this token
+    const { default: AfflictionStore } = await import('../stores/AfflictionStore.js');
+    const activeAfflictions = AfflictionStore.getAfflictions(token);
+    const activeAfflictionIds = new Set(Object.keys(activeAfflictions).map(id => activeAfflictions[id].id));
+
+    let changed = false;
+
+    // Remove instances from non-existent afflictions
+    for (const [slug, instances] of Object.entries(allInstances)) {
+      const validInstances = instances.filter(inst =>
+        activeAfflictionIds.has(inst.sourceAfflictionId)
+      );
+
+      if (validInstances.length !== instances.length) {
+        changed = true;
+        if (validInstances.length === 0) {
+          await this._removeCondition(actor, slug);
+        }
+        await this._setConditionInstances(actor, slug, validInstances);
+      }
+    }
+
+    if (changed) {
+      await this.recalculateConditions(actor);
+    }
+  }
+
+  /**
    * Clean up expired instances and recalculate
    */
   static async cleanupExpiredInstances(actor, currentRound, currentInitiative, currentTimestamp) {

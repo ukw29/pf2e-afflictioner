@@ -273,6 +273,14 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
     const combat = game.combat;
 
+    // Cleanup orphaned condition instances before displaying
+    for (const token of tokensToCheck) {
+      if (token?.actor) {
+        const { ConditionStackingService } = await import('../services/ConditionStackingService.js');
+        await ConditionStackingService.cleanupOrphanedInstances(token);
+      }
+    }
+
     for (const token of tokensToCheck) {
       const afflictions = AfflictionStore.getAfflictions(token);
 
