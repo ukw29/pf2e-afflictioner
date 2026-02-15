@@ -123,7 +123,7 @@ export class ConditionStackingService {
     if (Object.keys(allInstances).length === 0) return;
 
     // Get all active affliction IDs for this token
-    const { default: AfflictionStore } = await import('../stores/AfflictionStore.js');
+    const AfflictionStore = await import('../stores/AfflictionStore.js');
     const activeAfflictions = AfflictionStore.getAfflictions(token);
     const activeAfflictionIds = new Set(Object.keys(activeAfflictions).map(id => activeAfflictions[id].id));
 
