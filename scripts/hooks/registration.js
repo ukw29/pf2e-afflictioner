@@ -5,6 +5,7 @@
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
 import { CounteractService } from '../services/CounteractService.js';
+import { ConditionStackingService } from '../services/ConditionStackingService.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 
 export function registerAfflictionHooks() {
@@ -197,6 +198,16 @@ async function onCombatUpdate(combat, changed, options, userId) {
 
       // Check durations
       await AfflictionService.checkDurations(token, combat);
+
+      // Cleanup expired condition instances
+      if (token.actor) {
+        await ConditionStackingService.cleanupExpiredInstances(
+          token.actor,
+          combat.round,
+          combat.combatant?.initiative,
+          null
+        );
+      }
     }
   }
 
@@ -254,7 +265,7 @@ async function onWorldTimeUpdate(worldTime, delta) {
         if (newRemaining <= 0) {
           // Onset complete - advance to stage based on initial save result
           // stageAdvancement: 1 for failure, 2 for critical failure
-          const targetStage = affliction.stageAdvancement || 1;
+          const targetStage = Math.min(affliction.stageAdvancement || 1, affliction.stages.length);
           const stageData = affliction.stages[targetStage - 1];
 
           if (!stageData) {
@@ -289,12 +300,26 @@ async function onWorldTimeUpdate(worldTime, delta) {
           });
         }
       } else {
+        // Check if maximum duration expired
+        const wasRemoved = await AfflictionService.checkWorldTimeMaxDuration(token, affliction);
+        if (wasRemoved) continue; // Skip further checks if affliction was removed
+
         // Check if save is due based on elapsed time
         await AfflictionService.checkWorldTimeSave(token, affliction, delta);
 
         // Note: Damage prompts are NOT posted during world time updates
         // Damage is only prompted when entering a new stage (via save result)
       }
+    }
+
+    // Cleanup expired condition instances for this token
+    if (token.actor) {
+      await ConditionStackingService.cleanupExpiredInstances(
+        token.actor,
+        null,
+        null,
+        worldTime
+      );
     }
   }
 }

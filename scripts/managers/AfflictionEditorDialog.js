@@ -59,9 +59,10 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     const affliction = foundry.utils.deepClone(this.editedData);
 
     if (affliction.stages) {
+      const TextEditorClass = foundry.applications?.ux?.TextEditor?.implementation || TextEditor;
       for (const stage of affliction.stages) {
         if (stage.effects) {
-          stage.enrichedEffects = await TextEditor.enrichHTML(stage.effects, { async: true });
+          stage.enrichedEffects = await TextEditorClass.enrichHTML(stage.effects, { async: true });
         }
       }
     }
@@ -173,7 +174,8 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
   static async saveChanges(_event, _button) {
     const dialog = this;
-    const formData = new FormDataExtended(dialog.element).object;
+    const FormDataClass = foundry.applications?.ux?.FormDataExtended || FormDataExtended;
+    const formData = new FormDataClass(dialog.element).object;
 
     // Update DC
     if (formData.dc !== undefined) {

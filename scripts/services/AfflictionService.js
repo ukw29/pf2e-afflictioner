@@ -7,6 +7,7 @@ import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionParser } from './AfflictionParser.js';
 import * as AfflictionDefinitionStore from '../stores/AfflictionDefinitionStore.js';
 import { AfflictionEditorService } from './AfflictionEditorService.js';
+import { ConditionStackingService } from './ConditionStackingService.js';
 
 export class AfflictionService {
   /**
@@ -673,29 +674,23 @@ export class AfflictionService {
     for (const condition of stage.conditions || []) {
       try {
         const conditionSlug = condition.name.toLowerCase();
+        const expirationData = this._buildExpirationData(affliction, stage, token);
 
-        // Get existing condition if any
-        const existingCondition = actor.itemTypes.condition.find(
-          c => c.slug === conditionSlug
+        await ConditionStackingService.addConditionInstance(
+          actor,
+          token.id,
+          affliction.id,
+          conditionSlug,
+          condition.value || null,
+          expirationData
         );
-
-        if (existingCondition) {
-          // Update existing condition value if different
-          if (condition.value && existingCondition.value !== condition.value) {
-            await existingCondition.update({ 'system.value.value': condition.value });
-          }
-        } else {
-          // Add new condition
-          if (condition.value) {
-            await actor.increaseCondition(conditionSlug, { value: condition.value });
-          } else {
-            await actor.increaseCondition(conditionSlug);
-          }
-        }
       } catch (error) {
         console.error('PF2e Afflictioner | Error applying condition:', error);
       }
     }
+
+    // Recalculate to apply highest values across all afflictions
+    await ConditionStackingService.recalculateConditions(actor);
 
     // Apply auto-effects if any
     if (stage.autoEffects && Array.isArray(stage.autoEffects) && stage.autoEffects.length > 0) {
@@ -1062,30 +1057,25 @@ export class AfflictionService {
       }
     }
 
-    // Remove or update conditions from old stage
-    for (const condition of oldStage.conditions || []) {
-      const conditionSlug = condition.name.toLowerCase();
+    // Remove condition instances from this affliction
+    // ConditionStackingService will recalculate and apply highest remaining values
+    await ConditionStackingService.removeConditionInstancesForAffliction(actor, affliction.id);
+    await ConditionStackingService.recalculateConditions(actor);
 
-      // If condition doesn't exist in new stage, remove it entirely
-      if (!newConditions.has(conditionSlug)) {
+    // BACKWARD COMPATIBILITY: Also remove conditions the old way for afflictions applied before ConditionStackingService
+    // This ensures conditions from old afflictions are cleaned up even if not tracked
+    if (!newStageData && oldStage?.conditions) {
+      for (const condition of oldStage.conditions) {
+        const conditionSlug = condition.name.toLowerCase();
         try {
-          await actor.decreaseCondition(conditionSlug, { forceRemove: true });
-        } catch (error) {
-          console.error('PF2e Afflictioner | Error removing condition:', error);
-        }
-      } else {
-        // Condition exists in both stages - check if value changed
-        const newValue = newConditions.get(conditionSlug);
-        const oldValue = condition.value || null;
-
-        // If value decreased or was removed, update the condition
-        if (oldValue !== null && (newValue === null || newValue < oldValue)) {
-          try {
-            // Remove the old condition entirely, it will be re-added with new value
+          // Check if this condition is still tracked (has instances from other afflictions)
+          const instances = await ConditionStackingService._getConditionInstances(actor, conditionSlug);
+          if (instances.length === 0) {
+            // No tracked instances - remove directly as fallback
             await actor.decreaseCondition(conditionSlug, { forceRemove: true });
-          } catch (error) {
-            console.error('PF2e Afflictioner | Error updating condition:', error);
           }
+        } catch (error) {
+          console.debug(`PF2e Afflictioner | Fallback condition removal for ${conditionSlug}`);
         }
       }
     }
@@ -1104,7 +1094,7 @@ export class AfflictionService {
         if (newRemaining <= 0) {
           // Onset complete - advance to stage based on initial save result
           // stageAdvancement: 1 for failure, 2 for critical failure
-          const targetStage = affliction.stageAdvancement || 1;
+          const targetStage = Math.min(affliction.stageAdvancement || 1, affliction.stages.length);
           const stageData = affliction.stages[targetStage - 1];
 
           if (!stageData) {
@@ -1171,6 +1161,36 @@ export class AfflictionService {
   }
 
   /**
+   * Check maximum duration expiration for world time (non-combat)
+   */
+  static async checkWorldTimeMaxDuration(token, affliction) {
+    if (!affliction.maxDuration) return false; // indefinite
+
+    // Track total elapsed time since affliction was added
+    const totalElapsed = (game.time.worldTime - (affliction.addedTimestamp / 1000)) || 0;
+    const maxDurationSeconds = AfflictionParser.durationToSeconds(affliction.maxDuration);
+
+    if (totalElapsed >= maxDurationSeconds) {
+      // Duration expired
+      await AfflictionStore.removeAffliction(token, affliction.id);
+      await this.removeStageEffects(token, affliction);
+
+      // Remove visual indicator
+      const { VisualService } = await import('./VisualService.js');
+      await VisualService.removeAfflictionIndicator(token);
+
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.RECOVERED', {
+        tokenName: token.name,
+        afflictionName: affliction.name
+      }));
+
+      return true; // Affliction was removed
+    }
+
+    return false;
+  }
+
+  /**
    * Check if affliction needs save based on world time elapsed
    */
   static async checkWorldTimeSave(token, affliction, deltaSeconds) {
@@ -1206,6 +1226,38 @@ export class AfflictionService {
       await AfflictionStore.updateAffliction(token, affliction.id, {
         durationElapsed: newElapsed
       });
+    }
+  }
+
+  /**
+   * Build expiration data for condition instance tracking
+   */
+  static _buildExpirationData(_affliction, stage, token) {
+    const combat = game.combat;
+
+    if (!stage.duration) {
+      return { type: "permanent" };
+    }
+
+    if (combat) {
+      const durationSeconds = AfflictionParser.durationToSeconds(stage.duration);
+      const durationRounds = Math.ceil(durationSeconds / 6);
+      const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
+
+      return {
+        type: "combat",
+        round: combat.round + durationRounds,
+        initiative: tokenCombatant?.initiative,
+        timestamp: null
+      };
+    } else {
+      const durationSeconds = AfflictionParser.durationToSeconds(stage.duration);
+      return {
+        type: "worldTime",
+        round: null,
+        initiative: null,
+        timestamp: game.time.worldTime + durationSeconds
+      };
     }
   }
 

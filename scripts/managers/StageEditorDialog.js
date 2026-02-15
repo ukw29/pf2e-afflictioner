@@ -1139,7 +1139,8 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
    * Update stageData from current form values (without closing)
    */
   async updateFromForm() {
-    const formData = new FormDataExtended(this.element).object;
+    const FormDataClass = foundry.applications?.ux?.FormDataExtended || FormDataExtended;
+    const formData = new FormDataClass(this.element).object;
 
     // Update effects
     if (formData.effects !== undefined) {
@@ -1161,9 +1162,26 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     }
 
     // Update damage - construct formula from parts
-    // Only update if form has damage data
+    // Extract from flat or nested structure
+    const damageArray = [];
     if (formData.damage !== undefined) {
-      const damageArray = Array.isArray(formData.damage) ? formData.damage : [formData.damage];
+      const arr = Array.isArray(formData.damage) ? formData.damage : [formData.damage];
+      damageArray.push(...arr);
+    } else {
+      // Flat structure: damage.0.diceCount, damage.1.diceCount, etc.
+      let index = 0;
+      while (formData[`damage.${index}.diceType`] !== undefined) {
+        damageArray.push({
+          diceCount: formData[`damage.${index}.diceCount`],
+          diceType: formData[`damage.${index}.diceType`],
+          bonus: formData[`damage.${index}.bonus`],
+          damageType: formData[`damage.${index}.damageType`]
+        });
+        index++;
+      }
+    }
+
+    if (damageArray.length > 0) {
       this.stageData.damage = damageArray
         .filter(d => d.diceType && d.damageType)
         .map(d => {
@@ -1184,9 +1202,27 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     }
 
     // Update conditions
-    // Only update if form has condition data
+    // Extract from flat or nested structure
+    const conditionArray = [];
     if (formData.condition !== undefined) {
-      const conditionArray = Array.isArray(formData.condition) ? formData.condition : [formData.condition];
+      // Nested structure (if FormDataExtended creates it)
+      const arr = Array.isArray(formData.condition) ? formData.condition : [formData.condition];
+      conditionArray.push(...arr);
+    } else {
+      // Flat structure: condition.0.name, condition.1.name, etc.
+      let index = 0;
+      while (formData[`condition.${index}.name`] !== undefined) {
+        conditionArray.push({
+          name: formData[`condition.${index}.name`],
+          value: formData[`condition.${index}.value`],
+          persistentFormula: formData[`condition.${index}.persistentFormula`],
+          persistentType: formData[`condition.${index}.persistentType`]
+        });
+        index++;
+      }
+    }
+
+    if (conditionArray.length > 0) {
       this.stageData.conditions = conditionArray
         .filter(c => c.name) // Only keep conditions with a selected name
         .map(c => {
@@ -1208,9 +1244,24 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     }
 
     // Update weakness
-    // Only update if form has weakness data
+    // Extract from flat or nested structure
+    const weaknessArray = [];
     if (formData.weakness !== undefined) {
-      const weaknessArray = Array.isArray(formData.weakness) ? formData.weakness : [formData.weakness];
+      const arr = Array.isArray(formData.weakness) ? formData.weakness : [formData.weakness];
+      weaknessArray.push(...arr);
+    } else {
+      // Flat structure: weakness.0.type, weakness.1.type, etc.
+      let index = 0;
+      while (formData[`weakness.${index}.type`] !== undefined) {
+        weaknessArray.push({
+          type: formData[`weakness.${index}.type`],
+          value: formData[`weakness.${index}.value`]
+        });
+        index++;
+      }
+    }
+
+    if (weaknessArray.length > 0) {
       this.stageData.weakness = weaknessArray
         .filter(w => w.type && w.value)
         .map(w => ({

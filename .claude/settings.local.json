@@ -10,7 +10,8 @@
       "Bash(node -c:*)",
       "Bash(npm run lint)",
       "Bash(grep:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npm i:*)"
     ]
   }
 }
