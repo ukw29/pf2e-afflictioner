@@ -1023,7 +1023,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     await dialog.render({ force: true });
   }
 
-  static async removeEffect(event, button) {
+  static async removeEffect(_event, button) {
     const dialog = this;
     const index = parseInt(button.dataset.index);
     dialog.stageData.autoEffects.splice(index, 1);
@@ -1031,7 +1031,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     await dialog.render({ force: true });
   }
 
-  static async removeAllEffects(event, button) {
+  static async removeAllEffects(_event, _button) {
     const dialog = this;
 
     // Confirm removal
@@ -1220,7 +1220,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     }
   }
 
-  static async saveStage(event, button) {
+  static async saveStage(_event, _button) {
     const dialog = this;
 
     // Update from form values
@@ -1235,7 +1235,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     await dialog.close();
   }
 
-  static async cancelStageEdit(event, button) {
+  static async cancelStageEdit(_event, _button) {
     const dialog = this;
     await dialog.close();
   }

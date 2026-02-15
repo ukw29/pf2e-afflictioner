@@ -54,7 +54,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     this.editedData = AfflictionEditorService.prepareEditStructure(afflictionData);
   }
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     // Enrich stage effects text with clickable links
     const affliction = foundry.utils.deepClone(this.editedData);
 
@@ -71,7 +71,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     };
   }
 
-  static async editStage(event, button) {
+  static async editStage(_event, button) {
     const dialog = this;
     const stageNumber = parseInt(button.dataset.stageNumber);
     const stage = dialog.editedData.stages.find(s => s.number === stageNumber);
@@ -96,7 +96,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     stageEditor.render(true);
   }
 
-  static async addStage(event, button) {
+  static async addStage(_event, _button) {
     const dialog = this;
 
     // Create new stage with next stage number
@@ -117,7 +117,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     await dialog.render({ force: true });
   }
 
-  static async removeStage(event, button) {
+  static async removeStage(_event, button) {
     const dialog = this;
     const stageNumber = parseInt(button.dataset.stageNumber);
 
@@ -152,7 +152,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     }
   }
 
-  static async toggleOnset(event, button) {
+  static async toggleOnset(_event, _button) {
     const dialog = this;
 
     if (dialog.editedData.onset && dialog.editedData.onset.value > 0) {
@@ -171,7 +171,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     await dialog.render({ force: true });
   }
 
-  static async saveChanges(event, button) {
+  static async saveChanges(_event, _button) {
     const dialog = this;
     const formData = new FormDataExtended(dialog.element).object;
 
@@ -223,12 +223,12 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     }
   }
 
-  static async cancelEdit(event, button) {
+  static async cancelEdit(_event, _button) {
     const dialog = this;
     await dialog.close();
   }
 
-  static async resetToDefault(event, button) {
+  static async resetToDefault(_event, _button) {
     const dialog = this;
 
     // Confirm reset
