@@ -101,7 +101,7 @@ export class CounteractService {
       content: template,
       ok: {
         label: 'Create Counteract Prompt',
-        callback: (event, button, dialog) => new FormDataExtended(button.form).object
+        callback: (_event, button, _dialog) => new FormDataExtended(button.form).object
       }
     });
 

@@ -209,7 +209,7 @@ export class SocketService {
   /**
    * Handle affliction change notification
    */
-  static async notifyAfflictionChange(tokenId, afflictionName, type) {
+  static async notifyAfflictionChange(tokenId, _afflictionName, _type) {
     const token = canvas.tokens.get(tokenId);
     if (!token) return;
 

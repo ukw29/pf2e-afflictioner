@@ -283,7 +283,7 @@ export class AfflictionService {
   static async checkForScheduledSaves(token, combat) {
     const afflictions = AfflictionStore.getAfflictions(token);
 
-    for (const [id, affliction] of Object.entries(afflictions)) {
+    for (const [_id, affliction] of Object.entries(afflictions)) {
       // Skip if still in onset period
       if (affliction.inOnset) continue;
 
@@ -921,7 +921,7 @@ export class AfflictionService {
   /**
    * Update existing affliction effect for new stage
    */
-  static async updateAfflictionEffect(actor, affliction, stage, bonuses) {
+  static async updateAfflictionEffect(_actor, affliction, stage, bonuses) {
     try {
       const effect = await fromUuid(affliction.appliedEffectUuid);
       if (!effect) return null;
@@ -1279,7 +1279,7 @@ export class AfflictionService {
   static findExistingAffliction(token, afflictionName) {
     const afflictions = AfflictionStore.getAfflictions(token);
 
-    for (const [id, affliction] of Object.entries(afflictions)) {
+    for (const [_id, affliction] of Object.entries(afflictions)) {
       if (affliction.name === afflictionName) {
         return affliction;
       }

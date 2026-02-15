@@ -2,10 +2,7 @@
  * Add Affliction Dialog - Manual entry or item selection
  */
 
-import { MODULE_ID } from '../constants.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
-import * as AfflictionStore from '../stores/AfflictionStore.js';
-import { VisualService } from '../services/VisualService.js';
 
 export class AddAfflictionDialog extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -45,7 +42,7 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
     this.selectedItem = null;
   }
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     // Get all items with poison/disease/curse traits from actor
     const afflictionItems = [];
     if (this.token?.actor) {
@@ -108,7 +105,7 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
     return afflictions.slice(0, 20); // Limit to 20 for performance
   }
 
-  static async addFromItem(event, button) {
+  static async addFromItem(_event, button) {
     const itemUuid = button.dataset.itemUuid;
 
     try {
@@ -138,7 +135,7 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
     }
   }
 
-  static async addManual(event, button) {
+  static async addManual(_event, _button) {
     // Create a basic affliction template and prompt for details
     const template = `
       <form>
@@ -170,7 +167,7 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
       content: template,
       ok: {
         label: 'Create',
-        callback: (event, button, dialog) => new FormDataExtended(button.form).object
+        callback: (_event, button, _dialog) => new FormDataExtended(button.form).object
       }
     });
 
@@ -215,7 +212,7 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
     ui.notifications.info('Affliction added. Use the edit button to customize stages and effects.');
   }
 
-  static async formHandler(event, form, formData) {
+  static async formHandler(_event, _form, _formData) {
     // Handle form submission if needed
   }
 

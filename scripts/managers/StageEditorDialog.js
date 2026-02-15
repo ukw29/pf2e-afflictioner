@@ -63,7 +63,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     });
   }
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     const effectsText = this.stageData.effects || '';
 
     // Parse damage formulas into structured parts for display
@@ -202,7 +202,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     return { diceCount: 1, diceType: 'd6', bonus: 0 };
   }
 
-  static async parseEffectsText(event, button) {
+  static async parseEffectsText(_event, _button) {
     const dialog = this;
 
     // Get current effects text
@@ -469,7 +469,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     await dialog.render({ force: true });
   }
 
-  static async addDamage(event, button) {
+  static async addDamage(_event, _button) {
     const dialog = this;
 
     // Save current form values first
@@ -483,14 +483,14 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     await dialog.render({ force: true });
   }
 
-  static async removeDamage(event, button) {
+  static async removeDamage(_event, button) {
     const dialog = this;
     const index = parseInt(button.dataset.index);
     dialog.stageData.damage.splice(index, 1);
     await dialog.render({ force: true });
   }
 
-  static async addCondition(event, button) {
+  static async addCondition(_event, _button) {
     const dialog = this;
 
     // Save current form values first
@@ -504,14 +504,14 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     await dialog.render({ force: true });
   }
 
-  static async removeCondition(event, button) {
+  static async removeCondition(_event, button) {
     const dialog = this;
     const index = parseInt(button.dataset.index);
     dialog.stageData.conditions.splice(index, 1);
     await dialog.render({ force: true });
   }
 
-  static async addWeakness(event, button) {
+  static async addWeakness(_event, _button) {
     const dialog = this;
 
     // Save current form values first
@@ -525,14 +525,14 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     await dialog.render({ force: true });
   }
 
-  static async removeWeakness(event, button) {
+  static async removeWeakness(_event, button) {
     const dialog = this;
     const index = parseInt(button.dataset.index);
     dialog.stageData.weakness.splice(index, 1);
     await dialog.render({ force: true });
   }
 
-  static async openEffect(event, button) {
+  static async openEffect(_event, button) {
     const dialog = this;
     const uuid = button.dataset.uuid;
     if (!uuid) return;
@@ -720,7 +720,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       content: content,
       ok: {
         label: 'Add',
-        callback: (event, button) => new FormDataExtended(button.form).object
+        callback: (_event, button) => new FormDataExtended(button.form).object
       },
       rejectClose: false
     });
@@ -959,7 +959,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       content: content,
       ok: {
         label: 'Save',
-        callback: (event, button) => new FormDataExtended(button.form).object
+        callback: (_event, button) => new FormDataExtended(button.form).object
       },
       rejectClose: false
     });

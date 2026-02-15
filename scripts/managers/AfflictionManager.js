@@ -2,7 +2,6 @@
  * Affliction Manager - ApplicationV2-based UI for managing afflictions
  */
 
-import { MODULE_ID } from '../constants.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
 import { TreatmentService } from '../services/TreatmentService.js';
@@ -79,7 +78,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       this.render({ force: true });
     });
 
-    this._worldTimeHook = Hooks.on('updateWorldTime', (worldTime, delta) => {
+    this._worldTimeHook = Hooks.on('updateWorldTime', (_worldTime, _delta) => {
       this.render({ force: true });
     });
   }
@@ -172,7 +171,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
   }
 
-  async _applyDraggedAffliction(afflictionData, itemUuid, targetTokenId = null) {
+  async _applyDraggedAffliction(afflictionData, _itemUuid, targetTokenId = null) {
     // Priority: dropped on token section > filter token > selected token
     let token = null;
 
@@ -263,7 +262,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     return super.close(options);
   }
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     // Get all tokens with afflictions
     const tokensWithAfflictions = [];
 
@@ -504,7 +503,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     return tooltip.trim();
   }
 
-  static async addAffliction(event, button) {
+  static async addAffliction(_event, _button) {
     // Get selected token or first token with afflictions
     const token = canvas.tokens.controlled[0] ||
       (this.filterTokenId ? canvas.tokens.get(this.filterTokenId) : null);
@@ -519,7 +518,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     new AddAfflictionDialog(token).render(true);
   }
 
-  static async removeAffliction(event, button) {
+  static async removeAffliction(_event, button) {
     const afflictionId = button.dataset.afflictionId;
     const tokenId = button.dataset.tokenId;
     const token = canvas.tokens.get(tokenId);
@@ -560,7 +559,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     this.render({ force: true });
   }
 
-  static async editAffliction(event, button) {
+  static async editAffliction(_event, button) {
     const afflictionId = button.dataset.afflictionId;
     const tokenId = button.dataset.tokenId;
     const token = canvas.tokens.get(tokenId);
@@ -581,7 +580,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     new AfflictionEditorDialog(affliction).render(true);
   }
 
-  static async clearAllAfflictions(event, button) {
+  static async clearAllAfflictions(_event, _button) {
     // Confirm before clearing
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       title: game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL_CONFIRM_TITLE'),
@@ -639,7 +638,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     this.render({ force: true });
   }
 
-  static async progressStage(event, button) {
+  static async progressStage(_event, button) {
     const afflictionId = button.dataset.afflictionId;
     const tokenId = button.dataset.tokenId;
     const token = canvas.tokens.get(tokenId);
@@ -662,7 +661,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
   }
 
-  static async regressStage(event, button) {
+  static async regressStage(_event, button) {
     const afflictionId = button.dataset.afflictionId;
     const tokenId = button.dataset.tokenId;
     const token = canvas.tokens.get(tokenId);
@@ -682,7 +681,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
   }
 
-  static async rollSave(event, button) {
+  static async rollSave(_event, button) {
     const afflictionId = button.dataset.afflictionId;
     const tokenId = button.dataset.tokenId;
     const token = canvas.tokens.get(tokenId);
@@ -693,7 +692,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
   }
 
-  static async rollDamage(event, button) {
+  static async rollDamage(_event, button) {
     const afflictionId = button.dataset.afflictionId;
     const tokenId = button.dataset.tokenId;
     const token = canvas.tokens.get(tokenId);
@@ -704,7 +703,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
   }
 
-  static async treatAffliction(event, button) {
+  static async treatAffliction(_event, button) {
     const afflictionId = button.dataset.afflictionId;
     const tokenId = button.dataset.tokenId;
     const token = canvas.tokens.get(tokenId);
@@ -715,7 +714,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
   }
 
-  static async counteractAffliction(event, button) {
+  static async counteractAffliction(_event, button) {
     const afflictionId = button.dataset.afflictionId;
     const tokenId = button.dataset.tokenId;
     const token = canvas.tokens.get(tokenId);
