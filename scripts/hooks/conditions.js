@@ -1,36 +1,15 @@
 /**
- * Condition Hooks - Prevent manual removal of affliction-managed conditions
+ * Affliction Effect Badge Sync - Allow GMs to manually adjust stages via badge value
  */
 
 import { MODULE_ID } from '../constants.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
-import { ConditionStackingService } from '../services/ConditionStackingService.js';
 
 /**
- * Prevent deletion of conditions that are managed by afflictions
- */
-export function onPreDeleteItem(item, options, userId) {
-  // Only check conditions
-  if (item.type !== 'condition') return true;
-
-  // Check if this condition is managed by an affliction
-  const isAfflictionManaged = item.getFlag(MODULE_ID, 'fromAffliction');
-
-  if (isAfflictionManaged) {
-    // Prevent deletion unless it's from our cleanup code
-    if (!options?.bypassAfflictionLock) {
-      ui.notifications.warn(`${item.name} is managed by an affliction and cannot be manually removed. Manage the affliction to remove this condition.`);
-      return false; // Prevent deletion
-    }
-  }
-
-  return true; // Allow deletion
-}
-
-/**
- * Prevent updates to conditions that are managed by afflictions
- * Also handle GM badge changes on affliction effects to sync stage
+ * Handle GM badge changes on affliction effects to sync stage
+ * Badge value 0 = removes affliction (cure)
+ * Badge value 1-N = changes to that stage
  */
 export async function onPreUpdateItem(item, changes, options, userId) {
   // Check if this is an affliction effect with badge change
@@ -59,13 +38,9 @@ export async function onPreUpdateItem(item, changes, options, userId) {
                 // Stage 0 = cured, remove the affliction
                 if (newStage === 0) {
                   const oldStageData = affliction.stages[affliction.currentStage - 1];
-                  const actor = token.actor;
-
-                  // Remove condition instances from stacking service
-                  await ConditionStackingService.removeConditionInstancesForAffliction(actor, affliction.id);
-                  await ConditionStackingService.recalculateConditions(actor);
 
                   // Remove affliction and stage effects
+                  // NOTE: Conditions are auto-removed by GrantItem when effect is deleted
                   await AfflictionStore.removeAffliction(token, affliction.id);
                   await AfflictionService.removeStageEffects(token, affliction, oldStageData, null);
 
@@ -110,26 +85,5 @@ export async function onPreUpdateItem(item, changes, options, userId) {
     }
   }
 
-  // Only check conditions
-  if (item.type !== 'condition') return true;
-
-  // Check if this condition is managed by an affliction
-  const isAfflictionManaged = item.getFlag(MODULE_ID, 'fromAffliction');
-
-  if (isAfflictionManaged) {
-    // Check if they're trying to update the value (decreasing levels)
-    const isValueChange = changes.system?.value?.value !== undefined;
-
-    // Allow GMs to manually adjust condition levels
-    const user = game.users.get(userId);
-    const isGM = user?.isGM;
-
-    // Prevent updates unless it's from our cleanup code or the user is a GM
-    if (isValueChange && !options?.bypassAfflictionLock && !isGM) {
-      ui.notifications.warn(`${item.name} is managed by an affliction and cannot be manually modified. Manage the affliction to change this condition.`);
-      return false; // Prevent update
-    }
-  }
-
-  return true; // Allow update
+  return true; // GrantItem handles all condition protection
 }

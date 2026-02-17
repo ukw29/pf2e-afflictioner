@@ -42,6 +42,27 @@
         </button>
       {{/if}}
     </div>
+
+    <div class="form-group max-duration-group">
+      <label>{{localize 'PF2E_AFFLICTIONER.EDITOR.MAX_DURATION'}}</label>
+      {{#if affliction.maxDuration}}
+        <input type="number" name="maxDuration.value" value="{{affliction.maxDuration.value}}" min="0" placeholder="0" />
+        <select name="maxDuration.unit">
+          <option value="round" {{#if (eq affliction.maxDuration.unit "round")}}selected{{/if}}>Round(s)</option>
+          <option value="minute" {{#if (eq affliction.maxDuration.unit "minute")}}selected{{/if}}>Minute(s)</option>
+          <option value="hour" {{#if (eq affliction.maxDuration.unit "hour")}}selected{{/if}}>Hour(s)</option>
+          <option value="day" {{#if (eq affliction.maxDuration.unit "day")}}selected{{/if}}>Day(s)</option>
+        </select>
+        <button type="button" data-action="toggleMaxDuration" class="toggle-max-duration-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.REMOVE_MAX_DURATION'}}">
+          <i class="fas fa-times"></i>
+        </button>
+      {{else}}
+        <span class="no-max-duration">{{localize 'PF2E_AFFLICTIONER.EDITOR.NO_MAX_DURATION'}}</span>
+        <button type="button" data-action="toggleMaxDuration" class="toggle-max-duration-btn add-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.ADD_MAX_DURATION'}}">
+          <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.ADD_MAX_DURATION'}}
+        </button>
+      {{/if}}
+    </div>
   </section>
 
   <!-- Stages section -->

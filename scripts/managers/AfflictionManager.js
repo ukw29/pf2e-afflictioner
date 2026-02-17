@@ -273,13 +273,8 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
     const combat = game.combat;
 
-    // Cleanup orphaned condition instances before displaying
-    for (const token of tokensToCheck) {
-      if (token?.actor) {
-        const { ConditionStackingService } = await import('../services/ConditionStackingService.js');
-        await ConditionStackingService.cleanupOrphanedInstances(token);
-      }
-    }
+    // NOTE: Condition cleanup is now handled by GrantItem automatically
+    // When affliction effects are removed, PF2e removes granted conditions
 
     for (const token of tokensToCheck) {
       const afflictions = AfflictionStore.getAfflictions(token);

@@ -28,6 +28,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Useful for story adjustments or correcting errors
   - Non-GMs are prevented from modifying to maintain affliction integrity
 
+- **Maximum Duration UI**: Added affliction editor field for maximum duration
+  - New UI field to manually set or adjust maximum duration
+  - Toggle button to add/remove maximum duration (makes affliction indefinite when removed)
+  - Supports rounds, minutes, hours, and days
+  - Backend tracking and parsing was already implemented in v1.0.0-alpha.3
+
+- **Maximum Duration Chat Notifications**: GMs receive chat messages with removal button when max duration expires
+  - Whispered chat message when affliction reaches maximum duration
+  - **Requires GM confirmation** - Affliction is NOT auto-removed, button provided for manual removal
+  - **Conditions persist** after removal (per PF2e rules) - must be removed separately
+  - Shows the stage at expiration and duration that was reached
+  - Button to remove affliction while preserving conditions
+  - Respects official PF2e rule: "conditions persist and must be removed through other means"
+
+- **Live Affliction Updates**: Edited affliction changes now apply to active afflictions immediately
+  - When saving affliction editor changes, updates all matching active afflictions on canvas
+  - Updates DC, save type, maximum duration, stages, and traits
+  - Preserves current stage and progression state
+  - Re-applies current stage effects with updated definition
+  - Shows notification with count of updated afflictions
+  - Ensures active afflictions immediately reflect edited values
+
 - **Save Confirmation Setting**: New "Require Save Confirmation" world setting to prevent meta-gaming
   - When enabled, GM must confirm save results before consequences are applied
   - Allows players to use hero points or other reroll abilities after seeing the roll result
@@ -50,6 +72,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now properly removes condition instances from ConditionStackingService
   - Recalculates conditions to update or remove displayed conditions
   - Ensures no orphaned conditions remain after affliction removal
+
+- **Maximum Duration Saving**: Fixed maximum duration not being saved in affliction editor
+  - Affliction editor now properly saves maxDuration field when form is submitted
+  - Fixed Foundry v13+ flat form data structure handling for maxDuration fields
+  - Maximum duration changes are now persisted to edited affliction definitions
+
+- **Maximum Duration Unified Tracking**: Fixed max duration to work correctly across combat and world time
+  - Previously used separate tracking systems that didn't account for mode transitions
+  - Combat tracking used stage start round instead of affliction start time
+  - World time tracking didn't account for combat rounds
+  - Now uses unified `maxDurationElapsed` counter that accumulates time in seconds
+  - Combat: Adds 6 seconds per round to counter
+  - World Time: Adds delta seconds to counter
+  - **Correctly starts counting AFTER onset completes** (per PF2e rules, not during onset)
+  - Properly handles afflictions that transition between combat and exploration mode
+  - Example: Onset 10 minutes → max duration counting starts after onset → Affliction lasts onset + max duration
 
 - **Initial Save Permission Error**: Fixed bug where non-GM players rolling initial saves would trigger "Only GMs can manage afflictions" error
   - Initial saves now properly use socket communication to send results to GM for processing
@@ -84,6 +122,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Condition System Architecture**: Migrated to PF2e GrantItem rule elements for condition management
+  - Conditions now granted via GrantItem rules on affliction effects (native PF2e system)
+  - Uses `onDeleteActions: { grantee: 'restrict' }` for built-in deletion prevention
+  - PF2e natively handles multiple sources granting the same condition (highest value shown)
+  - Automatic condition cleanup when affliction effect is removed
+  - **Deleted ConditionStackingService.js entirely** - PF2e's GrantItem system handles all stacking natively
+  - **Removed all condition protection hooks** - GrantItem handles deletion and update prevention
+  - Deleted ~400 lines of custom condition stacking logic
+  - Only remaining hook: GM badge→stage sync for manual control
+  - More maintainable and aligned with PF2e's native architecture
+  - Significant code reduction and performance improvement
+
 - **Code Organization**: Refactored hook registration into modular file structure
   - Split monolithic `registration.js` (~900 lines) into focused modules
   - **New hooks/** directory: `damage.js`, `chat.js`, `combat.js`, `worldTime.js`, `tokenHUD.js`, `conditions.js`
@@ -96,10 +146,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Technical Details
 
 - **New Files**:
-  - `scripts/hooks/conditions.js`: Condition protection and GM control hooks
+  - `scripts/hooks/conditions.js`: GM badge sync for manual stage control
+
+- **Deleted Files**:
+  - `scripts/services/ConditionStackingService.js`: Entire service removed (~400 lines), replaced by PF2e GrantItem
 
 - **Updated Files**:
-  - `scripts/hooks/registration.js`: Added condition hook registration
+  - `scripts/hooks/registration.js`: Simplified condition hook registration (only badge sync)
+  - `scripts/hooks/conditions.js`: Simplified to only GM badge→stage sync
+  - `scripts/hooks/combat.js`: Removed ConditionStackingService calls
+  - `scripts/hooks/worldTime.js`: Removed ConditionStackingService calls, updated max duration check
+  - `scripts/managers/AfflictionManager.js`: Removed ConditionStackingService cleanup
+  - `scripts/services/AfflictionService.js`: Added getConditionUuid, GrantItem rules, max duration improvements, removed condition creation/cleanup
+  - `scripts/handlers/chatButtons.js`: Added max duration removal button handler
+  - `templates/affliction-editor.hbs`: Added maximum duration UI field
+  - `scripts/managers/AfflictionEditorDialog.js`: Added toggleMaxDuration, live affliction updates, flat form data handling
+  - `lang/en.json`: Added maximum duration localization strings
 
 - **Hook System**:
   - `preDeleteItem`: Prevents deletion of affliction-managed conditions

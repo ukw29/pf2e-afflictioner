@@ -4,7 +4,6 @@
 
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
-import { ConditionStackingService } from '../services/ConditionStackingService.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 
 /**
@@ -75,7 +74,7 @@ export async function onWorldTimeUpdate(worldTime, delta) {
         }
       } else {
         // Check if maximum duration expired
-        const wasRemoved = await AfflictionService.checkWorldTimeMaxDuration(token, affliction);
+        const wasRemoved = await AfflictionService.checkWorldTimeMaxDuration(token, affliction, delta);
         if (wasRemoved) continue; // Skip further checks if affliction was removed
 
         // Check if save is due based on elapsed time
@@ -86,14 +85,7 @@ export async function onWorldTimeUpdate(worldTime, delta) {
       }
     }
 
-    // Cleanup expired condition instances for this token
-    if (token.actor) {
-      await ConditionStackingService.cleanupExpiredInstances(
-        token.actor,
-        null,
-        null,
-        worldTime
-      );
-    }
+    // NOTE: Condition cleanup is now handled by GrantItem automatically
+    // When affliction effects are removed, PF2e removes granted conditions
   }
 }

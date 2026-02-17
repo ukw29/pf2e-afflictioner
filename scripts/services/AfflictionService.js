@@ -7,7 +7,6 @@ import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionParser } from './AfflictionParser.js';
 import * as AfflictionDefinitionStore from '../stores/AfflictionDefinitionStore.js';
 import { AfflictionEditorService } from './AfflictionEditorService.js';
-import { ConditionStackingService } from './ConditionStackingService.js';
 
 export class AfflictionService {
   /**
@@ -64,7 +63,9 @@ export class AfflictionService {
       nextSaveRound: null,
       nextSaveInitiative: null,
       stageStartRound: combat ? combat.round : null,
+      addedRound: combat ? combat.round : null, // Track when affliction was first added (for max duration)
       durationElapsed: 0,
+      maxDurationElapsed: 0, // Track total elapsed time in seconds for max duration (accumulates across combat and world time)
       nextSaveTimestamp: null,
       treatmentBonus: 0,
       treatedThisStage: false,
@@ -683,27 +684,12 @@ export class AfflictionService {
     // In PF2e, affliction damage is taken over time during the stage, not when changing stages
     // The GM should use the "Roll Damage" button to apply damage when appropriate
 
-    // Apply conditions (SET to specific value, not increment)
-    for (const condition of stage.conditions || []) {
-      try {
-        const conditionSlug = condition.name.toLowerCase();
-        const expirationData = this._buildExpirationData(affliction, stage, token);
-
-        await ConditionStackingService.addConditionInstance(
-          actor,
-          token.id,
-          affliction.id,
-          conditionSlug,
-          condition.value || null,
-          expirationData
-        );
-      } catch (error) {
-        console.error('PF2e Afflictioner | Error applying condition:', error);
-      }
-    }
-
-    // Recalculate to apply highest values across all afflictions
-    await ConditionStackingService.recalculateConditions(actor);
+    // NOTE: Conditions are now applied via GrantItem rules on the affliction effect
+    // PF2e's GrantItem system handles:
+    // - Condition creation and cleanup
+    // - Deletion prevention (onDeleteActions)
+    // - Stacking from multiple sources
+    // ConditionStackingService is no longer needed for condition management
 
     // Apply auto-effects if any
     if (stage.autoEffects && Array.isArray(stage.autoEffects) && stage.autoEffects.length > 0) {
@@ -865,6 +851,33 @@ export class AfflictionService {
         }
       }
 
+      // Add GrantItem rules for conditions (uses PF2e's native deletion prevention)
+      if (stage.conditions && stage.conditions.length > 0) {
+        for (const condition of stage.conditions) {
+          const conditionUuid = await this.getConditionUuid(condition.name);
+          if (conditionUuid) {
+            const grantRule = {
+              key: 'GrantItem',
+              uuid: conditionUuid,
+              allowDuplicate: true,
+              inMemoryOnly: true,
+              onDeleteActions: { grantee: 'restrict' }
+            };
+
+            // Add value alteration for numbered conditions
+            if (condition.value) {
+              grantRule.alterations = [{
+                mode: 'override',
+                property: 'badge-value',
+                value: condition.value
+              }];
+            }
+
+            rules.push(grantRule);
+          }
+        }
+      }
+
       // Get source item image
       let itemImg = 'icons/svg/hazard.svg'; // default
       if (affliction.sourceItemUuid) {
@@ -957,6 +970,33 @@ export class AfflictionService {
             label: `${affliction.name} (Weakness)`
           };
           rules.push(weaknessRule);
+        }
+      }
+
+      // Add GrantItem rules for conditions (uses PF2e's native deletion prevention)
+      if (stage.conditions && stage.conditions.length > 0) {
+        for (const condition of stage.conditions) {
+          const conditionUuid = await this.getConditionUuid(condition.name);
+          if (conditionUuid) {
+            const grantRule = {
+              key: 'GrantItem',
+              uuid: conditionUuid,
+              allowDuplicate: true,
+              inMemoryOnly: true,
+              onDeleteActions: { grantee: 'restrict' }
+            };
+
+            // Add value alteration for numbered conditions
+            if (condition.value) {
+              grantRule.alterations = [{
+                mode: 'override',
+                property: 'badge-value',
+                value: condition.value
+              }];
+            }
+
+            rules.push(grantRule);
+          }
         }
       }
 
@@ -1062,36 +1102,9 @@ export class AfflictionService {
     const oldStage = oldStageData || affliction.stages[affliction.currentStage - 1];
     if (!oldStage) return;
 
-    // Get conditions in new stage (to preserve them)
-    const newConditions = new Map(); // Use Map to store condition name -> value
-    if (newStageData && newStageData.conditions) {
-      for (const cond of newStageData.conditions) {
-        newConditions.set(cond.name.toLowerCase(), cond.value || null);
-      }
-    }
-
-    // Remove condition instances from this affliction
-    // ConditionStackingService will recalculate and apply highest remaining values
-    await ConditionStackingService.removeConditionInstancesForAffliction(actor, affliction.id);
-    await ConditionStackingService.recalculateConditions(actor);
-
-    // BACKWARD COMPATIBILITY: Also remove conditions the old way for afflictions applied before ConditionStackingService
-    // This ensures conditions from old afflictions are cleaned up even if not tracked
-    if (!newStageData && oldStage?.conditions) {
-      for (const condition of oldStage.conditions) {
-        const conditionSlug = condition.name.toLowerCase();
-        try {
-          // Check if this condition is still tracked (has instances from other afflictions)
-          const instances = await ConditionStackingService._getConditionInstances(actor, conditionSlug);
-          if (instances.length === 0) {
-            // No tracked instances - remove directly as fallback
-            await actor.decreaseCondition(conditionSlug, { forceRemove: true });
-          }
-        } catch (error) {
-          console.error(`PF2e Afflictioner | Fallback condition removal for ${conditionSlug}`);
-        }
-      }
-    }
+    // NOTE: Conditions are now managed via GrantItem rules on the affliction effect
+    // When the effect is deleted (above), PF2e automatically removes granted conditions
+    // No need for manual condition cleanup - GrantItem handles it automatically!
   }
 
   /**
@@ -1153,22 +1166,27 @@ export class AfflictionService {
     for (const [id, affliction] of Object.entries(afflictions)) {
       if (!affliction.maxDuration) continue; // indefinite
 
-      const elapsed = combat.round - affliction.stageStartRound;
-      const maxRounds = affliction.maxDuration.value;
+      // Skip max duration counting during onset (per PF2e rules)
+      if (affliction.inOnset) continue;
 
-      if (elapsed >= maxRounds) {
-        // Duration expired
-        await AfflictionStore.removeAffliction(token, id);
-        await this.removeStageEffects(token, affliction);
+      // Increment elapsed time (6 seconds per round)
+      const newMaxDurationElapsed = (affliction.maxDurationElapsed || 0) + 6;
+      await AfflictionStore.updateAffliction(token, id, {
+        maxDurationElapsed: newMaxDurationElapsed
+      });
 
-        // Remove visual indicator
-        const { VisualService } = await import('./VisualService.js');
-        await VisualService.removeAfflictionIndicator(token);
+      // Check if max duration exceeded
+      const maxDurationSeconds = AfflictionParser.durationToSeconds(affliction.maxDuration);
 
-        ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.RECOVERED', {
-          tokenName: token.name,
-          afflictionName: affliction.name
-        }));
+      if (newMaxDurationElapsed >= maxDurationSeconds && !affliction.maxDurationExpired) {
+        // Mark as expired and post chat message with button for GM to remove
+        await AfflictionStore.updateAffliction(token, id, {
+          maxDurationExpired: true
+        });
+
+        await this.postMaxDurationExpiredMessage(token, affliction);
+
+        ui.notifications.warn(`${affliction.name} on ${token.name} has reached maximum duration. Check chat for removal button.`);
       }
     }
   }
@@ -1176,28 +1194,32 @@ export class AfflictionService {
   /**
    * Check maximum duration expiration for world time (non-combat)
    */
-  static async checkWorldTimeMaxDuration(token, affliction) {
+  static async checkWorldTimeMaxDuration(token, affliction, deltaSeconds) {
     if (!affliction.maxDuration) return false; // indefinite
 
-    // Track total elapsed time since affliction was added
-    const totalElapsed = (game.time.worldTime - (affliction.addedTimestamp / 1000)) || 0;
+    // Skip max duration counting during onset (per PF2e rules)
+    if (affliction.inOnset) return false;
+
+    // Increment elapsed time (cumulative across combat and world time)
+    const newMaxDurationElapsed = (affliction.maxDurationElapsed || 0) + deltaSeconds;
+    await AfflictionStore.updateAffliction(token, affliction.id, {
+      maxDurationElapsed: newMaxDurationElapsed
+    });
+
+    // Check if max duration exceeded
     const maxDurationSeconds = AfflictionParser.durationToSeconds(affliction.maxDuration);
 
-    if (totalElapsed >= maxDurationSeconds) {
-      // Duration expired
-      await AfflictionStore.removeAffliction(token, affliction.id);
-      await this.removeStageEffects(token, affliction);
+    if (newMaxDurationElapsed >= maxDurationSeconds && !affliction.maxDurationExpired) {
+      // Mark as expired and post chat message with button for GM to remove
+      await AfflictionStore.updateAffliction(token, affliction.id, {
+        maxDurationExpired: true
+      });
 
-      // Remove visual indicator
-      const { VisualService } = await import('./VisualService.js');
-      await VisualService.removeAfflictionIndicator(token);
+      await this.postMaxDurationExpiredMessage(token, affliction);
 
-      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.RECOVERED', {
-        tokenName: token.name,
-        afflictionName: affliction.name
-      }));
+      ui.notifications.warn(`${affliction.name} on ${token.name} has reached maximum duration. Check chat for removal button.`);
 
-      return true; // Affliction was removed
+      return false; // Affliction not yet removed (GM must click button)
     }
 
     return false;
@@ -1443,6 +1465,38 @@ export class AfflictionService {
   }
 
   /**
+   * Post chat message when maximum duration expires
+   */
+  static async postMaxDurationExpiredMessage(token, affliction) {
+    const maxDurationText = affliction.maxDuration
+      ? `${affliction.maxDuration.value} ${affliction.maxDuration.unit}(s)`
+      : 'unknown';
+
+    const content = `
+      <div class="pf2e-afflictioner-save-request" style="border-color: #6C757D;">
+        <h3><i class="fas fa-hourglass-end"></i> ${affliction.name} - Maximum Duration Reached</h3>
+        <p><strong>${token.name}</strong>'s affliction has reached its maximum duration (${maxDurationText})</p>
+        <p><strong>The affliction should be removed, but any imposed conditions persist per PF2e rules.</strong></p>
+        <p><em>Stage when expired: ${affliction.currentStage}</em></p>
+        <div class="pf2e-afflictioner-button-group" style="margin-top: 10px;">
+          <button class="pf2e-afflictioner-btn pf2e-afflictioner-remove-expired-btn"
+                  data-token-id="${token.id}"
+                  data-affliction-id="${affliction.id}"
+                  style="background: #dc3545;">
+            <i class="fas fa-trash-alt"></i> Remove Affliction (Conditions Persist)
+          </button>
+        </div>
+      </div>
+    `;
+
+    await ChatMessage.create({
+      content,
+      speaker: ChatMessage.getSpeaker({ token: token }),
+      whisper: game.users.filter(u => u.isGM).map(u => u.id)
+    });
+  }
+
+  /**
    * Extract the die value (d20 result) from a roll or message
    */
   static getDieValue(rollOrMessage) {
@@ -1465,6 +1519,33 @@ export class AfflictionService {
     }
 
     return null;
+  }
+
+  /**
+   * Get condition UUID from name for GrantItem rules
+   */
+  static async getConditionUuid(conditionName) {
+    const slug = conditionName.toLowerCase();
+
+    // Try to find condition in PF2e compendium
+    const pack = game.packs.get('pf2e.conditionitems');
+    if (!pack) {
+      console.warn(`PF2e Afflictioner | Could not find pf2e.conditionitems compendium`);
+      return null;
+    }
+
+    const index = await pack.getIndex();
+    const entry = index.find(i =>
+      i.name.toLowerCase() === slug ||
+      (i.system?.slug && i.system.slug === slug)
+    );
+
+    if (!entry) {
+      console.warn(`PF2e Afflictioner | Condition "${conditionName}" not found in compendium`);
+      return null;
+    }
+
+    return `Compendium.pf2e.conditionitems.Item.${entry._id}`;
   }
 
   /**

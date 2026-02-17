@@ -3,7 +3,9 @@
  */
 
 import * as AfflictionDefinitionStore from '../stores/AfflictionDefinitionStore.js';
+import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionEditorService } from '../services/AfflictionEditorService.js';
+import { AfflictionService } from '../services/AfflictionService.js';
 import { StageEditorDialog } from './StageEditorDialog.js';
 
 export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -27,6 +29,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
       addStage: AfflictionEditorDialog.addStage,
       removeStage: AfflictionEditorDialog.removeStage,
       toggleOnset: AfflictionEditorDialog.toggleOnset,
+      toggleMaxDuration: AfflictionEditorDialog.toggleMaxDuration,
       saveChanges: AfflictionEditorDialog.saveChanges,
       cancelEdit: AfflictionEditorDialog.cancelEdit,
       resetToDefault: AfflictionEditorDialog.resetToDefault
@@ -172,10 +175,32 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     await dialog.render({ force: true });
   }
 
+  static async toggleMaxDuration(_event, _button) {
+    const dialog = this;
+
+    if (dialog.editedData.maxDuration && dialog.editedData.maxDuration.value > 0) {
+      // Remove max duration
+      dialog.editedData.maxDuration = null;
+      ui.notifications.info('Maximum duration removed (affliction is now indefinite)');
+    } else {
+      // Add default max duration
+      dialog.editedData.maxDuration = {
+        value: 6,
+        unit: 'round'
+      };
+      ui.notifications.info('Maximum duration added');
+    }
+
+    await dialog.render({ force: true });
+  }
+
   static async saveChanges(_event, _button) {
     const dialog = this;
     const FormDataClass = foundry.applications?.ux?.FormDataExtended || FormDataExtended;
     const formData = new FormDataClass(dialog.element).object;
+
+    // Debug: Log form data to see what we're getting
+    console.log('PF2e Afflictioner | Form data on save:', formData);
 
     // Update DC
     if (formData.dc !== undefined) {
@@ -187,18 +212,40 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
       dialog.editedData.saveType = formData.saveType.toLowerCase();
     }
 
-    // Update onset
-    if (formData.onset) {
-      const onsetValue = parseInt(formData.onset.value);
+    // Update onset (handle flat structure from Foundry v13+)
+    if (formData['onset.value'] !== undefined || formData.onset) {
+      const onsetValue = parseInt(formData['onset.value'] || formData.onset?.value);
+      const onsetUnit = formData['onset.unit'] || formData.onset?.unit || 'round';
+
       if (onsetValue > 0) {
         dialog.editedData.onset = {
           value: onsetValue,
-          unit: formData.onset.unit || 'round'
+          unit: onsetUnit
         };
       } else {
         dialog.editedData.onset = null;
       }
     }
+
+    // Update maximum duration (handle flat structure from Foundry v13+)
+    if (formData['maxDuration.value'] !== undefined || formData.maxDuration) {
+      const maxDurationValue = parseInt(formData['maxDuration.value'] || formData.maxDuration?.value);
+      const maxDurationUnit = formData['maxDuration.unit'] || formData.maxDuration?.unit || 'round';
+
+      if (maxDurationValue > 0) {
+        dialog.editedData.maxDuration = {
+          value: maxDurationValue,
+          unit: maxDurationUnit
+        };
+        console.log('PF2e Afflictioner | Saved maxDuration from form:', dialog.editedData.maxDuration);
+      } else {
+        dialog.editedData.maxDuration = null;
+      }
+    } else if (!dialog.editedData.maxDuration) {
+      // If form has no maxDuration fields and editedData doesn't have it, it's null (indefinite)
+      dialog.editedData.maxDuration = null;
+    }
+    // Otherwise, preserve existing editedData.maxDuration
 
     // Validate the edited data
     const validation = AfflictionEditorService.validateEditedData(dialog.editedData);
@@ -217,11 +264,74 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
     try {
       await AfflictionDefinitionStore.saveEditedDefinition(key, dialog.editedData);
+
+      // Apply changes to active afflictions
+      await dialog.applyToActiveAfflictions(key, dialog.editedData);
+
       ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.CHANGES_SAVED'));
       await dialog.close();
     } catch (error) {
       console.error('AfflictionEditorDialog: Error saving', error);
       ui.notifications.error('Failed to save changes');
+    }
+  }
+
+  /**
+   * Apply edited definition changes to active afflictions
+   */
+  async applyToActiveAfflictions(definitionKey, editedData) {
+    if (!canvas?.tokens) return;
+
+    let updatedCount = 0;
+
+    // Iterate through all tokens on canvas
+    for (const token of canvas.tokens.placeables) {
+      const afflictions = AfflictionStore.getAfflictions(token);
+
+      for (const [id, affliction] of Object.entries(afflictions)) {
+        // Check if this affliction matches the edited definition
+        const afflictionKey = AfflictionDefinitionStore.generateDefinitionKey(affliction);
+        if (afflictionKey === definitionKey) {
+          // Update affliction properties
+          const updates = {
+            name: editedData.name,
+            type: editedData.type,
+            dc: editedData.dc,
+            saveType: editedData.saveType,
+            stages: editedData.stages,
+            isVirulent: editedData.isVirulent,
+            multipleExposure: editedData.multipleExposure
+          };
+
+          // Update max duration if changed
+          if (editedData.maxDuration) {
+            updates.maxDuration = editedData.maxDuration;
+          } else {
+            updates.maxDuration = null;
+          }
+
+          // Don't update onset (already in progress)
+
+          await AfflictionStore.updateAffliction(token, id, updates);
+
+          // Re-fetch and update effects/conditions for current stage
+          const updatedAffliction = AfflictionStore.getAffliction(token, id);
+          const currentStageData = updatedAffliction.stages[updatedAffliction.currentStage - 1];
+
+          if (currentStageData) {
+            // Re-apply stage effects with updated definition
+            await AfflictionService.removeStageEffects(token, updatedAffliction, currentStageData, currentStageData);
+            await AfflictionService.applyStageEffects(token, updatedAffliction, currentStageData);
+          }
+
+          updatedCount++;
+        }
+      }
+    }
+
+    if (updatedCount > 0) {
+      ui.notifications.info(`Updated ${updatedCount} active affliction(s)`);
+      console.log(`PF2e Afflictioner | Applied changes to ${updatedCount} active affliction(s)`);
     }
   }
 

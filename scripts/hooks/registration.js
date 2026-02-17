@@ -11,7 +11,7 @@ import { onCombatUpdate, onPf2eStartTurn } from './combat.js';
 import { onWorldTimeUpdate } from './worldTime.js';
 import { onRenderTokenHUD } from './tokenHUD.js';
 import { onRenderChatMessage } from '../handlers/chatButtons.js';
-import { onPreDeleteItem, onPreUpdateItem } from './conditions.js';
+import { onPreUpdateItem } from './conditions.js';
 
 /**
  * Register all affliction hooks
@@ -38,10 +38,7 @@ export function registerAfflictionHooks() {
   // Chat message rendering - add button handlers and drag support
   Hooks.on('renderChatMessage', onRenderChatMessage);
 
-  // Condition deletion prevention - prevent manual removal of affliction-managed conditions
-  Hooks.on('preDeleteItem', onPreDeleteItem);
-
-  // Condition update prevention - prevent manual modification of affliction-managed conditions
+  // GM badge sync - allow GMs to manually adjust affliction stages via badge value
   Hooks.on('preUpdateItem', onPreUpdateItem);
 
   console.log('PF2e Afflictioner | Hooks registered');

@@ -88,15 +88,18 @@
   box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.2);
 }
 
-.affliction-editor .onset-group {
+.affliction-editor .onset-group,
+.affliction-editor .max-duration-group {
   align-items: flex-start;
 }
 
-.affliction-editor .onset-group input[type="number"] {
+.affliction-editor .onset-group input[type="number"],
+.affliction-editor .max-duration-group input[type="number"] {
   flex: 0 0 80px;
 }
 
-.affliction-editor .onset-group select {
+.affliction-editor .onset-group select,
+.affliction-editor .max-duration-group select {
   flex: 1;
 }
 
@@ -211,8 +214,9 @@
   box-shadow: 0 2px 6px rgba(124, 42, 42, 0.4);
 }
 
-/* Onset toggle button */
-.affliction-editor .toggle-onset-btn {
+/* Onset and Max Duration toggle buttons */
+.affliction-editor .toggle-onset-btn,
+.affliction-editor .toggle-max-duration-btn {
   padding: 4px 10px;
   border: 1px solid;
   border-radius: 4px;
@@ -224,32 +228,37 @@
   gap: 6px;
 }
 
-.affliction-editor .toggle-onset-btn.add-btn {
+.affliction-editor .toggle-onset-btn.add-btn,
+.affliction-editor .toggle-max-duration-btn.add-btn {
   background: var(--afflictioner-primary);
   border-color: var(--afflictioner-primary-hover);
   color: var(--afflictioner-text-light);
 }
 
-.affliction-editor .toggle-onset-btn.add-btn:hover {
+.affliction-editor .toggle-onset-btn.add-btn:hover,
+.affliction-editor .toggle-max-duration-btn.add-btn:hover {
   background: var(--afflictioner-primary-hover);
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(139, 0, 0, 0.4);
 }
 
-.affliction-editor .toggle-onset-btn:not(.add-btn) {
+.affliction-editor .toggle-onset-btn:not(.add-btn),
+.affliction-editor .toggle-max-duration-btn:not(.add-btn) {
   background: #7c2a2a;
   border-color: #8c3a3a;
   color: var(--afflictioner-text-light);
   padding: 6px 10px;
 }
 
-.affliction-editor .toggle-onset-btn:not(.add-btn):hover {
+.affliction-editor .toggle-onset-btn:not(.add-btn):hover,
+.affliction-editor .toggle-max-duration-btn:not(.add-btn):hover {
   background: #8c3a3a;
   transform: scale(1.05);
   box-shadow: 0 2px 4px rgba(124, 42, 42, 0.4);
 }
 
-.affliction-editor .no-onset {
+.affliction-editor .no-onset,
+.affliction-editor .no-max-duration {
   color: #888;
   font-style: italic;
   font-size: 13px;

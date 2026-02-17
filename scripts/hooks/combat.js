@@ -3,7 +3,6 @@
  */
 
 import { AfflictionService } from '../services/AfflictionService.js';
-import { ConditionStackingService } from '../services/ConditionStackingService.js';
 
 /**
  * Handle combat updates - check for scheduled saves and update timers
@@ -24,15 +23,8 @@ export async function onCombatUpdate(combat, changed, options, userId) {
       // Check durations
       await AfflictionService.checkDurations(token, combat);
 
-      // Cleanup expired condition instances
-      if (token.actor) {
-        await ConditionStackingService.cleanupExpiredInstances(
-          token.actor,
-          combat.round,
-          combat.combatant?.initiative,
-          null
-        );
-      }
+      // NOTE: Condition cleanup is now handled by GrantItem automatically
+      // When affliction effects are removed, PF2e removes granted conditions
     }
   }
 
