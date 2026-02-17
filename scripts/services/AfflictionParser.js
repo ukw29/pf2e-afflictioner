@@ -196,12 +196,14 @@ export class AfflictionParser {
     const stages = [];
 
     // Try HTML format first: <p><strong>Stage X</strong> effects (duration)</p>
-    const htmlMatches = description.matchAll(/<strong>Stage\s+(\d+)<\/strong>\s+([^<]+)\(([^)]+)\)/gi);
+    const htmlMatches = description.matchAll(/<strong>Stage\s+(\d+)<\/strong>\s+(.+?)\(([^)]+)\)([^<]*)/gi);
 
     for (const match of htmlMatches) {
       const stageNum = parseInt(match[1]);
-      const effects = match[2].trim();
+      const effectsBefore = match[2].trim();
       const durationText = match[3];
+      const effectsAfter = match[4].trim();
+      const effects = [effectsBefore, effectsAfter].filter(e => e).join(' ');
       const duration = this.parseDuration(durationText);
 
       // Check if stage has complex instructions that need manual handling
@@ -221,12 +223,14 @@ export class AfflictionParser {
 
     // If no HTML matches, try plain text format
     if (stages.length === 0) {
-      const plainMatches = description.matchAll(/Stage\s+(\d+)\s+([^(]+)\(([^)]+)\)/gi);
+      const plainMatches = description.matchAll(/Stage\s+(\d+)\s+(.+?)\(([^)]+)\)([^]*)/gi);
 
       for (const match of plainMatches) {
         const stageNum = parseInt(match[1]);
-        const effects = match[2].trim();
+        const effectsBefore = match[2].trim();
         const durationText = match[3];
+        const effectsAfter = match[4].trim();
+        const effects = [effectsBefore, effectsAfter].filter(e => e).join(' ');
         const duration = this.parseDuration(durationText);
 
         const requiresManualHandling = this.detectManualHandling(effects);
