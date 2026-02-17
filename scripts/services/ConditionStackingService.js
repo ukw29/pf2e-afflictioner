@@ -292,6 +292,9 @@ export class ConditionStackingService {
       const existingCondition = actor.itemTypes.condition?.find(c => c.slug === conditionSlug);
 
       if (existingCondition) {
+        // Check if condition is locked by affliction
+        const isLocked = existingCondition.getFlag(MODULE_ID, 'fromAffliction');
+
         // Update value if different
         const currentValue = existingCondition.system?.value?.value;
         if (value && currentValue !== value) {
@@ -301,12 +304,32 @@ export class ConditionStackingService {
           await existingCondition.update({ 'system.value.value': null });
         }
       } else {
-        // Add new condition
+        // Add new condition with affliction lock
+        const conditionSource = game.pf2e.ConditionManager.getCondition(conditionSlug).toObject();
+
+        // Set value if provided
         if (value) {
-          await actor.increaseCondition(conditionSlug, { value: value });
-        } else {
-          await actor.increaseCondition(conditionSlug);
+          conditionSource.system.value.value = value;
         }
+
+        // Add flag to mark as affliction-locked and add references to prevent manual removal
+        conditionSource.flags = {
+          ...conditionSource.flags,
+          [MODULE_ID]: {
+            fromAffliction: true
+          }
+        };
+
+        // Add to references to lock the condition (prevents manual removal)
+        if (!conditionSource.system.references) {
+          conditionSource.system.references = {};
+        }
+        conditionSource.system.references[MODULE_ID] = {
+          type: 'affliction',
+          id: MODULE_ID
+        };
+
+        await actor.createEmbeddedDocuments('Item', [conditionSource]);
       }
     } catch (error) {
       console.error(`PF2e Afflictioner | Error applying condition ${conditionSlug}:`, error);
@@ -318,10 +341,15 @@ export class ConditionStackingService {
    */
   static async _removeCondition(actor, conditionSlug) {
     try {
-      await actor.decreaseCondition(conditionSlug, { forceRemove: true });
+      // Find the condition item
+      const condition = actor.itemTypes.condition?.find(c => c.slug === conditionSlug);
+      if (condition) {
+        // Delete with bypass flag to skip affliction lock check
+        await condition.delete({ bypassAfflictionLock: true });
+      }
     } catch (error) {
       // Condition might not exist, that's fine
-      console.error(`PF2e Afflictioner | Condition ${conditionSlug} not found for removal`);
+      console.error(`PF2e Afflictioner | Condition ${conditionSlug} not found for removal:`, error);
     }
   }
 }
