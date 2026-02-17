@@ -62,6 +62,15 @@ export const DEFAULT_SETTINGS = {
     config: true,
     restricted: true
   },
+  'requireSaveConfirmation': {
+    name: 'Require Save Confirmation',
+    hint: 'Require GM confirmation before applying save consequences (allows hero point rerolls)',
+    scope: 'world',
+    type: Boolean,
+    default: false,
+    config: true,
+    restricted: true
+  },
   'editedAfflictions': {
     name: 'Edited Afflictions',
     hint: 'Stores GM-edited affliction definitions',

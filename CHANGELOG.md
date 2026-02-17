@@ -5,6 +5,63 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Save Confirmation Setting**: New "Require Save Confirmation" world setting to prevent meta-gaming
+  - When enabled, GM must confirm save results before consequences are applied
+  - Allows players to use hero points or other reroll abilities after seeing the roll result
+  - Shows roll result and degree of success (Critical Success/Success/Failure/Critical Failure) in chat
+  - **Button injected directly onto roll message** - No separate confirmation message needed
+  - Button appears below the roll result with color-coded border matching degree of success
+  - Consequences (conditions, stage changes) only apply after GM clicks "Apply Consequences"
+  - **Automatic Reroll Update**: Uses `pf2e.preReroll` and `pf2e.reroll` hooks
+  - When player rerolls, button automatically updates with new result and degree
+  - Button color changes to match new degree (green→orange for success→failure)
+  - No separate messages - everything stays on the original roll message
+  - Stores roll message ID (not result value) so button always applies latest outcome
+  - Player can reroll multiple times - button always shows current result
+  - GM-only feature - prevents revealing success/failure through immediate consequence application
+  - Works for both initial saves and stage saves
+
+### Fixed
+
+- **Initial Save Permission Error**: Fixed bug where non-GM players rolling initial saves would trigger "Only GMs can manage afflictions" error
+  - Initial saves now properly use socket communication to send results to GM for processing
+  - Prevents desync between active effects and affliction manager
+  - Matches existing stage save behavior for consistent multi-user support
+
+- **Curse Detection**: Improved "Apply Affliction" button detection for curses with non-standard formatting
+  - Previously only detected afflictions with "Saving Throw" AND ("Stage 1" OR "Stage 2") text pattern
+  - Now also detects curses that don't follow standard poison/disease format
+  - Checks for any note matching an item with curse/poison/disease trait
+  - Fixes detection for curses like Witchflame and Debilitating Bite
+
+- **Edited Affliction DC**: Chat save buttons now use current DC from edited afflictions
+  - Previously, buttons in old chat messages used the DC from when the message was posted
+  - Now checks for edited affliction definitions and uses current DC when rolling saves
+  - Applies to both initial saves and stage saves
+  - Ensures DC changes in the affliction editor are immediately reflected
+
+- **Natural 1/20 Degree of Success**: Fixed degree of success calculation to account for natural 1s and 20s
+  - Natural 20: Improves degree by one step (e.g., success → critical success)
+  - Natural 1: Reduces degree by one step (e.g., success → failure)
+  - Applies PF2e Core Rulebook rules correctly
+  - Example: DC 16, +15 modifier, roll nat 1 = total 16 → Now correctly counts as **Failure** (not Success)
+  - Fixes both save confirmation messages and immediate application
+
+### Changed
+
+- **Code Organization**: Refactored hook registration into modular file structure
+  - Split monolithic `registration.js` (~900 lines) into focused modules
+  - **New hooks/** directory: `damage.js`, `chat.js`, `combat.js`, `worldTime.js`, `tokenHUD.js`
+  - **New handlers/** directory: `saveButtons.js`, `afflictionButtons.js`, `treatmentButtons.js`, `counteractButtons.js`, `chatButtons.js`
+  - Main `registration.js` now acts as orchestrator (40 lines)
+  - Improves maintainability, testability, and navigation
+  - Each file has single, clear responsibility
+  - Easier for developers to find and modify specific functionality
+
 ## [1.0.0-alpha.4] - 2026-02-15
 
 ### Added

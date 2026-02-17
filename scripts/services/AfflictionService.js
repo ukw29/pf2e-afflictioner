@@ -150,8 +150,8 @@ export class AfflictionService {
   /**
    * Handle result of initial save
    */
-  static async handleInitialSave(token, affliction, saveTotal, dc) {
-    const degree = this.calculateDegreeOfSuccess(saveTotal, dc);
+  static async handleInitialSave(token, affliction, saveTotal, dc, dieValue = null) {
+    const degree = this.calculateDegreeOfSuccess(saveTotal, dc, dieValue);
     const isReExposure = affliction._isReExposure;
     const existingAfflictionId = affliction._existingAfflictionId;
 
@@ -444,9 +444,10 @@ export class AfflictionService {
   /**
    * Handle stage save result
    * @param {boolean} isManual - If true, prevents curing (limits to stage 1)
+   * @param {number} dieValue - Optional d20 die value for nat 1/20 handling
    */
-  static async handleStageSave(token, affliction, saveTotal, dc, isManual = false) {
-    const degree = this.calculateDegreeOfSuccess(saveTotal, dc);
+  static async handleStageSave(token, affliction, saveTotal, dc, isManual = false, dieValue = null) {
+    const degree = this.calculateDegreeOfSuccess(saveTotal, dc, dieValue);
     const combat = game.combat;
 
     let stageChange = 0;
@@ -1442,13 +1443,57 @@ export class AfflictionService {
   }
 
   /**
-   * Calculate degree of success
+   * Extract the die value (d20 result) from a roll or message
    */
-  static calculateDegreeOfSuccess(total, dc) {
+  static getDieValue(rollOrMessage) {
+    if (!rollOrMessage) return null;
+
+    // If it's a message, get the first roll
+    const roll = rollOrMessage.rolls ? rollOrMessage.rolls[0] : rollOrMessage;
+    if (!roll) return null;
+
+    // Try to get the first d20 die result
+    const d20Die = roll.dice?.find(d => d.faces === 20);
+    if (d20Die?.results?.length > 0) {
+      return d20Die.results[0].result;
+    }
+
+    // Fallback: Try terms array (Foundry v10+)
+    const d20Term = roll.terms?.find(t => t.faces === 20);
+    if (d20Term?.results?.length > 0) {
+      return d20Term.results[0].result;
+    }
+
+    return null;
+  }
+
+  /**
+   * Calculate degree of success with natural 1/20 rules
+   */
+  static calculateDegreeOfSuccess(total, dc, dieValue = null) {
+    // Calculate base degree from total vs DC
     const diff = total - dc;
-    if (diff >= 10) return DEGREE_OF_SUCCESS.CRITICAL_SUCCESS;
-    if (diff >= 0) return DEGREE_OF_SUCCESS.SUCCESS;
-    if (diff >= -10) return DEGREE_OF_SUCCESS.FAILURE;
-    return DEGREE_OF_SUCCESS.CRITICAL_FAILURE;
+    let degree;
+    if (diff >= 10) degree = DEGREE_OF_SUCCESS.CRITICAL_SUCCESS;
+    else if (diff >= 0) degree = DEGREE_OF_SUCCESS.SUCCESS;
+    else if (diff >= -10) degree = DEGREE_OF_SUCCESS.FAILURE;
+    else degree = DEGREE_OF_SUCCESS.CRITICAL_FAILURE;
+
+    // Apply natural 1/20 adjustments
+    if (dieValue === 20) {
+      // Natural 20: Improve degree by one step
+      if (degree === DEGREE_OF_SUCCESS.FAILURE) degree = DEGREE_OF_SUCCESS.SUCCESS;
+      else if (degree === DEGREE_OF_SUCCESS.SUCCESS) degree = DEGREE_OF_SUCCESS.CRITICAL_SUCCESS;
+      // Critical failure → failure, already critical success stays critical success
+      else if (degree === DEGREE_OF_SUCCESS.CRITICAL_FAILURE) degree = DEGREE_OF_SUCCESS.FAILURE;
+    } else if (dieValue === 1) {
+      // Natural 1: Reduce degree by one step
+      if (degree === DEGREE_OF_SUCCESS.SUCCESS) degree = DEGREE_OF_SUCCESS.FAILURE;
+      else if (degree === DEGREE_OF_SUCCESS.CRITICAL_SUCCESS) degree = DEGREE_OF_SUCCESS.SUCCESS;
+      // Failure → critical failure, already critical failure stays critical failure
+      else if (degree === DEGREE_OF_SUCCESS.FAILURE) degree = DEGREE_OF_SUCCESS.CRITICAL_FAILURE;
+    }
+
+    return degree;
   }
 }
