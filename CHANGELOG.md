@@ -5,9 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0-alpha.5] - 2026-02-17
 
 ### Added
+
+- **Condition Protection System**: Prevents manual removal or modification of affliction-managed conditions
+  - New hook system to intercept condition deletion and updates
+  - Players cannot manually remove or modify conditions applied by afflictions
+  - Conditions show lock icon in UI to indicate they are protected
+  - Prevents players from bypassing affliction mechanics by removing conditions directly
+  - Module code uses bypass flags to allow proper cleanup during stage changes
+
+- **GM Manual Stage Control**: GMs can manually adjust affliction stages via badge value
+  - Click the badge number on affliction effects to directly change the stage
+  - Setting badge to 0 removes the affliction (cures the character)
+  - Automatically updates all stage effects, conditions, and bonuses
+  - Properly cleans up condition instances from stacking service
+  - Removes visual indicators when affliction is cured
+
+- **GM Condition Level Override**: GMs can manually adjust condition values
+  - Allows GMs to manually increase or decrease affliction-managed condition levels
+  - Useful for story adjustments or correcting errors
+  - Non-GMs are prevented from modifying to maintain affliction integrity
 
 - **Save Confirmation Setting**: New "Require Save Confirmation" world setting to prevent meta-gaming
   - When enabled, GM must confirm save results before consequences are applied
@@ -26,6 +45,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Works for both initial saves and stage saves
 
 ### Fixed
+
+- **Condition Cleanup on Cure**: Fixed conditions not being removed when affliction is cured
+  - Now properly removes condition instances from ConditionStackingService
+  - Recalculates conditions to update or remove displayed conditions
+  - Ensures no orphaned conditions remain after affliction removal
 
 - **Initial Save Permission Error**: Fixed bug where non-GM players rolling initial saves would trigger "Only GMs can manage afflictions" error
   - Initial saves now properly use socket communication to send results to GM for processing
@@ -62,12 +86,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Code Organization**: Refactored hook registration into modular file structure
   - Split monolithic `registration.js` (~900 lines) into focused modules
-  - **New hooks/** directory: `damage.js`, `chat.js`, `combat.js`, `worldTime.js`, `tokenHUD.js`
+  - **New hooks/** directory: `damage.js`, `chat.js`, `combat.js`, `worldTime.js`, `tokenHUD.js`, `conditions.js`
   - **New handlers/** directory: `saveButtons.js`, `afflictionButtons.js`, `treatmentButtons.js`, `counteractButtons.js`, `chatButtons.js`
   - Main `registration.js` now acts as orchestrator (40 lines)
   - Improves maintainability, testability, and navigation
   - Each file has single, clear responsibility
   - Easier for developers to find and modify specific functionality
+
+### Technical Details
+
+- **New Files**:
+  - `scripts/hooks/conditions.js`: Condition protection and GM control hooks
+
+- **Updated Files**:
+  - `scripts/hooks/registration.js`: Added condition hook registration
+
+- **Hook System**:
+  - `preDeleteItem`: Prevents deletion of affliction-managed conditions
+  - `preUpdateItem`: Prevents updates and handles GM badge/condition changes
+  - Uses `fromAffliction` flag to identify protected conditions
+  - Uses `bypassAfflictionLock` option for module cleanup operations
+  - Uses `bypassAfflictionSync` option for internal badge updates
 
 ## [1.0.0-alpha.4] - 2026-02-15
 
