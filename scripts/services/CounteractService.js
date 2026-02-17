@@ -56,7 +56,7 @@ export class CounteractService {
     const template = `
       <form>
         <div class="form-group" style="margin-bottom: 12px;">
-          <label style="display: block; margin-bottom: 4px; font-weight: bold;">Your Counteract Rank</label>
+          <label style="display: block; margin-bottom: 4px; font-weight: bold;">Counteract Rank</label>
           <input type="number" name="counteractRank" value="${Math.max(1, afflictionRank)}" min="0" max="10" required
                  style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;"/>
           <p style="font-size: 0.85em; color: #666; margin: 4px 0 0 0;">Spell rank or half creature/item level (rounded up)</p>
@@ -194,20 +194,6 @@ export class CounteractService {
         });
       }
     }
-
-    // Send GM-only message with DC info (only if DCs are hidden from players and caster is a player)
-    if (!showDCToPlayers && casterActor?.hasPlayerOwner) {
-      const gmContent = `
-        <div class="pf2e-afflictioner-counteract-request" style="border-color: #8b0000; padding: 8px;">
-          <p style="margin: 0;"><strong>Counteract ${affliction.name} - DC ${dc}</strong> (GM Info) - Rank ${afflictionRank} vs ${counteractRank}</p>
-        </div>
-      `;
-      await ChatMessage.create({
-        content: gmContent,
-        speaker: ChatMessage.getSpeaker({ token }),
-        whisper: game.users.filter(u => u.isGM).map(u => u.id)
-      });
-    }
   }
 
   /**
@@ -238,31 +224,29 @@ export class CounteractService {
     const succeeds = rankDiff <= maxRankDifference;
 
     if (!succeeds) {
-      ui.notifications.warn(`Failed to counteract ${affliction.name} (Affliction Rank ${afflictionRank} vs Your Rank ${counteractRank})`);
+      if (game.user.isGM) {
+        ui.notifications.warn(`Counteract failed: ${affliction.name} (Affliction Rank ${afflictionRank} vs Counteract Rank ${counteractRank}) - Degree of Success: ${degree}`);
+      }
       return false;
     }
 
-    // Counteract succeeds - reduce stage by 1 (Cleanse Affliction behavior)
-    if (affliction.currentStage <= 1) {
-      // Stage 1 - cure completely
-      const oldStageData = affliction.stages[affliction.currentStage - 1];
-      await AfflictionStore.removeAffliction(token, affliction.id);
+    // Counteract succeeds - remove affliction completely
+    const oldStageData = affliction.currentStage > 0 ? affliction.stages[affliction.currentStage - 1] : null;
+    await AfflictionStore.removeAffliction(token, affliction.id);
+
+    // Remove stage effects
+    if (oldStageData) {
       await AfflictionService.removeStageEffects(token, affliction, oldStageData, null);
-
-      // Remove visual indicator if no more afflictions
-      const remainingAfflictions = AfflictionStore.getAfflictions(token);
-      if (Object.keys(remainingAfflictions).length === 0) {
-        const { VisualService } = await import('./VisualService.js');
-        await VisualService.removeAfflictionIndicator(token);
-      }
-
-      ui.notifications.info(`${affliction.name} counteracted! ${token.name} is cured.`);
-    } else {
-      // Reduce stage by 1 directly
-      await this.reduceAfflictionStage(token, affliction);
-      ui.notifications.info(`${affliction.name} counteracted! Stage reduced by 1.`);
     }
 
+    // Remove visual indicator if no more afflictions
+    const remainingAfflictions = AfflictionStore.getAfflictions(token);
+    if (Object.keys(remainingAfflictions).length === 0) {
+      const { VisualService } = await import('./VisualService.js');
+      await VisualService.removeAfflictionIndicator(token);
+    }
+
+    ui.notifications.info(`${affliction.name} counteracted! ${token.name} is cured.`);
     return true;
   }
 

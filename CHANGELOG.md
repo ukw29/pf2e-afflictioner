@@ -48,6 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Natural 20: Improves degree by one step (e.g., success → critical success)
   - Natural 1: Reduces degree by one step (e.g., success → failure)
   - Applies PF2e Core Rulebook rules correctly
+
+- **Cleanse Affliction Spell**: Fixed to properly handle base vs heightened versions
+  - Base (Rank 2): Now reduces stage by 1 without counteract check (only for stage 2+)
+  - Reduction can only be applied once per affliction case (per rules)
+  - Heightened (Rank 3): Counteract only for disease or poison
+  - Heightened (Rank 4+): Counteract for curse, disease, or poison
+  - Previous implementation incorrectly allowed counteract checks at all ranks
   - Example: DC 16, +15 modifier, roll nat 1 = total 16 → Now correctly counts as **Failure** (not Success)
   - Fixes both save confirmation messages and immediate application
 

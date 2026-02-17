@@ -70,8 +70,13 @@ export function registerCounteractButtonHandlers(root) {
       // Get degree from roll
       const degree = AfflictionService.calculateDegreeOfSuccess(roll.total, dc);
 
-      // Handle counteract result
-      await CounteractService.handleCounteractResult(token, affliction, counteractRank, afflictionRank, degree);
+      // Handle counteract result via socket (or directly if GM)
+      if (game.user.isGM) {
+        await CounteractService.handleCounteractResult(token, affliction, counteractRank, afflictionRank, degree);
+      } else {
+        const { SocketService } = await import('../services/SocketService.js');
+        await SocketService.requestHandleCounteract(tokenId, afflictionId, counteractRank, afflictionRank, degree);
+      }
 
       // Disable button after use
       btn.disabled = true;
@@ -83,7 +88,8 @@ export function registerCounteractButtonHandlers(root) {
  * Add affliction selection buttons to counteract spell messages
  */
 export async function addCounteractAfflictionSelection(message, htmlElement) {
-  // Only for GMs and players
+  // Only for GMs
+  if (!game.user.isGM) return;
   if (!message) return;
 
   // Check if already initialized
@@ -108,8 +114,9 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
   // Check if spell has healing trait and is counteract spell
   const traits = item.system?.traits?.value || [];
+  const isCleanse = item.name.toLowerCase().includes('cleanse affliction');
   const isCounteractSpell = traits.includes('healing') &&
-    (item.name.toLowerCase().includes('cleanse') || item.name.toLowerCase().includes('counteract'));
+    (isCleanse || item.name.toLowerCase().includes('counteract'));
 
   if (!isCounteractSpell) return;
 
@@ -117,6 +124,9 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
   const spellRank = message.flags?.pf2e?.origin?.castRank ||
                     item.system?.location?.heightenedLevel ||
                     item.system?.level?.value || 1;
+
+  // Cleanse Affliction at rank 2 (base) doesn't counteract, just reduces stage
+  const isBaseCleanse = isCleanse && spellRank === 2;
 
   // Check if canvas is ready
   if (!canvas?.tokens) {
@@ -144,8 +154,15 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
   const header = document.createElement('div');
   header.style.cssText = 'font-weight: bold; color: #4a7c2a; margin-bottom: 8px;';
-  header.innerHTML = `<i class="fas fa-shield-alt"></i> Counteract Affliction (Rank ${spellRank}):`;
+  if (isBaseCleanse) {
+    header.innerHTML = `<i class="fas fa-shield-alt"></i> Cleanse Affliction - Reduce Stage:`;
+  } else {
+    header.innerHTML = `<i class="fas fa-shield-alt"></i> Counteract Affliction (Rank ${spellRank}):`;
+  }
   selectionDiv.appendChild(header);
+
+  // Track if any buttons were added
+  let buttonsAdded = 0;
 
   // Add button for each token with afflictions
   for (const token of tokensWithAfflictions) {
@@ -153,6 +170,32 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
     const allAfflictions = Object.values(afflictions);
 
     for (const affliction of allAfflictions) {
+      // For base Cleanse Affliction: Only show afflictions at stage 2+
+      if (isBaseCleanse && affliction.currentStage < 2) {
+        continue;
+      }
+
+      // Check if already used (stored in affliction flags)
+      if (isBaseCleanse && affliction.cleansedOnce) {
+        continue; // Can only be used once per affliction
+      }
+
+      // For heightened Cleanse: Filter by affliction type
+      if (!isBaseCleanse && isCleanse) {
+        const afflictionType = affliction.type?.toLowerCase() || '';
+        if (spellRank === 3) {
+          // Rank 3: Only disease or poison
+          if (afflictionType !== 'disease' && afflictionType !== 'poison') {
+            continue;
+          }
+        } else if (spellRank >= 4) {
+          // Rank 4+: curse, disease, or poison
+          if (afflictionType !== 'curse' && afflictionType !== 'disease' && afflictionType !== 'poison') {
+            continue;
+          }
+        }
+      }
+
       const button = document.createElement('button');
       button.style.cssText = 'width: 100%; padding: 6px; margin: 4px 0; background: #4a7c2a; border: 1px solid #5a8c3a; color: white; border-radius: 4px; cursor: pointer;';
       const stageDisplay = affliction.currentStage === -1 ? 'Initial Save' : `Stage ${affliction.currentStage}`;
@@ -160,47 +203,60 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
       button.addEventListener('click', async () => {
         try {
-          // Auto-fill the counteract prompt with spell rank
-          const { level: afflictionLevel, rank: afflictionRank } = await CounteractService.calculateAfflictionRank(affliction);
+          // Base Cleanse Affliction: Directly apply stage reduction
+          if (isBaseCleanse) {
+            // Confirm with GM
+            const confirmed = await foundry.applications.api.DialogV2.confirm({
+              window: { title: 'Cleanse Affliction' },
+              content: `
+                <div style="padding: 10px; background: rgba(74, 124, 42, 0.1); border-left: 3px solid #4a7c2a; border-radius: 4px;">
+                  <p style="margin: 0; font-size: 0.9em;"><strong>Spell:</strong> ${item.name} (Rank ${spellRank})</p>
+                  <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>Target:</strong> ${token.name}</p>
+                  <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>Affliction:</strong> ${affliction.name} (Stage ${affliction.currentStage})</p>
+                  <p style="margin: 8px 0 0 0; font-size: 0.9em;">This will reduce the affliction stage by 1. This reduction can only be applied once to this affliction.</p>
+                </div>
+              `,
+              yes: { label: 'Apply Stage Reduction' },
+              no: { label: 'Cancel' }
+            });
 
-          // Create auto-filled template
-          const template = `
-            <form>
-              <input type="hidden" name="counteractRank" value="${spellRank}" />
-              <input type="hidden" name="dc" value="${affliction.dc}" />
-              <input type="hidden" name="skill" value="medicine" />
-              <div style="padding: 10px; background: rgba(74, 124, 42, 0.1); border-left: 3px solid #4a7c2a; border-radius: 4px;">
-                <p style="margin: 0; font-size: 0.9em;"><strong>Spell:</strong> ${item.name} (Rank ${spellRank})</p>
-                <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>Target:</strong> ${affliction.name} (Level ${afflictionLevel}, Rank ${afflictionRank})</p>
-                <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>Check:</strong> Medicine vs DC ${affliction.dc}</p>
-              </div>
-            </form>
-          `;
+            if (!confirmed) return;
 
-          const confirmed = await foundry.applications.api.DialogV2.confirm({
-            window: { title: 'Counteract Affliction' },
-            content: template,
-            yes: { label: 'Create Counteract Prompt' },
-            no: { label: 'Cancel' }
-          });
+            // Mark as cleansed once
+            await AfflictionStore.updateAffliction(token, affliction.id, { cleansedOnce: true });
 
-          if (!confirmed) return;
+            // Reduce stage by 1
+            await CounteractService.reduceAfflictionStage(token, affliction);
 
+            ui.notifications.info(`${affliction.name} stage reduced by 1 for ${token.name}`);
+
+            // Disable button after use
+            button.disabled = true;
+            button.style.opacity = '0.5';
+            button.innerHTML = `${token.name}: ${affliction.name} - Applied`;
+            return;
+          }
+
+          // Heightened Cleanse or other counteract spells: Normal counteract flow
           // Get caster actor from message
           const casterId = message.flags?.pf2e?.context?.actor || message.speaker?.actor;
           const casterActor = casterId ? game.actors.get(casterId) : null;
 
-          // Create counteract prompt with auto-detected values
+          // Create counteract prompt directly (no intermediate dialog)
           await CounteractService.promptCounteract(token, affliction, casterActor);
         } catch (error) {
-          console.error('Error creating counteract prompt:', error);
-          ui.notifications.error('Failed to create counteract prompt');
+          console.error('Error processing cleanse/counteract:', error);
+          ui.notifications.error('Failed to process spell effect');
         }
       });
 
       selectionDiv.appendChild(button);
+      buttonsAdded++;
     }
   }
 
-  messageContent.appendChild(selectionDiv);
+  // Only append if at least one button was added
+  if (buttonsAdded > 0) {
+    messageContent.appendChild(selectionDiv);
+  }
 }

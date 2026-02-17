@@ -106,7 +106,6 @@ function registerInitialSaveButtons(root) {
         unlockBtn.className = 'affliction-unlock-save';
         unlockBtn.style.cssText = 'display: inline-block; margin-left: 8px; padding: 4px 8px; background: #555; border: 1px solid #777; color: #ffd700; border-radius: 4px; cursor: pointer; font-size: 11px; vertical-align: middle;';
         unlockBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock';
-        unlockBtn.title = 'Unlock this button for the player';
 
         unlockBtn.addEventListener('click', async (e) => {
           e.preventDefault();
@@ -220,7 +219,6 @@ function registerStageSaveButtons(root) {
         unlockBtn.className = 'affliction-unlock-save';
         unlockBtn.style.cssText = 'display: inline-block; margin-left: 8px; padding: 4px 8px; background: #555; border: 1px solid #777; color: #ffd700; border-radius: 4px; cursor: pointer; font-size: 11px; vertical-align: middle;';
         unlockBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock';
-        unlockBtn.title = 'Unlock this button for the player';
 
         unlockBtn.addEventListener('click', async (e) => {
           e.preventDefault();

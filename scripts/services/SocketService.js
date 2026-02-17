@@ -41,6 +41,7 @@ export class SocketService {
     this.socket.register('gmHandleSave', this.gmHandleSave.bind(this));
     this.socket.register('gmHandleInitialSave', this.gmHandleInitialSave.bind(this));
     this.socket.register('gmHandleTreatment', this.gmHandleTreatment.bind(this));
+    this.socket.register('gmHandleCounteract', this.gmHandleCounteract.bind(this));
     this.socket.register('gmApplySaveConsequences', this.gmApplySaveConsequences.bind(this));
     this.socket.register('unlockSaveButton', this.handleUnlockSaveButton.bind(this));
     this.socket.register('syncButtonState', this.handleSyncButtonState.bind(this));
@@ -206,6 +207,39 @@ export class SocketService {
     if (!affliction) return;
 
     await TreatmentService.handleTreatmentResult(token, affliction, total, dc);
+  }
+
+  /**
+   * Request GM to process counteract result
+   */
+  static async requestHandleCounteract(tokenId, afflictionId, counteractRank, afflictionRank, degree) {
+    if (!this.socket) return false;
+
+    try {
+      await this.socket.executeAsGM('gmHandleCounteract', tokenId, afflictionId, counteractRank, afflictionRank, degree);
+      return true;
+    } catch (error) {
+      console.error('PF2e Afflictioner | Error requesting counteract handling:', error);
+      return false;
+    }
+  }
+
+  /**
+   * GM handler for processing counteract result
+   */
+  static async gmHandleCounteract(tokenId, afflictionId, counteractRank, afflictionRank, degree) {
+    if (!game.user.isGM) return;
+
+    const token = canvas.tokens.get(tokenId);
+    if (!token) return;
+
+    const { CounteractService } = await import('./CounteractService.js');
+    const AfflictionStoreModule = await import('../stores/AfflictionStore.js');
+
+    const affliction = AfflictionStoreModule.getAffliction(token, afflictionId);
+    if (!affliction) return;
+
+    await CounteractService.handleCounteractResult(token, affliction, counteractRank, afflictionRank, degree);
   }
 
   /**
@@ -751,7 +785,6 @@ export class SocketService {
           unlockBtn.className = 'affliction-unlock-save';
           unlockBtn.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: linear-gradient(135deg, rgb(180, 145, 0) 0%, rgb(140, 110, 0) 100%); border: 2px dashed #ffd700; color: #ffd700; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 3px 8px rgba(0,0,0,0.4), 0 0 15px rgba(255,215,0,0.5); transition: all 0.2s ease; z-index: 5; display: flex; align-items: center; justify-content: center;';
           unlockBtn.innerHTML = '<i class="fas fa-unlock-alt"></i> Unlock';
-          unlockBtn.title = 'Click to unlock this button for the player';
 
           unlockBtn.addEventListener('mouseenter', () => {
             unlockBtn.style.background = 'linear-gradient(135deg, rgb(200, 165, 0) 0%, rgb(160, 130, 0) 100%)';
