@@ -67,6 +67,9 @@ function registerInitialSaveButtons(root) {
       // Fallback: Roll the save via chat button
       const actor = token.actor;
 
+      // Check if this should be a blind GM roll
+      const isBlindRoll = btn.dataset.blindRoll === 'true';
+
       // Capture the message ID by tracking message creation
       let rollMessageId = null;
       Hooks.once('createChatMessage', (message) => {
@@ -75,7 +78,13 @@ function registerInitialSaveButtons(root) {
         }
       });
 
-      await actor.saves.fortitude.roll({ dc: { value: currentDC } });
+      // Roll with blind mode if this is a GM secret roll
+      const rollOptions = { dc: { value: currentDC } };
+      if (isBlindRoll) {
+        rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+      }
+
+      await actor.saves.fortitude.roll(rollOptions);
 
       // Wait a bit for the hook to fire
       await new Promise(resolve => setTimeout(resolve, 100));

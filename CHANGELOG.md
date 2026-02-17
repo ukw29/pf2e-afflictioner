@@ -5,6 +5,91 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-alpha.6] - 2026-02-17
+
+### Added
+
+- **Anonymize Save Messages Setting**: New GM setting to hide affliction details from players
+  - New world setting: "Anonymize Save Messages"
+  - When enabled, players only see "Fortitude Save Required" without affliction name or details
+  - Hides affliction name, exposure text, current stage, and virulent trait information
+  - Players still see DC (if PF2e metagame setting allows) and treatment bonuses
+  - GMs continue to see full details in their separate GM-only messages
+  - Useful for keeping the nature of afflictions secret from players
+  - Works for both initial saves and stage saves
+
+- **Unidentified Affliction Effects**: Affliction effects are now automatically unidentified for players when mysterious
+  - Effects appear as "Unknown Affliction" to players when the affliction's nature is unknown
+  - Automatically unidentified when:
+    - Affliction is currently in onset period (not yet affecting the character), OR
+    - Current stage has no mechanical effects (no conditions, weakness, or damage)
+  - Automatically identified when:
+    - Character experiences mechanical effects (conditions, weakness, or damage)
+  - Once identified, stays identified even if character regresses to earlier stages
+  - Effect text alone (flavor text) does NOT reveal the affliction's identity
+  - GMs always see the true affliction name
+  - Prevents meta-gaming by hiding affliction details until they become mechanically apparent
+
+- **Onset Effects with Duration**: Onset effects now show countdown timer
+  - Onset effects display actual onset duration (e.g., "10 MINUTES REMAINING")
+  - Duration automatically counts down using Foundry's built-in timer system
+  - Description shows simple "Onset" text (no redundant time information)
+  - Stages continue to use unlimited duration (they end via saves, not time)
+
+- **GM Rolls Mysterious Initial Saves**: New setting for complete secrecy with mysterious afflictions
+  - New world setting: "GM Rolls Mysterious Initial Saves"
+  - When enabled, GM rolls initial saves in secret for mysterious afflictions
+  - Mysterious affliction criteria:
+    - Affliction has an onset period, OR
+    - Stage 1 has no mechanical effects (no conditions, weakness, or damage)
+  - Players never see the save request - complete secrecy maintained
+  - **Rolls are automatically made as blind GM rolls** - players don't see roll or result
+  - Temporarily sets roll mode to blind, skips dialog, then restores original mode
+  - GM receives special message with red border and secret icon
+  - Indicates reason for secrecy (onset or no mechanical effects)
+  - Works with "Anonymize Save Messages" and unidentified effects for maximum mystery
+
+### Changed
+
+- **Effect Timing**: Effects now only appear after initial save completes
+  - No effect created during "Awaiting initial save" state
+  - Effect appears when character enters onset or first stage
+  - Reduces clutter and confusion during initial exposure
+
+- **Badge Numbering**: Badge range changed from 0-max to 1-max
+  - Onset effects have no badge (onset is not a numbered stage)
+  - Stage effects show badge numbered 1 to max stage
+  - Prevents confusion with badge value 0
+
+### Fixed
+
+- **Initial Save Effect Deletion**: Fixed effect being deleted when closing sheet during initial save
+  - Added check to skip badge sync when affliction is awaiting initial save
+  - Prevents premature affliction removal from badge normalization
+
+- **Blind Roll Implementation**: GM secret saves now properly use blind roll mode
+  - Temporarily sets core roll mode to blind before rolling
+  - Skips dialog to prevent mode override
+  - Restores original roll mode after roll completes
+  - Ensures players never see the roll or result in chat
+
+### Refactored
+
+- **AfflictionService Code Organization**: Major refactor splitting monolithic service into focused modules
+  - Created **AfflictionEffectBuilder** (374 lines) - Effect creation, updates, and configuration
+  - Created **AfflictionChatService** (375 lines) - Chat message generation and prompts
+  - Created **AfflictionTimerService** (217 lines) - Duration tracking and timing logic
+  - Reduced **AfflictionService** from 1580 lines to 818 lines (-48% reduction)
+  - Total code extracted: 966 lines into 3 focused services
+  - **Benefits:**
+    - Single Responsibility Principle - each service has clear focus
+    - DRY Compliance - eliminated all duplicated logic
+    - Improved testability - services can be tested independently
+    - Better maintainability - changes are isolated to specific services
+    - Cleaner imports - each service only imports what it needs
+  - **Zero behavior changes** - pure code organization refactor
+  - All code passes linting with no errors
+
 ## [1.0.0-alpha.5] - 2026-02-17
 
 ### Added

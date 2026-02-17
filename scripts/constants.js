@@ -71,6 +71,24 @@ export const DEFAULT_SETTINGS = {
     config: true,
     restricted: true
   },
+  'anonymizeSaveMessages': {
+    name: 'Anonymize Save Messages',
+    hint: 'Hide affliction details in player save messages. Players see only "Fortitude Save Required" without affliction name, stage, or effects. Works with automatic unidentified effects to keep afflictions mysterious.',
+    scope: 'world',
+    type: Boolean,
+    default: false,
+    config: true,
+    restricted: true
+  },
+  'gmRollMysteriousSaves': {
+    name: 'GM Rolls Mysterious Initial Saves',
+    hint: 'GM rolls initial saves for mysterious afflictions (onset or no stage 1 mechanical effects). Players never see the save request, maintaining complete secrecy.',
+    scope: 'world',
+    type: Boolean,
+    default: false,
+    config: true,
+    restricted: true
+  },
   'editedAfflictions': {
     name: 'Edited Afflictions',
     hint: 'Stores GM-edited affliction definitions',

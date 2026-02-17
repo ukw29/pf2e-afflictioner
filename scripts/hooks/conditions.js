@@ -27,6 +27,12 @@ export async function onPreUpdateItem(item, changes, options, userId) {
         const token = canvas.tokens.get(item.parent.token?.id) || canvas.tokens.placeables.find(t => t.actor?.id === item.parent.id);
         if (token) {
           const affliction = AfflictionStore.getAffliction(token, afflictionId);
+
+          // Don't process badge changes if affliction is awaiting initial save
+          if (affliction && affliction.needsInitialSave) {
+            return true; // Allow the update but don't sync
+          }
+
           if (affliction && affliction.currentStage !== badgeChange) {
             // Validate and clamp the new stage
             const maxStage = affliction.stages?.length || 4;
