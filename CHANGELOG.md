@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-alpha.9] - 2026-02-18
+
+### Fixed
+
+- **Counteract: Multiple Spellcasting Entries**: Characters with multiple spellcasting entries of the same tradition (e.g., Wizard + Magus archetype, class spells + innate spells) now all appear individually in the counteract check type dropdown
+  - Previously deduplicated by tradition, showing only one "Arcane Spellcasting" option even with multiple arcane entries
+  - Now lists each entry by name (e.g., "Arcane Spells", "Arcane Innate Spells") using the entry's unique ID
+  - Rolling uses the exact selected entry's statistic for accurate modifiers
+  - Backward compatible with existing counteract buttons in chat history
+
 ## [1.0.0-alpha.8] - 2026-02-18
 
 ### Added

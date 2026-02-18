@@ -101,9 +101,11 @@ export function registerCounteractButtonHandlers(root) {
       // For skill counteract: use the skill directly
       let roll;
       if (skill.startsWith('spellcasting:')) {
-        const tradition = skill.split(':')[1];
+        const identifier = skill.split(':')[1];
         const entries = casterActor.spellcasting?.contents || [];
-        const entry = entries.find(e => e.tradition === tradition);
+        // Try by entry ID first, fall back to tradition match (backward compat with existing messages)
+        const entry = entries.find(e => e.id === identifier) || entries.find(e => e.tradition === identifier);
+        const tradition = entry?.tradition || identifier;
         if (entry?.statistic?.check) {
           roll = await entry.statistic.check.roll({ dc: { value: dc } });
         } else {
@@ -432,7 +434,8 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
           // Create counteract prompt directly (no intermediate dialog)
           // Pass spellRank as the default counteract rank (per PF2e rules, spell rank = counteract rank)
-          await CounteractService.promptCounteract(token, affliction, casterActor, spellRank);
+          const spellEntryId = item.spellcasting?.id || item.system?.location?.value || null;
+          await CounteractService.promptCounteract(token, affliction, casterActor, spellRank, spellEntryId);
         } catch (error) {
           console.error('Error processing cleanse/counteract:', error);
           ui.notifications.error('Failed to process spell effect');

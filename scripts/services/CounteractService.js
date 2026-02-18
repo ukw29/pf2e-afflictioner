@@ -49,22 +49,22 @@ export class CounteractService {
    * @param {Object} affliction - The affliction data
    * @param {Actor} casterActor - Optional: The actor casting the counteract (for whisper targeting)
    */
-  static async promptCounteract(token, affliction, casterActor = null, defaultCounterRank = null) {
+  static async promptCounteract(token, affliction, casterActor = null, defaultCounterRank = null, spellEntryId = null) {
     const afflictedActor = token.actor;
     const { level: afflictionLevel, rank: afflictionRank } = await this.calculateAfflictionRank(affliction);
 
-    // Auto-detect spellcasting traditions from casterActor
-    const detectedTraditions = [];
+    // Auto-detect spellcasting entries from casterActor (list all, not just unique traditions)
+    const detectedEntries = [];
     if (casterActor?.spellcasting) {
       const entries = casterActor.spellcasting.contents || [];
       for (const entry of entries) {
-        if (entry.tradition && !detectedTraditions.includes(entry.tradition)) {
-          detectedTraditions.push(entry.tradition);
+        if (entry.tradition && entry.statistic) {
+          detectedEntries.push({ id: entry.id, name: entry.name, tradition: entry.tradition });
         }
       }
     }
-    const spellcastingOptions = detectedTraditions.map(t =>
-      `<option value="spellcasting:${t}" selected>${t.charAt(0).toUpperCase() + t.slice(1)} Spellcasting</option>`
+    const spellcastingOptions = detectedEntries.map(e =>
+      `<option value="spellcasting:${e.id}"${e.id === spellEntryId ? ' selected' : ''}>${e.name}</option>`
     ).join('') || [
       '<option value="spellcasting:arcane">Arcane Spellcasting</option>',
       '<option value="spellcasting:divine">Divine Spellcasting</option>',
@@ -155,7 +155,12 @@ export class CounteractService {
       survival: 'Survival',
       thievery: 'Thievery'
     };
-    const skillDisplay = skillNames[skill] || skill.charAt(0).toUpperCase() + skill.slice(1);
+    let skillDisplay = skillNames[skill];
+    if (!skillDisplay && skill.startsWith('spellcasting:')) {
+      const matchedEntry = detectedEntries.find(e => e.id === skill.split(':')[1]);
+      skillDisplay = matchedEntry?.name || `${matchedEntry?.tradition?.charAt(0).toUpperCase()}${matchedEntry?.tradition?.slice(1) || ''} Spellcasting`;
+    }
+    skillDisplay = skillDisplay || skill.charAt(0).toUpperCase() + skill.slice(1);
 
     // Check PF2e metagame setting for showing DCs to players
     const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
