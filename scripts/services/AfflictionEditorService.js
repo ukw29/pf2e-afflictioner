@@ -187,6 +187,7 @@ export class AfflictionEditorService {
       dc: afflictionData.dc || 15,
       saveType: afflictionData.saveType || 'fortitude',
       onset: afflictionData.onset || null,
+      maxDuration: afflictionData.maxDuration || null,
       stages: afflictionData.stages || [],
       sourceItemUuid: afflictionData.sourceItemUuid || null
     };

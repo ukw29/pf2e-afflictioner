@@ -110,9 +110,12 @@ export async function onCreateChatMessage(message, options, userId) {
     affliction.inOnset = false;
     if (combat && firstStage?.duration) {
       // Convert duration to rounds (6 seconds per round)
-      const durationSeconds = AfflictionParser.durationToSeconds(firstStage.duration);
+      const durationSeconds = await AfflictionParser.resolveStageDuration(firstStage.duration, `${afflictionData.name} Stage 1`);
       const durationRounds = Math.ceil(durationSeconds / 6);
       affliction.nextSaveRound = combat.round + durationRounds;
+      if (firstStage.duration?.value > 0) {
+        affliction.currentStageResolvedDuration = { value: firstStage.duration.value, unit: firstStage.duration.unit };
+      }
     }
 
     // Apply stage 1 effects

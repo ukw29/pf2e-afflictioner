@@ -47,14 +47,18 @@ export async function onWorldTimeUpdate(worldTime, delta) {
           }
 
           // Calculate next save time for world time tracking
-          const stageDurationSeconds = AfflictionParser.durationToSeconds(stageData.duration);
+          const stageDurationSeconds = await AfflictionParser.resolveStageDuration(stageData.duration, `${affliction.name} Stage ${targetStage}`);
+          const resolvedDuration = stageData.duration?.value > 0
+            ? { value: stageData.duration.value, unit: stageData.duration.unit }
+            : undefined;
 
           await AfflictionStore.updateAffliction(token, id, {
             inOnset: false,
             currentStage: targetStage,
             onsetRemaining: 0,
             durationElapsed: 0,  // Reset duration tracking for new stage
-            nextSaveTimestamp: game.time.worldTime + stageDurationSeconds
+            nextSaveTimestamp: game.time.worldTime + stageDurationSeconds,
+            ...(resolvedDuration && { currentStageResolvedDuration: resolvedDuration })
           });
 
           // Re-fetch affliction with updated currentStage

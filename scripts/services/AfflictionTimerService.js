@@ -27,15 +27,19 @@ export class AfflictionTimerService {
             return;
           }
 
-          const durationSeconds = AfflictionParser.durationToSeconds(stageData.duration);
+          const durationSeconds = await AfflictionParser.resolveStageDuration(stageData.duration, `${affliction.name} Stage ${targetStage}`);
           const durationRounds = Math.ceil(durationSeconds / 6);
           const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
+          const resolvedDuration = stageData.duration?.value > 0
+            ? { value: stageData.duration.value, unit: stageData.duration.unit }
+            : undefined;
           await AfflictionStore.updateAffliction(token, id, {
             inOnset: false,
             currentStage: targetStage,
             onsetRemaining: 0,
             durationElapsed: 0,
             nextSaveRound: combat.round + durationRounds,
+            ...(resolvedDuration && { currentStageResolvedDuration: resolvedDuration }),
             nextSaveInitiative: tokenCombatant?.initiative
           });
 

@@ -5,7 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0-alpha.6] - 2026-02-17
+## [1.0.0-alpha.7] - 2026-02-18
+
+### Added
+
+- **Dynamic Stage Duration Rolling**: Dice-based stage durations (e.g. "Paralyzed for 2d4 hours") now roll automatically on stage entry
+  - Rolls posted as GM-whispered chat message with dice formula and result
+  - ui.notifications toast also shown
+  - Rolled value persisted to affliction store so subsequent saves use the correct duration
+  - Supports Foundry inline roll notation `[[/br 2d4 #hours]]` in addition to plain text
+
+- **Max Duration Effect Expiry**: When an affliction hits max duration and GM clicks "Remove", the Foundry effect is now updated to the stage's rolled duration so conditions expire naturally rather than persisting indefinitely
+  - Only applies if the current stage had a timed duration (e.g. Paralyzed for 2d4 hours)
+  - Stages without explicit duration continue existing behavior (effect remains until manually removed)
+
+- **Counteract: Spellcasting Proficiency**: Counteract check type dropdown now includes spellcasting traditions
+  - **Arcane / Divine / Occult / Primal Spellcasting** options listed first (ability mod + proficiency, per PF2e rules)
+  - Auto-detected from the caster's spellcasting entries when available
+  - Rolls via `spellcastingEntry.statistic.check.roll()` for accurate modifier
+  - Falls back to relevant knowledge skill (arcana/religion/etc.) if no matching entry found
+  - Skills still available as fallback
+
+- **Counteract: Apply Consequences Button**: When "Require Save Confirmation" is enabled, counteract rolls now inject an "Apply Counteract Consequences" button directly onto the roll message (matching the save confirmation pattern)
+  - Button color-coded by degree of success
+  - Shows rank explanation (e.g. "Can counteract up to rank 4 — affliction rank 3 is within range")
+  - Button omitted entirely on failure/critical failure when counteract cannot succeed
+  - Supports hero point rerolls — degree recomputed from live roll each render
+  - Uses `pf2e.preReroll` hook to copy flags to new message on reroll
+
+- **Counteract: Spell Rank as Default**: Counteract rank dialog now defaults to the spell's cast rank (per PF2e rule: spell rank = counteract rank)
+
+### Fixed
+
+- **Dynamic Stage Duration**: Fixed `Roll.evaluate({ async: false })` removed in Foundry v12 causing stage duration rolls to silently fail
+  - Now uses `await roll.evaluate()` with Math.random fallback
+  - All call sites updated to properly `await` the async method
+
+- **Foundry Enrichment Parsing**: Stage durations using Foundry inline roll notation (`[[/br 2d4 #hours]]`) now parse correctly
+  - Previous plain-text regex failed on enriched descriptions
+  - New `stripEnrichment()` helper also added for general use
+
+- **Edited Definition Override**: Fixed edited affliction definitions overwriting freshly-parsed stage durations with stale null values
+  - Edited definitions stored before the parsing fix had null durations that silently replaced correct values
+
+- **Counteract Apply Button**: Fixed "Apply Counteract Consequences" button doing nothing when injected asynchronously
+  - Button now has event listener attached directly at injection time (not via `registerCounteractButtonHandlers`)
+
+### [1.0.0-alpha.6] - 2026-02-17
 
 ### Added
 

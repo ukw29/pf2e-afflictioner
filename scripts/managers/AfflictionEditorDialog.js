@@ -199,8 +199,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     const FormDataClass = foundry.applications?.ux?.FormDataExtended || FormDataExtended;
     const formData = new FormDataClass(dialog.element).object;
 
-    // Debug: Log form data to see what we're getting
-    console.log('PF2e Afflictioner | Form data on save:', formData);
+
 
     // Update DC
     if (formData.dc !== undefined) {
@@ -237,7 +236,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
           value: maxDurationValue,
           unit: maxDurationUnit
         };
-        console.log('PF2e Afflictioner | Saved maxDuration from form:', dialog.editedData.maxDuration);
       } else {
         dialog.editedData.maxDuration = null;
       }
@@ -331,7 +329,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
     if (updatedCount > 0) {
       ui.notifications.info(`Updated ${updatedCount} active affliction(s)`);
-      console.log(`PF2e Afflictioner | Applied changes to ${updatedCount} active affliction(s)`);
     }
   }
 

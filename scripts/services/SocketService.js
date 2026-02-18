@@ -564,11 +564,16 @@ export class SocketService {
     // Only GMs need to track this
     if (!game.user.isGM) return;
 
-    // Find the message containing this roll BEFORE it gets deleted
-    const recentMessages = game.messages.contents.slice(-20);
-    const oldMessage = recentMessages.find(msg =>
-      msg.rolls?.some(r => r === oldRoll || r.total === oldRoll?.total)
-    );
+    // Try to find message by messageId on the roll options first (most reliable)
+    // Fall back to roll total matching
+    const messageId = oldRoll?.options?.messageId || oldRoll?.messageId;
+    let oldMessage = messageId ? game.messages.get(messageId) : null;
+    if (!oldMessage) {
+      const recentMessages = game.messages.contents.slice(-20);
+      oldMessage = recentMessages.find(msg =>
+        msg.rolls?.some(r => r === oldRoll || r.total === oldRoll?.total)
+      );
+    }
 
     if (!oldMessage) {
       return;
@@ -586,6 +591,18 @@ export class SocketService {
         saveType: oldMessage.flags['pf2e-afflictioner'].saveType,
         dc: oldMessage.flags['pf2e-afflictioner'].dc
       };
+    }
+
+    // For counteract flags: register a createChatMessage hook to reliably catch the new message
+    if (oldMessage.flags?.['pf2e-afflictioner']?.needsCounteractConfirmation) {
+      const counteractFlags = { ...oldMessage.flags['pf2e-afflictioner'] };
+      const speakerActorId = oldMessage.speaker?.actor;
+      Hooks.once('createChatMessage', async (newMsg) => {
+        // Only copy if from same actor (the reroll)
+        if (!speakerActorId || newMsg.speaker?.actor === speakerActorId || newMsg.actor?.id === speakerActorId) {
+          await newMsg.update({ 'flags.pf2e-afflictioner': counteractFlags });
+        }
+      });
     }
 
   }
@@ -611,11 +628,15 @@ export class SocketService {
     // Wait for new message to be created
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Find the NEW message (containing new roll)
-    const recentMessages = game.messages.contents.slice(-20);
-    const newMessage = recentMessages.find(msg =>
-      msg.rolls?.some(r => r === newRoll || r.total === newRoll?.total)
-    );
+    // Find the NEW message - try messageId first, then fall back to total matching
+    const newMessageId = newRoll?.options?.messageId || newRoll?.messageId;
+    let newMessage = newMessageId ? game.messages.get(newMessageId) : null;
+    if (!newMessage) {
+      const recentMessages = game.messages.contents.slice(-20);
+      newMessage = recentMessages.find(msg =>
+        msg.id !== oldMessageId && msg.rolls?.some(r => r === newRoll || r.total === newRoll?.total)
+      );
+    }
 
     if (!newMessage) {
       return;
@@ -629,6 +650,8 @@ export class SocketService {
       });
       this._lastRerollConfirmationFlags = null;
     }
+
+    // Note: counteract flags are copied via Hooks.once('createChatMessage') in onPf2ePreReroll
 
     // Clean up tracking
     this._lastRerollOldMessageId = null;

@@ -4,6 +4,7 @@
 
 import { AfflictionService } from './AfflictionService.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
+import { AfflictionParser } from './AfflictionParser.js';
 
 export class CounteractService {
   /**
@@ -48,16 +49,35 @@ export class CounteractService {
    * @param {Object} affliction - The affliction data
    * @param {Actor} casterActor - Optional: The actor casting the counteract (for whisper targeting)
    */
-  static async promptCounteract(token, affliction, casterActor = null) {
+  static async promptCounteract(token, affliction, casterActor = null, defaultCounterRank = null) {
     const afflictedActor = token.actor;
     const { level: afflictionLevel, rank: afflictionRank } = await this.calculateAfflictionRank(affliction);
+
+    // Auto-detect spellcasting traditions from casterActor
+    const detectedTraditions = [];
+    if (casterActor?.spellcasting) {
+      const entries = casterActor.spellcasting.contents || [];
+      for (const entry of entries) {
+        if (entry.tradition && !detectedTraditions.includes(entry.tradition)) {
+          detectedTraditions.push(entry.tradition);
+        }
+      }
+    }
+    const spellcastingOptions = detectedTraditions.map(t =>
+      `<option value="spellcasting:${t}" selected>${t.charAt(0).toUpperCase() + t.slice(1)} Spellcasting</option>`
+    ).join('') || [
+      '<option value="spellcasting:arcane">Arcane Spellcasting</option>',
+      '<option value="spellcasting:divine">Divine Spellcasting</option>',
+      '<option value="spellcasting:occult">Occult Spellcasting</option>',
+      '<option value="spellcasting:primal">Primal Spellcasting</option>'
+    ].join('');
 
     // Prompt for counteract rank and DC
     const template = `
       <form>
         <div class="form-group" style="margin-bottom: 12px;">
           <label style="display: block; margin-bottom: 4px; font-weight: bold;">Counteract Rank</label>
-          <input type="number" name="counteractRank" value="${Math.max(1, afflictionRank)}" min="0" max="10" required
+          <input type="number" name="counteractRank" value="${defaultCounterRank ?? Math.max(1, afflictionRank)}" min="0" max="10" required
                  style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;"/>
           <p style="font-size: 0.85em; color: #666; margin: 4px 0 0 0;">Spell rank or half creature/item level (rounded up)</p>
         </div>
@@ -70,24 +90,29 @@ export class CounteractService {
         <div class="form-group" style="margin-bottom: 12px;">
           <label style="display: block; margin-bottom: 4px; font-weight: bold;">Check Type</label>
           <select name="skill" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
-            <option value="medicine">Medicine</option>
-            <option value="religion">Religion</option>
-            <option value="nature">Nature</option>
-            <option value="arcana">Arcana</option>
-            <option value="occultism">Occultism</option>
-            <option value="acrobatics">Acrobatics</option>
-            <option value="athletics">Athletics</option>
-            <option value="crafting">Crafting</option>
-            <option value="deception">Deception</option>
-            <option value="diplomacy">Diplomacy</option>
-            <option value="intimidation">Intimidation</option>
-            <option value="performance">Performance</option>
-            <option value="society">Society</option>
-            <option value="stealth">Stealth</option>
-            <option value="survival">Survival</option>
-            <option value="thievery">Thievery</option>
+            <optgroup label="Spellcasting (attr mod + proficiency)">
+              ${spellcastingOptions}
+            </optgroup>
+            <optgroup label="Skills">
+              <option value="medicine">Medicine</option>
+              <option value="religion">Religion</option>
+              <option value="nature">Nature</option>
+              <option value="arcana">Arcana</option>
+              <option value="occultism">Occultism</option>
+              <option value="acrobatics">Acrobatics</option>
+              <option value="athletics">Athletics</option>
+              <option value="crafting">Crafting</option>
+              <option value="deception">Deception</option>
+              <option value="diplomacy">Diplomacy</option>
+              <option value="intimidation">Intimidation</option>
+              <option value="performance">Performance</option>
+              <option value="society">Society</option>
+              <option value="stealth">Stealth</option>
+              <option value="survival">Survival</option>
+              <option value="thievery">Thievery</option>
+            </optgroup>
           </select>
-          <p style="font-size: 0.85em; color: #666; margin: 4px 0 0 0;">Skill to roll for counteract check</p>
+          <p style="font-size: 0.85em; color: #666; margin: 4px 0 0 0;">Spellcasting uses ability mod + proficiency bonus per PF2e rules</p>
         </div>
         <div style="padding: 10px; background: rgba(74, 124, 42, 0.1); border-left: 3px solid #4a7c2a; border-radius: 4px;">
           <p style="margin: 0; font-size: 0.9em;"><strong>Target Affliction:</strong> ${affliction.name}</p>
@@ -270,16 +295,15 @@ export class CounteractService {
 
     // Update save timing for new stage
     if (newStageData) {
-      const { AfflictionParser } = await import('./AfflictionParser.js');
       if (combat) {
-        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${affliction.name} Stage ${newStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
         const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
         updates.nextSaveInitiative = tokenCombatant?.initiative;
         updates.stageStartRound = combat.round;
       } else {
-        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${affliction.name} Stage ${newStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
       }
     }

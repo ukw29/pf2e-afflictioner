@@ -6,7 +6,7 @@
 import { registerSaveButtonHandlers, injectConfirmationButton } from './saveButtons.js';
 import { registerAfflictionButtonHandlers } from './afflictionButtons.js';
 import { registerTreatmentButtonHandlers, addTreatmentAfflictionSelection } from './treatmentButtons.js';
-import { registerCounteractButtonHandlers, addCounteractAfflictionSelection } from './counteractButtons.js';
+import { registerCounteractButtonHandlers, addCounteractAfflictionSelection, injectCounteractConfirmButton } from './counteractButtons.js';
 
 /**
  * Handle chat message rendering - add all button handlers
@@ -17,6 +17,7 @@ export function onRenderChatMessage(message, html) {
 
   // Inject confirmation button on roll messages (when requireSaveConfirmation enabled)
   injectConfirmationButton(message, root);
+  injectCounteractConfirmButton(message, root);
 
   // Register save button handlers
   registerSaveButtonHandlers(root);
@@ -65,15 +66,39 @@ function registerMaxDurationRemovalHandler(root) {
       return;
     }
 
+    // If the current stage has a resolved duration, update the effect to expire naturally
+    const resolved = affliction.currentStageResolvedDuration;
+    if (resolved?.value > 0 && affliction.appliedEffectUuid) {
+      try {
+        const effect = await fromUuid(affliction.appliedEffectUuid);
+        if (effect) {
+          const unitMap = { round: 'rounds', minute: 'minutes', hour: 'hours', day: 'days' };
+          await effect.update({
+            'system.duration': {
+              value: resolved.value,
+              unit: unitMap[resolved.unit] || resolved.unit,
+              expiry: resolved.unit === 'round' ? 'turn-start' : null,
+              sustained: false
+            }
+          });
+        }
+      } catch (e) {
+        console.error('PF2e Afflictioner | Failed to update effect duration on max duration expiry:', e);
+      }
+    }
+
     // Remove affliction from tracking only
-    // Effect and conditions remain on actor per PF2e rules
+    // Effect and conditions remain on actor per PF2e rules (effect will expire via its own duration)
     await AfflictionStore.removeAffliction(token, afflictionId);
 
     // Remove visual indicator
     const { VisualService } = await import('../services/VisualService.js');
     await VisualService.removeAfflictionIndicator(token);
 
-    ui.notifications.info(`Removed ${affliction.name} from tracking. Effect and conditions persist on ${token.name} per PF2e rules.`);
+    const expiryNote = resolved?.value > 0
+      ? `Effect will expire after ${resolved.value} ${resolved.unit}(s).`
+      : `Effect and conditions persist on ${token.name} per PF2e rules.`;
+    ui.notifications.info(`Removed ${affliction.name} from tracking. ${expiryNote}`);
 
     // Disable button
     button.disabled = true;

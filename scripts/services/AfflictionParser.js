@@ -32,13 +32,15 @@ export class AfflictionParser {
 
     const stages = this.extractStages(description);
 
+    const maxDuration = item.system?.maxDuration ? this.parseDuration(item.system.maxDuration) : this.extractMaxDuration(description);
+
     return {
       name: item.name,
       type,
       dc: this.extractDC(description, item),
-      onset: this.extractOnset(description),
+      onset: item.system?.onset ? this.parseDuration(item.system.onset) : this.extractOnset(description),
       stages: stages,
-      maxDuration: this.extractMaxDuration(description),
+      maxDuration,
       isVirulent: isVirulent,
       multipleExposure: this.extractMultipleExposure(description),
       sourceItemUuid: item.uuid
@@ -90,7 +92,7 @@ export class AfflictionParser {
       dc,
       onset: item.system?.onset ? this.parseDuration(item.system.onset) : null,
       stages: stages,
-      maxDuration: item.system?.maxDuration ? this.parseDuration(item.system.maxDuration) : null,
+      maxDuration: item.system?.maxDuration ? this.parseDuration(item.system.maxDuration) : this.extractMaxDuration(description),
       isVirulent: isVirulent,
       multipleExposure: this.extractMultipleExposure(description),
       sourceItemUuid: item.uuid
@@ -194,6 +196,7 @@ export class AfflictionParser {
    */
   static extractStages(description) {
     const stages = [];
+    const matchedStageNums = new Set();
 
     // Try HTML format first: <p><strong>Stage X</strong> effects (duration)</p>
     const htmlMatches = description.matchAll(/<strong>Stage\s+(\d+)<\/strong>\s+(.+?)\(([^)]+)\)([^<]*)/gi);
@@ -219,7 +222,44 @@ export class AfflictionParser {
         weakness: this.extractWeakness(effects),
         requiresManualHandling: requiresManualHandling
       });
+      matchedStageNums.add(stageNum);
     }
+
+    // Second pass: catch stages without parenthesized duration (e.g., "for 2d4 hours")
+    const htmlParaMatches = description.matchAll(/<strong>Stage\s+(\d+)<\/strong>\s*([\s\S]*?)<\/p>/gi);
+    for (const match of htmlParaMatches) {
+      const stageNum = parseInt(match[1]);
+      if (matchedStageNums.has(stageNum)) continue;
+
+      const rawContent = match[2];
+      const plainText = this.stripEnrichment(rawContent);
+
+      // Try Foundry inline roll notation first: [[/br 2d4 #hours]] or [[2d4 #hours]]
+      const inlineRollMatch = rawContent.match(/\[\[(?:\/br\s+)?(\d+d\d+(?:[+-]\d+)?)\s+#(\w+)\]\]/i);
+      let duration;
+      if (inlineRollMatch) {
+        duration = this.parseDuration(`${inlineRollMatch[1]} ${inlineRollMatch[2]}`);
+      } else {
+        const forMatch = plainText.match(/\bfor\s+(\d+d\d+\s+\w+|\d+\s+\w+)\s*$/i);
+        duration = forMatch ? this.parseDuration(forMatch[1]) : null;
+      }
+
+      const requiresManualHandling = this.detectManualHandling(plainText);
+
+      stages.push({
+        number: stageNum,
+        effects: rawContent.trim(),
+        rawText: match[0],
+        duration: duration,
+        damage: this.extractDamage(rawContent),
+        conditions: this.extractConditions(rawContent),
+        weakness: this.extractWeakness(rawContent),
+        requiresManualHandling: requiresManualHandling
+      });
+      matchedStageNums.add(stageNum);
+    }
+
+    stages.sort((a, b) => a.number - b.number);
 
     // If no HTML matches, try plain text format
     if (stages.length === 0) {
@@ -252,6 +292,20 @@ export class AfflictionParser {
   }
 
   /**
+   * Strip Foundry enrichment notation and HTML, returning plain text.
+   * Handles [[/br formula #unit]]{display}, @Tag[...]{display}, and HTML tags.
+   */
+  static stripEnrichment(text) {
+    return text
+      .replace(/\[\[[^\]]*\]\]\{([^}]+)\}/g, '$1')  // [[...]]{ display } → display
+      .replace(/@\w+\[[^\]]*\]\{([^}]+)\}/g, '$1')  // @Tag[...]{display} → display
+      .replace(/@\w+\[[^\]]*\]/g, '')               // @Tag[...] (no display) → ''
+      .replace(/<[^>]+>/g, ' ')                     // HTML tags → space
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
    * Detect if stage requires manual handling by GM
    */
   static detectManualHandling(effectsText) {
@@ -267,41 +321,28 @@ export class AfflictionParser {
 
   /**
    * Parse duration text into structured format
-   * Automatically rolls dice and posts to chat
+   * For dice durations, stores formula for rolling at stage entry
    */
   static parseDuration(text) {
-    // Handle dice: "1d4 rounds" - roll and post to chat
+    // Handle PF2e duration objects: {value: 6, unit: "rounds"}
+    if (text !== null && typeof text === 'object') {
+      if (!text.value || text.unit === 'unlimited') return null;
+      return {
+        value: text.value,
+        unit: text.unit.toLowerCase().replace(/s$/, ''),
+        isDice: false
+      };
+    }
+
+    // Handle dice: "1d4 rounds" - store formula, roll deferred to stage entry
     const diceMatch = text.match(/(\d+d\d+)\s+(\w+)/i);
     if (diceMatch) {
       const formula = diceMatch[1];
       const unit = diceMatch[2].toLowerCase().replace(/s$/, ''); // Remove plural 's'
 
-      // Roll the dice synchronously
-      const roll = new Roll(formula);
-      roll.evaluate({ async: false });
-
-      // Ensure roll evaluated properly (Foundry v11+ compatibility)
-      let total = roll.total;
-      if (!total || total < 1) {
-        // Fallback: manually simulate dice roll
-        const [numDice, dieSize] = formula.split('d').map(Number);
-        total = 0;
-        for (let i = 0; i < numDice; i++) {
-          total += Math.floor(Math.random() * dieSize) + 1;
-        }
-      }
-
-      // Post to chat (GM only) - use custom message to ensure correct total
-      ChatMessage.create({
-        flavor: `Duration: ${formula} ${unit}(s)`,
-        content: `<div class="dice-roll"><div class="dice-result"><h4 class="dice-formula">${formula}</h4><div class="dice-total">${total}</div></div></div>`,
-        whisper: game.users.filter(u => u.isGM).map(u => u.id)
-      });
-
-      ui.notifications.info(`Rolled ${formula} for duration: ${total} ${unit}(s)`);
-
       return {
-        value: total,
+        formula: formula,
+        value: null, // resolved when entering stage via resolveStageDuration
         unit: unit,
         isDice: true
       };
@@ -492,9 +533,9 @@ export class AfflictionParser {
    * Extract maximum duration before affliction ends
    */
   static extractMaxDuration(description) {
-    const maxMatch = description.match(/Maximum Duration\s+([^;.<]+)/i);
+    const maxMatch = description.match(/Maximum Duration(?:<\/[^>]+>)?\s+([^;.<]+)/i);
     if (maxMatch) {
-      return this.parseDuration(maxMatch[1]);
+      return this.parseDuration(maxMatch[1].trim());
     }
     return null; // no max = indefinite
   }
@@ -506,7 +547,50 @@ export class AfflictionParser {
     if (!duration) return 0;
     const unit = duration.unit.toLowerCase();
     const multiplier = DURATION_MULTIPLIERS[unit] || DURATION_MULTIPLIERS['round'];
-    return duration.value * multiplier;
+    return (duration.value ?? 0) * multiplier;
+  }
+
+  /**
+   * Resolve a stage duration: rolls dice if needed, posts result to GM, returns seconds.
+   * Use this at stage-entry points instead of durationToSeconds.
+   */
+  static async resolveStageDuration(duration, stageName = 'Stage') {
+    if (!duration) return 0;
+
+    if (!duration.isDice || !duration.formula) {
+      return this.durationToSeconds(duration);
+    }
+
+    const formula = duration.formula;
+    let total;
+    try {
+      const roll = new Roll(formula);
+      await roll.evaluate();
+      total = roll.total;
+    } catch (e) {
+      console.warn('PF2e Afflictioner | Roll.evaluate failed, using fallback:', e);
+    }
+    if (!total || total < 1) {
+      const [numDice, dieSize] = formula.split('d').map(Number);
+      total = 0;
+      for (let i = 0; i < numDice; i++) {
+        total += Math.floor(Math.random() * dieSize) + 1;
+      }
+    }
+
+    ChatMessage.create({
+      flavor: `${stageName} Duration`,
+      content: `<div class="dice-roll"><div class="dice-result"><h4 class="dice-formula">${formula} ${duration.unit}(s)</h4><div class="dice-total">${total}</div></div></div>`,
+      whisper: game.users.filter(u => u.isGM).map(u => u.id)
+    });
+    ui.notifications.info(`${stageName}: rolled ${formula} → ${total} ${duration.unit}(s)`);
+
+    // Update in-memory value so elapsed-time checks in the same session stay consistent
+    duration.value = total;
+
+    const unit = duration.unit.toLowerCase();
+    const multiplier = DURATION_MULTIPLIERS[unit] || DURATION_MULTIPLIERS['round'];
+    return total * multiplier;
   }
 
   /**

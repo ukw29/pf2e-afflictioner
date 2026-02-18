@@ -202,14 +202,17 @@ export class AfflictionService {
 
       // Set next save timing
       if (combat) {
-        const durationSeconds = AfflictionParser.durationToSeconds(initialStage.duration);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(initialStage.duration, `${affliction.name} Stage ${startingStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
         const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
         updates.nextSaveInitiative = tokenCombatant?.initiative;
       } else {
-        const durationSeconds = AfflictionParser.durationToSeconds(initialStage.duration);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(initialStage.duration, `${affliction.name} Stage ${startingStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
+      }
+      if (initialStage.duration?.value > 0) {
+        updates.currentStageResolvedDuration = { value: initialStage.duration.value, unit: initialStage.duration.unit };
       }
 
       // Update affliction
@@ -375,7 +378,7 @@ export class AfflictionService {
     if (newStageData) {
       if (combat) {
         // In combat - use round-based tracking
-        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${affliction.name} Stage ${finalStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
         // Use the afflicted token's initiative, not the current combatant's
@@ -384,8 +387,11 @@ export class AfflictionService {
         updates.stageStartRound = combat.round;
       } else {
         // Out of combat - use world time timestamp tracking
-        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${affliction.name} Stage ${finalStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
+      }
+      if (newStageData.duration?.value > 0) {
+        updates.currentStageResolvedDuration = { value: newStageData.duration.value, unit: newStageData.duration.unit };
       }
     }
 
@@ -723,14 +729,17 @@ export class AfflictionService {
     // Update save timing based on new stage
     if (newStageData) {
       if (combat) {
-        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${existingAffliction.name} Stage ${newStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
         const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
         updates.nextSaveInitiative = tokenCombatant?.initiative;
       } else {
-        const durationSeconds = AfflictionParser.durationToSeconds(newStageData.duration);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${existingAffliction.name} Stage ${newStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
+      }
+      if (newStageData.duration?.value > 0) {
+        updates.currentStageResolvedDuration = { value: newStageData.duration.value, unit: newStageData.duration.unit };
       }
     }
 
