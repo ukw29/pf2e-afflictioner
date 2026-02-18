@@ -356,7 +356,12 @@ export class AfflictionChatService {
         effects.push(`Damage: ${newStageData.damage.map(d => `${d.formula} ${d.type}`).join(', ')}`);
       }
       if (newStageData.conditions?.length) {
-        effects.push(`Conditions: ${newStageData.conditions.map(c => c.value ? `${c.name} ${c.value}` : c.name).join(', ')}`);
+        effects.push(`Conditions: ${newStageData.conditions.map(c => {
+          if (c.name === 'persistent damage' || c.name === 'persistent-damage') {
+            return `${c.persistentFormula || '1d6'} ${c.persistentType || 'untyped'} persistent damage`;
+          }
+          return c.value ? `${c.name} ${c.value}` : c.name;
+        }).join(', ')}`);
       }
       if (newStageData.weakness?.length) {
         effects.push(`Weakness: ${newStageData.weakness.map(w => `${w.type} ${w.value}`).join(', ')}`);
@@ -382,6 +387,34 @@ export class AfflictionChatService {
 
     await ChatMessage.create({
       content: content,
+      speaker: ChatMessage.getSpeaker({ token: token }),
+      whisper: game.users.filter(u => u.isGM).map(u => u.id)
+    });
+  }
+
+  /**
+   * Prompt GM to confirm killing a token from a lethal affliction stage
+   */
+  static async promptDeathConfirmation(token, affliction) {
+    const actor = token.actor;
+
+    const content = `
+      <div class="pf2e-afflictioner-save-request" style="border-color: #4a0000;">
+        <h3><i class="fas fa-skull-crossbones"></i> ${affliction.name} - Lethal Stage</h3>
+        <p><strong>${actor.name}</strong> has reached a lethal stage of <strong>${affliction.name}</strong> (Stage ${affliction.currentStage})</p>
+        <p><em>The affliction description indicates the creature dies at this stage.</em></p>
+        <hr>
+        <button class="pf2e-afflictioner-btn pf2e-afflictioner-confirm-kill-btn"
+                data-token-id="${token.id}"
+                data-affliction-id="${affliction.id}"
+                style="width: 100%; padding: 8px; margin-top: 10px; background: #8b0000;">
+          <i class="fas fa-skull"></i> Confirm Kill
+        </button>
+      </div>
+    `;
+
+    await ChatMessage.create({
+      content,
       speaker: ChatMessage.getSpeaker({ token: token }),
       whisper: game.users.filter(u => u.isGM).map(u => u.id)
     });

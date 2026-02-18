@@ -121,7 +121,8 @@
       "MULTIPLE_EXPOSURE_NO_EFFECT": "{tokenName} is exposed to {afflictionName} again, but current stage is too low (minimum stage {minStage} required)",
       "MULTIPLE_EXPOSURE_NO_EFFECT_DEFAULT": "{tokenName} is exposed to {afflictionName} ({type}) again, but multiple exposures have no effect",
       "POISON_RE_EXPOSURE": "{tokenName} is exposed to {afflictionName} again - poison stage increased by {stageIncrease}!",
-      "VIRULENT_CONSECUTIVE_SUCCESS": "{tokenName} succeeded against {afflictionName} (virulent) - one more success needed to reduce stage"
+      "VIRULENT_CONSECUTIVE_SUCCESS": "{tokenName} succeeded against {afflictionName} (virulent) - one more success needed to reduce stage",
+      "KILLED": "{tokenName} has been killed by {afflictionName}"
     },
     "CONFLICT": {
       "TITLE": "Import Conflicts",

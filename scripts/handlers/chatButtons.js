@@ -39,6 +39,9 @@ export function onRenderChatMessage(message, html) {
 
   // Register max duration removal button handler
   registerMaxDurationRemovalHandler(root);
+
+  // Register death confirmation button handler
+  registerDeathConfirmationHandler(root);
 }
 
 /**
@@ -72,7 +75,7 @@ function registerMaxDurationRemovalHandler(root) {
       try {
         const effect = await fromUuid(affliction.appliedEffectUuid);
         if (effect) {
-          const unitMap = { round: 'rounds', minute: 'minutes', hour: 'hours', day: 'days' };
+          const unitMap = { round: 'rounds', minute: 'minutes', hour: 'hours', day: 'days', week: 'weeks' };
           await effect.update({
             'system.duration': {
               value: resolved.value,
@@ -103,5 +106,51 @@ function registerMaxDurationRemovalHandler(root) {
     // Disable button
     button.disabled = true;
     button.textContent = '✓ Affliction Removed';
+  });
+}
+
+/**
+ * Register handler for death confirmation buttons
+ */
+function registerDeathConfirmationHandler(root) {
+  const killBtn = root.querySelector('.pf2e-afflictioner-confirm-kill-btn');
+  if (!killBtn) return;
+
+  killBtn.addEventListener('click', async (event) => {
+    const button = event.currentTarget;
+    const tokenId = button.dataset.tokenId;
+    const afflictionId = button.dataset.afflictionId;
+
+    const token = canvas.tokens.get(tokenId);
+    if (!token) {
+      ui.notifications.error('Token not found');
+      return;
+    }
+
+    const actor = token.actor;
+    if (!actor) {
+      ui.notifications.error('Actor not found');
+      return;
+    }
+
+    const AfflictionStore = await import('../stores/AfflictionStore.js');
+    const affliction = AfflictionStore.getAffliction(token, afflictionId);
+
+    // Set HP to 0 and raise dying to max (triggers death in PF2e)
+    await actor.update({ 'system.attributes.hp.value': 0 });
+    await actor.increaseCondition('dying');
+    const dying = actor.getCondition('dying');
+    if (dying) {
+      const dyingMax = actor.system.attributes?.dying?.max ?? 4;
+      await dying.update({ 'system.value.value': dyingMax });
+    }
+
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.KILLED', {
+      tokenName: token.name,
+      afflictionName: affliction?.name ?? 'Unknown'
+    }));
+
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-skull"></i> Confirmed';
   });
 }

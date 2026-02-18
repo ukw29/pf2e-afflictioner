@@ -71,9 +71,9 @@ export class AfflictionEditorService {
         errors.push('Onset value must be a non-negative integer');
       }
 
-      const validUnits = ['round', 'minute', 'hour', 'day'];
+      const validUnits = ['round', 'minute', 'hour', 'day', 'week'];
       if (!validUnits.includes(editedData.onset.unit)) {
-        errors.push('Onset unit must be round, minute, hour, or day');
+        errors.push('Onset unit must be round, minute, hour, day, or week');
       }
     }
 
@@ -86,9 +86,9 @@ export class AfflictionEditorService {
             errors.push(`Stage ${stage.number}: Duration value must be a positive integer`);
           }
 
-          const validUnits = ['round', 'minute', 'hour', 'day'];
+          const validUnits = ['round', 'minute', 'hour', 'day', 'week'];
           if (!validUnits.includes(stage.duration.unit)) {
-            errors.push(`Stage ${stage.number}: Duration unit must be round, minute, hour, or day`);
+            errors.push(`Stage ${stage.number}: Duration unit must be round, minute, hour, day, or week`);
           }
         }
 
@@ -108,7 +108,8 @@ export class AfflictionEditorService {
         // Validate conditions
         if (stage.conditions && Array.isArray(stage.conditions)) {
           for (const cond of stage.conditions) {
-            if (!PF2E_CONDITIONS.includes(cond.name?.toLowerCase())) {
+            const normalizedName = cond.name?.toLowerCase().replace(/\s+/g, '-');
+            if (!PF2E_CONDITIONS.includes(normalizedName)) {
               errors.push(`Stage ${stage.number}: Unknown condition "${cond.name}"`);
             }
 

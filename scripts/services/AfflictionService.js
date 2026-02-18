@@ -2,7 +2,7 @@
  * Affliction Service - Core automation logic
  */
 
-import { DEGREE_OF_SUCCESS } from '../constants.js';
+import { DEGREE_OF_SUCCESS, MODULE_ID } from '../constants.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionParser } from './AfflictionParser.js';
 import * as AfflictionDefinitionStore from '../stores/AfflictionDefinitionStore.js';
@@ -65,6 +65,7 @@ export class AfflictionService {
       onsetRemaining: 0,
       nextSaveRound: null,
       nextSaveInitiative: null,
+      applicationInitiative: combat?.combatant?.initiative ?? null,
       stageStartRound: combat ? combat.round : null,
       addedRound: combat ? combat.round : null, // Track when affliction was first added (for max duration)
       durationElapsed: 0,
@@ -171,8 +172,7 @@ export class AfflictionService {
       if (combat) {
         const onsetRounds = Math.ceil(updates.onsetRemaining / 6);
         updates.nextSaveRound = combat.round + onsetRounds;
-        const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
-        updates.nextSaveInitiative = tokenCombatant?.initiative;
+        updates.nextSaveInitiative = this.getSaveInitiative(affliction, token, combat);
       } else {
         updates.nextSaveTimestamp = game.time.worldTime + updates.onsetRemaining;
       }
@@ -205,8 +205,7 @@ export class AfflictionService {
         const durationSeconds = await AfflictionParser.resolveStageDuration(initialStage.duration, `${affliction.name} Stage ${startingStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
-        const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
-        updates.nextSaveInitiative = tokenCombatant?.initiative;
+        updates.nextSaveInitiative = this.getSaveInitiative(affliction, token, combat);
       } else {
         const durationSeconds = await AfflictionParser.resolveStageDuration(initialStage.duration, `${affliction.name} Stage ${startingStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
@@ -381,9 +380,7 @@ export class AfflictionService {
         const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${affliction.name} Stage ${finalStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
-        // Use the afflicted token's initiative, not the current combatant's
-        const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
-        updates.nextSaveInitiative = tokenCombatant?.initiative;
+        updates.nextSaveInitiative = this.getSaveInitiative(affliction, token, combat);
         updates.stageStartRound = combat.round;
       } else {
         // Out of combat - use world time timestamp tracking
@@ -453,6 +450,13 @@ export class AfflictionService {
       return;
     }
 
+    // Handle lethal stage
+    if (stage.isDead) {
+      await AfflictionEffectBuilder.createOrUpdateEffect(token, actor, affliction, stage);
+      await AfflictionChatService.promptDeathConfirmation(token, affliction);
+      return;
+    }
+
     // Note: Damage is NOT auto-applied on stage change
     // In PF2e, affliction damage is taken over time during the stage, not when changing stages
     // The GM should use the "Roll Damage" button to apply damage when appropriate
@@ -496,6 +500,9 @@ export class AfflictionService {
       }
     }
 
+    // Remove old persistent damage from this affliction before applying new stage
+    await AfflictionEffectBuilder.removePersistentDamage(actor, affliction.id);
+
     // Create or update affliction effect with counter badge and rule elements
     const effectUuid = await AfflictionEffectBuilder.createOrUpdateEffect(token, actor, affliction, stage);
     if (effectUuid && !affliction.appliedEffectUuid) {
@@ -504,6 +511,9 @@ export class AfflictionService {
         appliedEffectUuid: effectUuid
       });
     }
+
+    // Apply persistent damage directly (not via GrantItem)
+    await AfflictionEffectBuilder.applyPersistentDamage(actor, affliction, stage);
   }
 
   /**
@@ -590,6 +600,9 @@ export class AfflictionService {
     // NOTE: Conditions are now managed via GrantItem rules on the affliction effect
     // When the effect is deleted (above), PF2e automatically removes granted conditions
     // No need for manual condition cleanup - GrantItem handles it automatically!
+
+    // Persistent damage is applied directly (not via GrantItem), so clean it up manually
+    await AfflictionEffectBuilder.removePersistentDamage(actor, affliction.id);
   }
 
   /**
@@ -732,8 +745,7 @@ export class AfflictionService {
         const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${existingAffliction.name} Stage ${newStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
-        const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
-        updates.nextSaveInitiative = tokenCombatant?.initiative;
+        updates.nextSaveInitiative = this.getSaveInitiative(existingAffliction, token, combat);
       } else {
         const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${existingAffliction.name} Stage ${newStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
@@ -768,6 +780,19 @@ export class AfflictionService {
     }));
 
     await AfflictionChatService.postMultipleExposure(token, afflictionData, multipleExposure, newStage);
+  }
+
+  /**
+   * Get the initiative step to use for the next scheduled save.
+   * If 'useApplicationInitiative' setting is enabled, use the step when the affliction was applied.
+   * Otherwise, use the afflicted token's own initiative.
+   */
+  static getSaveInitiative(affliction, token, combat) {
+    const useAppInit = game.settings.get(MODULE_ID, 'useApplicationInitiative');
+    if (useAppInit && affliction.applicationInitiative != null) {
+      return affliction.applicationInitiative;
+    }
+    return combat?.combatants?.find(c => c.tokenId === token.id)?.initiative ?? null;
   }
 
   /**

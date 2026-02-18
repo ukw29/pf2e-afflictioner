@@ -700,6 +700,11 @@
   display: none;
 }
 
+/* Hide value field for on/off conditions (no value) */
+.stage-editor .condition-entry.no-value-condition .condition-value {
+  display: none;
+}
+
 .stage-editor .remove-button {
   padding: 4px 8px;
   background: #7c2a2a;

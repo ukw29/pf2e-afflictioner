@@ -86,6 +86,7 @@ export async function onCreateChatMessage(message, options, userId) {
     onsetRemaining: AfflictionParser.durationToSeconds(afflictionData.onset),
     nextSaveRound: combat ? combat.round : null,
     nextSaveInitiative: combat ? combat.combatant?.initiative : null,
+    applicationInitiative: combat?.combatant?.initiative ?? null,
     stageStartRound: combat ? combat.round : null,
     durationElapsed: 0,
     nextSaveTimestamp: !combat ? game.time.worldTime + AfflictionParser.durationToSeconds(afflictionData.onset || afflictionData.stages?.[0]?.duration) : null,

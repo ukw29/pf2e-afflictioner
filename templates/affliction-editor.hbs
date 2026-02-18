@@ -31,6 +31,7 @@
           <option value="minute" {{#if (eq affliction.onset.unit "minute")}}selected{{/if}}>Minute(s)</option>
           <option value="hour" {{#if (eq affliction.onset.unit "hour")}}selected{{/if}}>Hour(s)</option>
           <option value="day" {{#if (eq affliction.onset.unit "day")}}selected{{/if}}>Day(s)</option>
+          <option value="week" {{#if (eq affliction.onset.unit "week")}}selected{{/if}}>Week(s)</option>
         </select>
         <button type="button" data-action="toggleOnset" class="toggle-onset-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.REMOVE_ONSET'}}">
           <i class="fas fa-times"></i>
@@ -52,6 +53,7 @@
           <option value="minute" {{#if (eq affliction.maxDuration.unit "minute")}}selected{{/if}}>Minute(s)</option>
           <option value="hour" {{#if (eq affliction.maxDuration.unit "hour")}}selected{{/if}}>Hour(s)</option>
           <option value="day" {{#if (eq affliction.maxDuration.unit "day")}}selected{{/if}}>Day(s)</option>
+          <option value="week" {{#if (eq affliction.maxDuration.unit "week")}}selected{{/if}}>Week(s)</option>
         </select>
         <button type="button" data-action="toggleMaxDuration" class="toggle-max-duration-btn" data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.REMOVE_MAX_DURATION'}}">
           <i class="fas fa-times"></i>
@@ -115,7 +117,7 @@
               <strong>{{localize 'PF2E_AFFLICTIONER.EDITOR.CONDITIONS'}}:</strong>
               <span>
                 {{#each conditions}}
-                  {{name}}{{#if value}} {{value}}{{/if}}{{#unless @last}}, {{/unless}}
+                  {{#if (eq name "persistent damage")}}{{persistentFormula}} {{persistentType}} persistent damage{{else if (eq name "persistent-damage")}}{{persistentFormula}} {{persistentType}} persistent damage{{else}}{{name}}{{#if value}} {{value}}{{/if}}{{/if}}{{#unless @last}}, {{/unless}}
                 {{/each}}
               </span>
             </div>

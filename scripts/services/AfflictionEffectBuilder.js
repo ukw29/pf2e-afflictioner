@@ -154,6 +154,7 @@ export class AfflictionEffectBuilder {
     if (unit === 'minute') return 'minutes';
     if (unit === 'hour') return 'hours';
     if (unit === 'day') return 'days';
+    if (unit === 'week') return 'weeks';
     return unit;
   }
 
@@ -242,9 +243,11 @@ export class AfflictionEffectBuilder {
       }
     }
 
-    // Add GrantItem rules for conditions
+    // Add GrantItem rules for conditions (skip persistent damage - handled separately)
     if (stage.conditions && stage.conditions.length > 0) {
       for (const condition of stage.conditions) {
+        if (condition.name === 'persistent damage' || condition.name === 'persistent-damage') continue;
+
         const conditionUuid = await this.getConditionUuid(condition.name);
         if (conditionUuid) {
           const grantRule = {
@@ -344,6 +347,49 @@ export class AfflictionEffectBuilder {
     if (lower.includes('against disease')) predicates.push('item:trait:disease');
 
     return predicates.length > 0 ? predicates : undefined;
+  }
+
+  /**
+   * Apply persistent damage conditions directly on the actor
+   */
+  static async applyPersistentDamage(actor, affliction, stage) {
+    if (!stage.conditions) return;
+
+    for (const condition of stage.conditions) {
+      if (condition.name !== 'persistent damage' && condition.name !== 'persistent-damage') continue;
+
+      const formula = condition.persistentFormula || '1d6';
+      const damageType = condition.persistentType || 'untyped';
+      const dc = affliction.dc || 15;
+
+      const baseCondition = game.pf2e.ConditionManager.getCondition('persistent-damage');
+      if (!baseCondition) {
+        console.warn('PF2e Afflictioner | Could not find persistent-damage condition');
+        continue;
+      }
+
+      const source = foundry.utils.mergeObject(baseCondition.toObject(), {
+        system: { persistent: { formula, damageType, dc } },
+        flags: { 'pf2e-afflictioner': { afflictionId: affliction.id, persistentDamage: true } }
+      });
+
+      await actor.createEmbeddedDocuments('Item', [source]);
+    }
+  }
+
+  /**
+   * Remove persistent damage conditions applied by an affliction
+   */
+  static async removePersistentDamage(actor, afflictionId) {
+    const persistentConditions = actor.itemTypes.condition.filter(c =>
+      c.slug === 'persistent-damage' &&
+      c.flags?.['pf2e-afflictioner']?.afflictionId === afflictionId &&
+      c.flags?.['pf2e-afflictioner']?.persistentDamage === true
+    );
+
+    for (const condition of persistentConditions) {
+      await condition.delete();
+    }
   }
 
   /**

@@ -2,6 +2,8 @@
  * Stage Editor Dialog - UI for editing individual affliction stage details
  */
 
+import { VALUELESS_CONDITIONS } from '../constants.js';
+
 export class StageEditorDialog extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
 ) {
@@ -70,6 +72,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const stageWithParsedDamage = {
       ...this.stageData,
       effects: this.stripEnrichers(effectsText), // Show cleaned text in textarea
+      conditions: this.stageData.conditions.map(c => ({
+        ...c,
+        isValueless: VALUELESS_CONDITIONS.includes(c.name?.toLowerCase())
+      })),
       damage: this.stageData.damage.map(dmg => {
         // Parse formula like "2d6+3" or "1d8" into parts
         const parsed = this.parseDamageFormula(dmg.formula);
@@ -1235,6 +1241,8 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
             condition.persistentFormula = c.persistentFormula || '1d6';
             condition.persistentType = c.persistentType || 'fire';
             condition.value = null; // Persistent damage doesn't use value
+          } else if (VALUELESS_CONDITIONS.includes(c.name?.toLowerCase())) {
+            condition.value = null; // On/off conditions don't use value
           } else {
             condition.value = c.value !== undefined && c.value !== '' ? parseInt(c.value) : null;
           }

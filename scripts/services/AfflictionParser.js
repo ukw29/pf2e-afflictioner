@@ -64,15 +64,17 @@ export class AfflictionParser {
       // Structured stage object (e.g., {1: {effects: [...], duration: {...}}, 2: {...}})
       for (const [stageNum, stageInfo] of Object.entries(stageData)) {
         if (!isNaN(stageNum)) {
+          const effectsText = this.formatEffectsFromStructured(stageInfo.effects || []);
           stages.push({
             number: parseInt(stageNum),
-            effects: this.formatEffectsFromStructured(stageInfo.effects || []),
-            rawText: `Stage ${stageNum}: ${this.formatEffectsFromStructured(stageInfo.effects || [])}`,
+            effects: effectsText,
+            rawText: `Stage ${stageNum}: ${effectsText}`,
             duration: stageInfo.duration || { value: 1, unit: 'hour', isDice: false },
             damage: this.extractDamageFromStructured(stageInfo.effects || []),
             conditions: this.extractConditionsFromStructured(stageInfo.effects || []),
             weakness: this.extractWeaknessFromStructured(stageInfo.effects || []),
-            requiresManualHandling: false
+            requiresManualHandling: false,
+            isDead: this.detectDeath(effectsText)
           });
         }
       }
@@ -220,7 +222,8 @@ export class AfflictionParser {
         damage: this.extractDamage(effects),
         conditions: this.extractConditions(effects),
         weakness: this.extractWeakness(effects),
-        requiresManualHandling: requiresManualHandling
+        requiresManualHandling: requiresManualHandling,
+        isDead: this.detectDeath(effects)
       });
       matchedStageNums.add(stageNum);
     }
@@ -254,7 +257,8 @@ export class AfflictionParser {
         damage: this.extractDamage(rawContent),
         conditions: this.extractConditions(rawContent),
         weakness: this.extractWeakness(rawContent),
-        requiresManualHandling: requiresManualHandling
+        requiresManualHandling: requiresManualHandling,
+        isDead: this.detectDeath(rawContent)
       });
       matchedStageNums.add(stageNum);
     }
@@ -283,11 +287,13 @@ export class AfflictionParser {
           damage: this.extractDamage(effects),
           conditions: this.extractConditions(effects),
           weakness: this.extractWeakness(effects),
-          requiresManualHandling: requiresManualHandling
+          requiresManualHandling: requiresManualHandling,
+          isDead: this.detectDeath(effects)
         });
       }
     }
 
+    this.resolveStageReferences(stages);
     return stages;
   }
 
@@ -312,11 +318,40 @@ export class AfflictionParser {
     const manualKeywords = [
       'secret', 'gm', 'special', 'ability', 'save again',
       'choose', 'option', 'or', 'either', 'instead',
-      'permanent', 'instant death', 'dies'
+      'permanent'
     ];
 
     const lowerText = effectsText.toLowerCase();
     return manualKeywords.some(keyword => lowerText.includes(keyword));
+  }
+
+  /**
+   * Detect if stage causes death
+   */
+  static detectDeath(effectsText) {
+    const stripped = this.stripEnrichment(effectsText).toLowerCase();
+    return /\bdead\b|\bdies\b|\binstant\s+death\b/.test(stripped);
+  }
+
+  /**
+   * Resolve "as stage X" references — copy mechanical data from referenced stage
+   */
+  static resolveStageReferences(stages) {
+    for (const stage of stages) {
+      const stripped = this.stripEnrichment(stage.effects || stage.rawText || '').toLowerCase();
+      const match = stripped.match(/\bas\s+stage\s+(\d+)\b/i);
+      if (!match) continue;
+
+      const refNum = parseInt(match[1]);
+      const ref = stages.find(s => s.number === refNum);
+      if (!ref) continue;
+
+      stage.damage = ref.damage;
+      stage.conditions = ref.conditions;
+      stage.weakness = ref.weakness;
+      stage.requiresManualHandling = ref.requiresManualHandling;
+      stage.isDead = ref.isDead;
+    }
   }
 
   /**

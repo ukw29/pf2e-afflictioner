@@ -89,6 +89,15 @@ export const DEFAULT_SETTINGS = {
     config: true,
     restricted: true
   },
+  'useApplicationInitiative': {
+    name: 'Use Application Initiative',
+    hint: 'When enabled, affliction saves trigger on the same initiative step the affliction was first applied, rather than the afflicted token\'s own initiative. Unofficial rule — not explicitly stated in the PF2e rulebook.',
+    scope: 'world',
+    type: Boolean,
+    default: false,
+    config: true,
+    restricted: true
+  },
   'editedAfflictions': {
     name: 'Edited Afflictions',
     hint: 'Stores GM-edited affliction definitions',
@@ -99,6 +108,14 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   }
 };
+
+// PF2e conditions that have no value (just on/off)
+export const VALUELESS_CONDITIONS = [
+  'blinded', 'confused', 'controlled', 'dazzled', 'deafened', 'fascinated',
+  'fatigued', 'fleeing', 'grabbed', 'hidden', 'immobilized', 'invisible',
+  'observed', 'off-guard', 'paralyzed', 'petrified', 'prone', 'quickened',
+  'restrained', 'unconscious', 'undetected'
+];
 
 // PF2e condition names for parsing
 export const PF2E_CONDITIONS = [
@@ -117,5 +134,6 @@ export const DURATION_MULTIPLIERS = {
   'round': 6,
   'minute': 60,
   'hour': 3600,
-  'day': 86400
+  'day': 86400,
+  'week': 604800
 };

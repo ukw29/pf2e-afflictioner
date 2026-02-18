@@ -483,7 +483,12 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
     if (stage.conditions && stage.conditions.length > 0) {
       const conditionText = stage.conditions
-        .map(c => c.value ? `${c.name} ${c.value}` : c.name)
+        .map(c => {
+          if (c.name === 'persistent damage' || c.name === 'persistent-damage') {
+            return `${c.persistentFormula || '1d6'} ${c.persistentType || 'untyped'} persistent damage`;
+          }
+          return c.value ? `${c.name} ${c.value}` : c.name;
+        })
         .join(', ');
       tooltip += `Conditions: ${conditionText}\n`;
     }

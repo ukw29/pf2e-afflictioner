@@ -12,6 +12,7 @@
       <option value="minute" {{#if (eq stage.duration.unit "minute")}}selected{{/if}}>Minute(s)</option>
       <option value="hour" {{#if (eq stage.duration.unit "hour")}}selected{{/if}}>Hour(s)</option>
       <option value="day" {{#if (eq stage.duration.unit "day")}}selected{{/if}}>Day(s)</option>
+      <option value="week" {{#if (eq stage.duration.unit "week")}}selected{{/if}}>Week(s)</option>
     </select>
   </div>
 
@@ -157,8 +158,8 @@
 
     <div class="condition-list">
       {{#each stage.conditions}}
-        <div class="condition-entry {{#if (eq name 'persistent damage')}}has-persistent-damage{{/if}}" data-index="{{@index}}">
-          <select name="condition.{{@index}}.name" class="condition-name" onchange="this.closest('.condition-entry').classList.toggle('has-persistent-damage', this.value === 'persistent damage')">
+        <div class="condition-entry {{#if (eq name 'persistent damage')}}has-persistent-damage{{/if}}{{#if isValueless}} no-value-condition{{/if}}" data-index="{{@index}}">
+          <select name="condition.{{@index}}.name" class="condition-name" onchange="const vl=['blinded','confused','controlled','dazzled','deafened','fascinated','fatigued','fleeing','grabbed','hidden','immobilized','invisible','observed','off-guard','paralyzed','petrified','prone','quickened','restrained','unconscious','undetected'];this.closest('.condition-entry').classList.toggle('has-persistent-damage', this.value === 'persistent damage');this.closest('.condition-entry').classList.toggle('no-value-condition', vl.includes(this.value))">
             <option value="">Select condition...</option>
             <option value="blinded" {{#if (eq name "blinded")}}selected{{/if}}>Blinded</option>
             <option value="clumsy" {{#if (eq name "clumsy")}}selected{{/if}}>Clumsy</option>

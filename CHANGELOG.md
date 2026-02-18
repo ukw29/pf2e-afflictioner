@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-alpha.8] - 2026-02-18
+
+### Added
+
+- **"Dead" Stage Support**: Affliction stages with "dead" effect now prompt GM for confirmation before killing character
+  - GM receives whispered chat message with "Confirm Kill" button
+  - On approval: sets character HP to 0 and applies the Dead condition
+  - Prevents accidental kills with explicit GM confirmation step
+
+- **"As Stage X" Reference Support**: Stages referencing another stage (e.g. "as stage 2") now inherit that stage's damage, conditions, and effects
+  - Referenced stage's damage, conditions, and weakness are copied automatically
+  - Own duration and raw text are preserved
+
+- **Week Duration Unit**: Added "week" as a valid duration unit for onset, stage duration, and max duration fields
+
+- **Application Initiative Setting**: New "Use Application Initiative" world setting
+  - When enabled, affliction saves trigger on the initiative step the affliction was first applied rather than the afflicted token's own initiative
+  - Unofficial rule — not explicitly in the PF2e rulebook, off by default
+
+### Fixed
+
+- **Persistent Damage Conditions**: Persistent damage now applied directly on the actor instead of via GrantItem
+  - GrantItem cannot represent persistent damage with formula/type, causing it to be silently skipped
+  - Uses `game.pf2e.ConditionManager` to create a proper persistent-damage condition with correct formula, damage type, and recovery DC
+  - Old persistent damage is removed before applying a new stage and on affliction removal
+  - Tooltip and chat messages now display persistent damage correctly (e.g. "1d6 fire persistent damage")
+
+- **Valueless Conditions**: On/off conditions (blinded, paralyzed, prone, etc.) no longer show a numeric value field in the stage editor
+
+- **Condition Name Validation**: Condition names with spaces (e.g. "persistent damage") now validate correctly against hyphenated slug form
+
 ## [1.0.0-alpha.7] - 2026-02-18
 
 ### Added
