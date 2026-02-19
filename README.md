@@ -22,7 +22,6 @@ Automated affliction (poison/disease/curse) manager for Pathfinder 2e in Foundry
   - Applies highest value when multiple sources exist
   - Automatically downgrades to next highest when top value expires
   - Example: slowed 2 (1 round) + slowed 1 (6 rounds) = slowed 2 for round 1, then slowed 1 for rounds 2-6
-  - Stored in actor flags: `pf2e-afflictioner.conditionInstances`
 
 - **Virulent Trait**: Requires two consecutive successes to reduce stage by 1, critical success reduces by 1 instead of 2
 
@@ -39,6 +38,7 @@ Automated affliction (poison/disease/curse) manager for Pathfinder 2e in Foundry
   - Targets selected tokens or shows all afflictions if none selected
 
 - **Counteract Button**: Counteract afflictions using spells (e.g., Cleanse Affliction)
+  - Auto-detects multiple spellcasting traditions
   - Calculates affliction counteract rank (half level, rounded up)
   - Uses official counteract rules based on degree of success and rank comparison
   - Reduces stage by 1 on success, cures if at stage 1
@@ -57,27 +57,45 @@ Automated affliction (poison/disease/curse) manager for Pathfinder 2e in Foundry
   - Auto-refreshes on combat/world time updates
 
 - **Manager UI**: Comprehensive interface for manual management
-  - Roll saves, treat, progress/regress stages, remove afflictions
+  - Roll saves, treat, counteract, progress/regress stages, remove afflictions
   - Shows trait badges (virulent, multiple exposure)
-  - Displays all stage effects (damage, conditions, durations)
+  - Displays all stage effects (damage, conditions, weakness, durations)
 
-### Advanced Features
+### Adding Afflictions
 
-- **Manual Affliction Entry**: Create custom afflictions directly via "Manual Entry" button
-  - Prompts for name, type, DC, and number of stages
-  - Creates template affliction that can be customized via editor
+- **Add Affliction Dialog**: Multiple ways to add afflictions to tokens
+  - **Drag-and-Drop**: Drop poison/disease/curse items directly
+  - **Actor Items**: Quick-select from the token's actor items
+  - **Compendium Browse**: Search and add from the PF2e system compendium
+  - **Manual Entry**: Create custom afflictions with name, type, DC, and stage count
 
-- **Edited Afflictions Manager**: GM-only interface to edit affliction definitions
-  - Accessible via settings menu
-  - Customized versions override default item data
+### Affliction Editor
+
+- **Affliction Editor**: Full editor for customizing affliction definitions
+  - Basic properties: DC, save type (Fortitude/Reflex/Will), onset, max duration
+  - Per-stage editing: duration, damage, conditions, weakness, instructions
+  - **"OR" Damage Parsing**: Detects and displays damage choices (e.g., "3d6 cold or fire damage")
+  - **Auto-Applied Effects**: Drag-drop item effects to auto-apply when a stage becomes active
+
+- **Edited Afflictions Manager** (GM only): Manage all customized definitions
+  - View, edit, and delete custom definitions
+  - **Import/Export**: JSON file support for sharing configurations between worlds
+  - **Conflict Resolution**: Field-by-field merge dialog when imports conflict with existing edits
   - Stored per-world
 
-- **"OR" Damage Parsing**: Automatically detects and displays damage choices
-  - Parses patterns like "3d6 cold or fire damage"
-  - Shows both options as clickable damage links
-  - Vertical layout with "Choose one:" header
+- **Community Afflictions**: Auto-imports bundled community affliction definitions on version updates, with conflict resolution for existing edits
 
-- **Cross-Client Sync**: Uses socketlib (optional) for multiplayer synchronization
+### Mystery & Anonymization
+
+- **Anonymize Save Messages**: Hide affliction details from players; they see only "Fortitude Save Required" without name, stage, or effects
+- **GM Rolls Mysterious Saves**: GM rolls initial saves in secret for mysterious afflictions (those with onset or no visible stage 1 effects)
+- **Save Confirmation**: Optional GM confirmation before applying save consequences, allowing hero point rerolls
+
+### Advanced Options
+
+- **Application Initiative**: Optional unofficial rule where saves trigger on the initiative the affliction was applied, rather than the afflicted token's initiative
+- **Cross-Client Sync**: Uses socketlib for multiplayer synchronization
+- **Storyframe Integration**: Optional integration for sending rolls through the Storyframe module
 
 ## Usage
 
@@ -88,7 +106,7 @@ Automated affliction (poison/disease/curse) manager for Pathfinder 2e in Foundry
 3. Module prompts for initial Fortitude saves
 4. On failure, affliction is added to token with visual indicator
 5. On token's turn after onset, save prompt appears automatically
-6. Saves determine stage progression (±1/±2 stages)
+6. Saves determine stage progression (+/-1 or +/-2 stages)
 7. Conditions and damage applied automatically
 8. Continue until cured (stage 0) or max duration reached
 
@@ -96,7 +114,7 @@ Automated affliction (poison/disease/curse) manager for Pathfinder 2e in Foundry
 
 **Open Manager:**
 
-- **Token HUD Button**: Right-click token → click biohazard icon (red if afflicted, gray otherwise)
+- **Token HUD Button**: Right-click token -> click biohazard icon (red if afflicted, gray otherwise)
 - **Monitor Indicator** (GM only): Click token name in indicator tooltip
 - **API**: `game.modules.get('pf2e-afflictioner').api.openManager()`
 - **Filtered to Token**: `game.modules.get('pf2e-afflictioner').api.openManager({ filterTokenId: token.id })`
@@ -110,10 +128,11 @@ Manager actions:
 - **Edit**: Open affliction editor to customize stages
 - **Remove**: Remove affliction from token
 
-**Manual Entry:**
+**Adding Afflictions:**
 
-- Click "Manual Entry" button in Manager to create custom afflictions
-- Specify name, type (poison/disease/curse), DC, and number of stages
+- Click "Add Affliction" in the Manager
+- Drag-and-drop items, select from actor/compendium, or use Manual Entry
+- Manual Entry: specify name, type (poison/disease/curse), DC, and number of stages
 - Customize via editor after creation
 
 ### API
@@ -149,87 +168,31 @@ api.refreshAllIndicators();                        // Refresh all visual indicat
 
 ## Settings
 
-- **Show Visual Indicators**: Toggle biohazard icons on tokens (per-client)
-- **Auto-Detect Afflictions**: Auto-detect poison/disease/curse usage (world, GM only)
-- **Auto-Prompt Saves (Out of Combat)**: Automatically prompt for saves when world time elapses (world, GM only)
-- **Default DC**: Fallback DC if parsing fails (world, GM only)
-- **Integrate with Storyframe**: Send save and counteract rolls through Storyframe module (world, GM only)
-- **Edited Afflictions Manager**: Settings menu button to open manager for customizing affliction definitions (world, GM only)
+### Client Settings (per-player)
 
-## Affliction Data Format
+- **Show Visual Indicators**: Toggle biohazard icons on tokens
 
-Afflictions stored in token flags at `token.document.flags['pf2e-afflictioner'].afflictions`:
+### World Settings (GM only)
 
-```js
-{
-  id: 'uuid',
-  name: 'Affliction Name',
-  type: 'poison' | 'disease' | 'curse',
-  dc: 17,
-  level: 5,                          // Affliction level (for counteract)
-  onset: { duration, unit },
-  currentStage: 1,
-  stages: [{
-    damage,
-    conditions,
-    duration,
-    requiresManualHandling
-  }],
-
-  // Timing (combat)
-  nextSaveRound: 3,
-  nextSaveInitiative: 18,
-  stageStartRound: 1,
-
-  // Timing (world time)
-  nextSaveTimestamp: 1234567890,
-  addedAt: 1234567890,
-
-  // Treatment
-  treatmentBonus: 0,
-  treatedThisStage: false,
-
-  // Traits
-  isVirulent: false,
-  virulentConsecutiveSuccesses: 0,
-  multipleExposure: { increase: 1, minStage: null },
-
-  // Maximum duration
-  maxDuration: { duration: 24, unit: 'hour' },
-  maxDurationSeconds: 86400,
-
-  // Source
-  sourceItemUuid: 'Item.abc123',
-  sourceActorId: 'Actor.xyz789'
-}
-```
-
-Condition instances stored in actor flags at `actor.flags['pf2e-afflictioner'].conditionInstances`:
-
-```js
-{
-  'slowed': [
-    {
-      id: 'randomId',
-      value: 2,
-      sourceAfflictionId: 'afflictionId',
-      sourceTokenId: 'tokenId',
-      expiresAt: { type: 'combat', round: 5, initiative: 18 },
-      addedAt: 1234567890
-    }
-  ]
-}
-```
-
-## Manual Handling
-
-Stages with complex instructions (secret rolls, special abilities, etc.) are flagged with `requiresManualHandling: true`. The module shows warnings and includes raw text for GM review.
+- **Auto-Detect Afflictions**: Auto-detect poison/disease/curse usage
+- **Auto-Prompt Saves (Out of Combat)**: Automatically prompt for saves when world time elapses
+- **Require Save Confirmation**: Require GM confirmation before applying save consequences (allows hero point rerolls)
+- **Anonymize Save Messages**: Hide affliction details in player save messages
+- **GM Rolls Mysterious Initial Saves**: GM rolls initial saves for mysterious afflictions in secret
+- **Use Application Initiative**: Saves trigger at affliction application initiative instead of token initiative (unofficial rule)
+- **Integrate with Storyframe**: Send save and counteract rolls through Storyframe module
+- **Edited Afflictions Manager**: Settings menu button to open manager for customizing affliction definitions
 
 ## Dependencies
 
 - **FoundryVTT**: v13+
-- **PF2e System**: Required
-- **socketlib**: Optional (for multiplayer sync)
+- **PF2e System**: v7.0.0+
+- **lib-wrapper**: Required
+- **socketlib**: Required
+
+### Optional
+
+- **Storyframe**: For integrated roll handling
 
 ## Credits
 
