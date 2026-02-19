@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-02-19
+
+### Added
+
+- **Community Afflictions Auto-Import**: Bundled community affliction definitions are now automatically imported on world load
+  - Compares bundled data version against last imported version
+  - Auto-merges new entries without conflicts
+  - Shows conflict resolution dialog when GM edits overlap with community data
+  - Tracks import version via `communityDataVersion` setting
+
+### Changed
+
+- **Removed Default DC Setting**: Afflictions without a parseable DC now warn the GM via notification instead of silently falling back to a configurable default
+  - Added `NO_DC_FOUND` notification: "No DC found for affliction item {itemName}"
+  - Prevents incorrect DCs from being used unknowingly
+
+- **Visual Indicator Setting Scope**: Changed "Show Visual Indicators" setting from client to world scope
+
 ## [1.0.0-alpha.10] - 2026-02-19
 
 ### Changed

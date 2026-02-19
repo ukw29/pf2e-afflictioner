@@ -17,10 +17,11 @@ export const DEFAULT_SETTINGS = {
   'showVisualIndicators': {
     name: 'Show Visual Indicators',
     hint: 'Display biohazard icon on tokens with active afflictions',
-    scope: 'client',
+    scope: 'world',
     type: Boolean,
     default: true,
-    config: true
+    config: true,
+    restricted: true
   },
   'autoDetectAfflictions': {
     name: 'Auto-Detect Afflictions',
