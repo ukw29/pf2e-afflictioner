@@ -4,6 +4,7 @@
 
 import { AfflictionService } from './AfflictionService.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
+import { DEGREE_OF_SUCCESS } from '../constants.js';
 
 export class TreatmentService {
   /**
@@ -47,13 +48,16 @@ export class TreatmentService {
 
     let bonus = 0;
     switch (degree) {
-      case 'criticalSuccess':
+      case DEGREE_OF_SUCCESS.CRITICAL_SUCCESS:
         bonus = 4;
         break;
-      case 'success':
+      case DEGREE_OF_SUCCESS.SUCCESS:
         bonus = 2;
         break;
-      case 'criticalFailure':
+      case DEGREE_OF_SUCCESS.FAILURE:
+        bonus = 0;
+        break;
+      case DEGREE_OF_SUCCESS.CRITICAL_FAILURE:
         bonus = -2;
         break;
     }
@@ -98,9 +102,10 @@ export class TreatmentService {
     try {
       // Format degree name for display
       const degreeNames = {
-        'criticalSuccess': 'Critical Success',
-        'success': 'Success',
-        'criticalFailure': 'Critical Failure'
+        [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'Critical Success',
+        [DEGREE_OF_SUCCESS.SUCCESS]: 'Success',
+        [DEGREE_OF_SUCCESS.FAILURE]: 'Failure',
+        [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'Critical Failure'
       };
       const degreeName = degreeNames[degree] || '';
       const effectName = `${affliction.name} (Treatment: ${degreeName})`;

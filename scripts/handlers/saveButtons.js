@@ -67,8 +67,8 @@ function registerInitialSaveButtons(root) {
       // Fallback: Roll the save via chat button
       const actor = token.actor;
 
-      // Check if this should be a blind GM roll
-      const isBlindRoll = btn.dataset.blindRoll === 'true';
+      // Check if this should be a blind GM roll (mysterious afflictions or NPC actors)
+      const isBlindRoll = btn.dataset.blindRoll === 'true' || actor.type === 'npc';
 
       // Capture the message ID by tracking message creation
       let rollMessageId = null;
@@ -197,7 +197,13 @@ function registerStageSaveButtons(root) {
         }
       });
 
-      await actor.saves.fortitude.roll({ dc: { value: currentDC } });
+      // Use blind roll for NPC actors
+      const stageRollOptions = { dc: { value: currentDC } };
+      if (actor.type === 'npc') {
+        stageRollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+      }
+
+      await actor.saves.fortitude.roll(stageRollOptions);
 
       // Wait a bit for the hook to fire
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -307,31 +313,31 @@ export async function injectConfirmationButton(message, root) {
   // Convert to string for UI
   const { DEGREE_OF_SUCCESS } = await import('../constants.js');
   const degreeMap = {
-    [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'criticalSuccess',
-    [DEGREE_OF_SUCCESS.SUCCESS]: 'success',
-    [DEGREE_OF_SUCCESS.FAILURE]: 'failure',
-    [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'criticalFailure'
+    [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: DEGREE_OF_SUCCESS.CRITICAL_SUCCESS,
+    [DEGREE_OF_SUCCESS.SUCCESS]: DEGREE_OF_SUCCESS.SUCCESS,
+    [DEGREE_OF_SUCCESS.FAILURE]: DEGREE_OF_SUCCESS.FAILURE,
+    [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: DEGREE_OF_SUCCESS.CRITICAL_FAILURE
   };
-  const degree = degreeMap[degreeConstant] || 'failure';
+  const degree = degreeMap[degreeConstant] || DEGREE_OF_SUCCESS.FAILURE;
 
   // Define colors and gradients for each degree
   const colorScheme = {
-    'criticalSuccess': {
+    [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: {
       gradient: 'linear-gradient(135deg, rgb(0, 180, 0) 0%, rgb(0, 128, 0) 100%)',
       border: 'rgb(0, 200, 0)',
       glow: 'rgba(0, 255, 0, 0.4)'
     },
-    'success': {
+    [DEGREE_OF_SUCCESS.SUCCESS]: {
       gradient: 'linear-gradient(135deg, rgb(50, 100, 255) 0%, rgb(0, 0, 200) 100%)',
       border: 'rgb(0, 100, 255)',
       glow: 'rgba(0, 100, 255, 0.4)'
     },
-    'failure': {
+    [DEGREE_OF_SUCCESS.FAILURE]: {
       gradient: 'linear-gradient(135deg, rgb(255, 120, 50) 0%, rgb(255, 69, 0) 100%)',
       border: 'rgb(255, 100, 0)',
       glow: 'rgba(255, 100, 0, 0.4)'
     },
-    'criticalFailure': {
+    [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: {
       gradient: 'linear-gradient(135deg, rgb(255, 50, 50) 0%, rgb(200, 0, 0) 100%)',
       border: 'rgb(255, 0, 0)',
       glow: 'rgba(255, 0, 0, 0.4)'

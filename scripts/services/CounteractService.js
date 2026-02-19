@@ -5,6 +5,7 @@
 import { AfflictionService } from './AfflictionService.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionParser } from './AfflictionParser.js';
+import { DEGREE_OF_SUCCESS } from '../constants.js';
 
 export class CounteractService {
   /**
@@ -235,16 +236,16 @@ export class CounteractService {
     // Per rules: Critical Success = rank+3, Success = rank+1, Failure = rank-1, Critical Failure = fail
     let maxRankDifference;
     switch (degree) {
-      case 'criticalSuccess':
+      case DEGREE_OF_SUCCESS.CRITICAL_SUCCESS:
         maxRankDifference = 3; // Can counteract up to +3 ranks higher
         break;
-      case 'success':
+      case DEGREE_OF_SUCCESS.SUCCESS:
         maxRankDifference = 1; // Can counteract up to +1 rank higher
         break;
-      case 'failure':
+      case DEGREE_OF_SUCCESS.FAILURE:
         maxRankDifference = -1; // Can only counteract lower ranks
         break;
-      default: // criticalFailure
+      default: // DEGREE_OF_SUCCESS.CRITICAL_FAILURE
         maxRankDifference = -Infinity; // Cannot counteract
         break;
     }

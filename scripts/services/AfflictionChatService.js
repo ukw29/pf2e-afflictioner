@@ -59,16 +59,16 @@ export class AfflictionChatService {
         anonymizeSaves
       );
 
-      // Send player message
-      const playerWhisper = actor.hasPlayerOwner
+      // Send save message (whisper to GM for NPCs)
+      const whisperTargets = actor.hasPlayerOwner
         ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
-        : [];
+        : game.users.filter(u => u.isGM).map(u => u.id);
 
-      if (playerWhisper.length > 0 || !actor.hasPlayerOwner) {
+      if (whisperTargets.length > 0) {
         await ChatMessage.create({
           content: playerContent,
           speaker: ChatMessage.getSpeaker({ token: token }),
-          whisper: playerWhisper
+          whisper: whisperTargets
         });
       }
     }
@@ -131,16 +131,16 @@ export class AfflictionChatService {
         anonymizeSaves
       );
 
-      // Send player message
-      const playerWhisper = actor.hasPlayerOwner
+      // Send save message (whisper to GM for NPCs)
+      const whisperTargets = actor.hasPlayerOwner
         ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
-        : [];
+        : game.users.filter(u => u.isGM).map(u => u.id);
 
-      if (playerWhisper.length > 0 || !actor.hasPlayerOwner) {
+      if (whisperTargets.length > 0) {
         await ChatMessage.create({
           content: playerContent,
           speaker: ChatMessage.getSpeaker({ token: token }),
-          whisper: playerWhisper
+          whisper: whisperTargets
         });
       }
     }

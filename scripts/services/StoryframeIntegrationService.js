@@ -92,17 +92,8 @@ export class StoryframeIntegrationService {
     const actor = token.actor;
     let participant = this.findParticipant(actor);
 
-    // Prompt to add if not found
-    if (!participant && game.user.isGM) {
-      const added = await this.promptAddParticipant(actor);
-      if (!added) return false;
-      participant = this.findParticipant(actor);
-    }
-
-    if (!participant) {
-      console.warn(`${MODULE_ID} | Cannot find participant for ${actor.name}`);
-      return false;
-    }
+    // Fall back to chat if not a participant
+    if (!participant) return false;
 
     const requestId = foundry.utils.randomID();
     const dc = affliction.dc || game.settings.get(MODULE_ID, 'defaultDC');
@@ -169,17 +160,8 @@ export class StoryframeIntegrationService {
 
     let participant = this.findParticipant(casterActor);
 
-    // Prompt to add if not found
-    if (!participant && game.user.isGM) {
-      const added = await this.promptAddParticipant(casterActor);
-      if (!added) return false;
-      participant = this.findParticipant(casterActor);
-    }
-
-    if (!participant) {
-      console.warn(`${MODULE_ID} | Cannot find participant for ${casterActor.name}`);
-      return false;
-    }
+    // Fall back to chat if not a participant
+    if (!participant) return false;
 
     const requestId = foundry.utils.randomID();
     const dc = affliction.dc || game.settings.get(MODULE_ID, 'defaultDC');

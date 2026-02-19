@@ -289,6 +289,13 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
     return;
   }
 
+  // For spells, DC is dynamic (not on the item) — extract from message save button
+  const defaultDC = game.settings.get('pf2e-afflictioner', 'defaultDC');
+  if (!afflictionData.dc || afflictionData.dc === defaultDC) {
+    const dcMatch = message.content?.match(/data-dc="(\d+)"/);
+    if (dcMatch) afflictionData.dc = parseInt(dcMatch[1]);
+  }
+
   // Mark as initialized
   htmlElement.dataset.applyAfflictionToSelectedEnabled = 'true';
 
@@ -304,25 +311,28 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
   const button = document.createElement('button');
   button.className = 'affliction-apply-to-selected';
   button.style.cssText = 'width: 100%; padding: 8px; background: var(--afflictioner-primary, #8b0000); border: 2px solid var(--afflictioner-primary-hover, #a00000); color: white; border-radius: 6px; cursor: pointer; font-weight: bold;';
-  button.innerHTML = '<i class="fas fa-biohazard"></i> Apply to Selected Token';
+  button.innerHTML = '<i class="fas fa-biohazard"></i> Apply to Target / Selected Token';
 
   button.addEventListener('click', async () => {
     try {
-      // Get selected tokens
-      const selectedTokens = canvas.tokens.controlled;
-      if (selectedTokens.length === 0) {
-        ui.notifications.warn('Please select a token first');
+      // Get target tokens: user targets > selected tokens
+      let tokens = Array.from(game.user.targets);
+      if (!tokens.length) {
+        tokens = canvas.tokens.controlled;
+      }
+      if (!tokens.length) {
+        ui.notifications.warn('Please target or select a token first');
         return;
       }
 
-      // Apply affliction to all selected tokens
-      for (const token of selectedTokens) {
+      // Apply affliction to all target tokens
+      for (const token of tokens) {
         await AfflictionService.promptInitialSave(token, afflictionData);
       }
 
       // Disable button
       button.disabled = true;
-      button.textContent = `Applied to ${selectedTokens.length} token(s)`;
+      button.textContent = `Applied to ${tokens.length} token(s)`;
       button.style.opacity = '0.5';
     } catch (error) {
       console.error('PF2e Afflictioner | Error applying affliction:', error);

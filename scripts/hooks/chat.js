@@ -5,6 +5,7 @@
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
+import { DEGREE_OF_SUCCESS } from '../constants.js';
 
 /**
  * Handle chat message creation - detect saving throws against afflictions
@@ -65,7 +66,7 @@ export async function onCreateChatMessage(message, options, userId) {
 
   // Auto-apply based on save result
   // Success or Critical Success = resisted
-  if (degreeOfSuccess === 'success' || degreeOfSuccess === 'criticalSuccess') {
+  if (degreeOfSuccess === DEGREE_OF_SUCCESS.SUCCESS || degreeOfSuccess === DEGREE_OF_SUCCESS.CRITICAL_SUCCESS) {
     ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.RESISTED', {
       tokenName: token.name,
       afflictionName: afflictionData.name

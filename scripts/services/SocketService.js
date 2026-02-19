@@ -14,12 +14,12 @@ export class SocketService {
    */
   static degreeToString(degree) {
     const map = {
-      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'criticalSuccess',
-      [DEGREE_OF_SUCCESS.SUCCESS]: 'success',
-      [DEGREE_OF_SUCCESS.FAILURE]: 'failure',
-      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'criticalFailure'
+      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: DEGREE_OF_SUCCESS.CRITICAL_SUCCESS,
+      [DEGREE_OF_SUCCESS.SUCCESS]: DEGREE_OF_SUCCESS.SUCCESS,
+      [DEGREE_OF_SUCCESS.FAILURE]: DEGREE_OF_SUCCESS.FAILURE,
+      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: DEGREE_OF_SUCCESS.CRITICAL_FAILURE
     };
-    return map[degree] || 'failure';
+    return map[degree] || DEGREE_OF_SUCCESS.FAILURE;
   }
 
   /**
@@ -266,17 +266,17 @@ export class SocketService {
     const degree = this.degreeToString(degreeConstant);
 
     const degreeText = {
-      'criticalSuccess': 'Critical Success',
-      'success': 'Success',
-      'failure': 'Failure',
-      'criticalFailure': 'Critical Failure'
+      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'Critical Success',
+      [DEGREE_OF_SUCCESS.SUCCESS]: 'Success',
+      [DEGREE_OF_SUCCESS.FAILURE]: 'Failure',
+      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'Critical Failure'
     }[degree];
 
     const degreeColor = {
-      'criticalSuccess': '#4a7c2a',
-      'success': '#5a8c3a',
-      'failure': '#c45500',
-      'criticalFailure': '#8b0000'
+      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: '#4a7c2a',
+      [DEGREE_OF_SUCCESS.SUCCESS]: '#5a8c3a',
+      [DEGREE_OF_SUCCESS.FAILURE]: '#c45500',
+      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: '#8b0000'
     }[degree];
 
     const saveTypeLabel = saveType === 'initial' ? 'Initial Save' : 'Stage Save';
@@ -677,17 +677,17 @@ export class SocketService {
     const degree = this.degreeToString(degreeConstant);
 
     const degreeText = {
-      'criticalSuccess': 'Critical Success',
-      'success': 'Success',
-      'failure': 'Failure',
-      'criticalFailure': 'Critical Failure'
+      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'Critical Success',
+      [DEGREE_OF_SUCCESS.SUCCESS]: 'Success',
+      [DEGREE_OF_SUCCESS.FAILURE]: 'Failure',
+      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'Critical Failure'
     }[degree];
 
     const degreeColor = {
-      'criticalSuccess': '#4a7c2a',
-      'success': '#5a8c3a',
-      'failure': '#c45500',
-      'criticalFailure': '#8b0000'
+      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: '#4a7c2a',
+      [DEGREE_OF_SUCCESS.SUCCESS]: '#5a8c3a',
+      [DEGREE_OF_SUCCESS.FAILURE]: '#c45500',
+      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: '#8b0000'
     }[degree];
 
     const saveTypeLabel = saveType === 'initial' ? 'Initial Save' : 'Stage Save';

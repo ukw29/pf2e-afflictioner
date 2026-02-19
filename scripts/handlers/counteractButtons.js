@@ -135,10 +135,10 @@ export function registerCounteractButtonHandlers(root) {
       const { DEGREE_OF_SUCCESS, MODULE_ID } = await import('../constants.js');
       const degreeConstant = AfflictionService.calculateDegreeOfSuccess(roll.total, dc);
       const degreeMap = {
-        [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'criticalSuccess',
-        [DEGREE_OF_SUCCESS.SUCCESS]: 'success',
-        [DEGREE_OF_SUCCESS.FAILURE]: 'failure',
-        [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'criticalFailure'
+        [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: DEGREE_OF_SUCCESS.CRITICAL_SUCCESS,
+        [DEGREE_OF_SUCCESS.SUCCESS]: DEGREE_OF_SUCCESS.SUCCESS,
+        [DEGREE_OF_SUCCESS.FAILURE]: DEGREE_OF_SUCCESS.FAILURE,
+        [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: DEGREE_OF_SUCCESS.CRITICAL_FAILURE
       };
       const degree = degreeMap[degreeConstant] ?? 'criticalFailure';
 
@@ -198,12 +198,12 @@ export async function injectCounteractConfirmButton(message, root) {
   const dieValue = AfflictionService.getDieValue(message);
   const degreeConstant = AfflictionService.calculateDegreeOfSuccess(roll.total, dc, dieValue);
   const degreeMap = {
-    [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'criticalSuccess',
-    [DEGREE_OF_SUCCESS.SUCCESS]: 'success',
-    [DEGREE_OF_SUCCESS.FAILURE]: 'failure',
-    [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'criticalFailure'
+    [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: DEGREE_OF_SUCCESS.CRITICAL_SUCCESS,
+    [DEGREE_OF_SUCCESS.SUCCESS]: DEGREE_OF_SUCCESS.SUCCESS,
+    [DEGREE_OF_SUCCESS.FAILURE]: DEGREE_OF_SUCCESS.FAILURE,
+    [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: DEGREE_OF_SUCCESS.CRITICAL_FAILURE
   };
-  const degree = degreeMap[degreeConstant] ?? 'criticalFailure';
+  const degree = degreeMap[degreeConstant] ?? DEGREE_OF_SUCCESS.CRITICAL_FAILURE;
 
   const degreeColors = { criticalSuccess: '#2d8a2d', success: '#1a5cb8', failure: '#c85a00', criticalFailure: '#b00000' };
   const degreeLabels = { criticalSuccess: '✨ Critical Success', success: '✅ Success', failure: '❌ Failure', criticalFailure: '💀 Critical Failure' };
@@ -213,7 +213,7 @@ export async function injectCounteractConfirmButton(message, root) {
   const maxCounterableRank = isFinite(maxRankDiff) ? counteractRank + maxRankDiff : null;
   const wouldSucceed = (afflictionRank - counteractRank) <= maxRankDiff;
   let rankExplanation;
-  if (degree === 'criticalFailure') {
+  if (degree === DEGREE_OF_SUCCESS.CRITICAL_FAILURE) {
     rankExplanation = `Cannot counteract anything.`;
   } else if (wouldSucceed) {
     rankExplanation = `Can counteract up to rank ${maxCounterableRank} — affliction rank ${afflictionRank} is within range.`;
@@ -312,8 +312,8 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
   // Get the spell rank (check castRank first, then heightened level, then base level)
   const spellRank = message.flags?.pf2e?.origin?.castRank ||
-                    item.system?.location?.heightenedLevel ||
-                    item.system?.level?.value || 1;
+    item.system?.location?.heightenedLevel ||
+    item.system?.level?.value || 1;
 
   // Cleanse Affliction at rank 2 (base) doesn't counteract, just reduces stage
   const isBaseCleanse = isCleanse && spellRank === 2;
