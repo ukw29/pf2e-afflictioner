@@ -3,7 +3,6 @@ import { MODULE_ID } from '../constants.js';
 export class StoryframeIntegrationService {
   constructor() {
     this.pendingRequests = new Map();
-    this.lastProcessedIndex = 0;
   }
 
   static isAvailable() {
@@ -14,63 +13,18 @@ export class StoryframeIntegrationService {
     return enabled && storyframeActive && apiAvailable;
   }
 
-  static findParticipant(actor) {
-    if (!game.storyframe?.stateManager) return null;
-
-    const state = game.storyframe.stateManager.getState();
-    if (!state) return null;
-
-    return state.participants.find(p => p.actorUuid === actor.uuid);
-  }
-
-  static async promptAddParticipant(actor) {
-    return new Promise((resolve) => {
-      new Dialog({
-        title: 'Add to Storyframe?',
-        content: `<p><strong>${actor.name}</strong> is not a Storyframe participant.</p><p>Add them to use Storyframe for rolls?</p>`,
-        buttons: {
-          yes: {
-            icon: '<i class="fas fa-check"></i>',
-            label: 'Add to Storyframe',
-            callback: async () => {
-              const user = game.users.find(u => u.active && !u.isGM && actor.testUserPermission(u, 'OWNER'));
-              if (!user) {
-                ui.notifications.warn(`${actor.name} has no active owner. Cannot add to Storyframe.`);
-                resolve(false);
-                return;
-              }
-
-              await game.storyframe.socketManager.requestAddParticipant({
-                actorUuid: actor.uuid,
-                userId: user.id
-              });
-
-              ui.notifications.info(`${actor.name} added to Storyframe participants`);
-              resolve(true);
-            }
-          },
-          no: {
-            icon: '<i class="fas fa-times"></i>',
-            label: 'Use Chat Buttons',
-            callback: () => resolve(false)
-          }
-        },
-        default: 'yes'
-      }).render(true);
-    });
+  static findOwnerUser(actor) {
+    return game.users.find(u => u.active && !u.isGM && actor.testUserPermission(u, 'OWNER'));
   }
 
   static async sendSaveRequest(token, affliction, saveType) {
     if (!this.isAvailable()) return false;
 
     const actor = token.actor;
-    let participant = this.findParticipant(actor);
+    const user = this.findOwnerUser(actor);
+    if (!user) return false;
 
-    if (!participant) return false;
-
-    const requestId = foundry.utils.randomID();
     const dc = affliction.dc;
-
     if (!dc) {
       console.warn(`PF2e Afflictioner | No DC found for affliction "${affliction.name}". Cannot send save request to Storyframe.`);
       ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.NO_DC_FOUND', {
@@ -79,28 +33,23 @@ export class StoryframeIntegrationService {
       return false;
     }
 
+    if (!game.afflictioner?.storyframeService) {
+      console.error(`${MODULE_ID} | Storyframe service not initialized`);
+      return false;
+    }
+
+    const requestId = foundry.utils.randomID();
+
     const request = {
       id: requestId,
-      participantId: participant.id,
       actorUuid: actor.uuid,
-      userId: participant.userId,
+      userId: user.id,
       skillSlug: 'fortitude',
       checkType: 'save',
       dc,
       isSecretRoll: false,
       timestamp: Date.now()
     };
-
-    if (!game.afflictioner?.storyframeService) {
-      console.error(`${MODULE_ID} | Storyframe service not initialized`);
-      return false;
-    }
-
-    const user = game.users.get(participant.userId);
-    if (!user || !user.active) {
-      console.warn(`${MODULE_ID} | User ${participant.userId} is not connected, falling back to chat`);
-      return false;
-    }
 
     game.afflictioner.storyframeService.pendingRequests.set(requestId, {
       tokenId: token.id,
@@ -112,7 +61,7 @@ export class StoryframeIntegrationService {
 
     try {
       await game.storyframe.socketManager.requestAddPendingRoll(request);
-      await game.storyframe.socketManager.triggerSkillCheckOnPlayer(participant.userId, request);
+      await game.storyframe.socketManager.triggerSkillCheckOnPlayer(user.id, request);
 
       ui.notifications.info(`Fortitude save requested from ${actor.name} via Storyframe`);
       return true;
@@ -126,13 +75,10 @@ export class StoryframeIntegrationService {
   static async sendCounteractRequest(token, affliction, casterActor, skillSlug, counteractRank, afflictionRank) {
     if (!this.isAvailable()) return false;
 
-    let participant = this.findParticipant(casterActor);
+    const user = this.findOwnerUser(casterActor);
+    if (!user) return false;
 
-    if (!participant) return false;
-
-    const requestId = foundry.utils.randomID();
     const dc = affliction.dc;
-
     if (!dc) {
       console.warn(`PF2e Afflictioner | No DC found for affliction "${affliction.name}". Cannot send counteract request to Storyframe.`);
       ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.NO_DC_FOUND', {
@@ -141,28 +87,23 @@ export class StoryframeIntegrationService {
       return false;
     }
 
+    if (!game.afflictioner?.storyframeService) {
+      console.error(`${MODULE_ID} | Storyframe service not initialized`);
+      return false;
+    }
+
+    const requestId = foundry.utils.randomID();
+
     const request = {
       id: requestId,
-      participantId: participant.id,
       actorUuid: casterActor.uuid,
-      userId: participant.userId,
+      userId: user.id,
       skillSlug,
       checkType: 'skill',
       dc,
       isSecretRoll: false,
       timestamp: Date.now()
     };
-
-    if (!game.afflictioner?.storyframeService) {
-      console.error(`${MODULE_ID} | Storyframe service not initialized`);
-      return false;
-    }
-
-    const user = game.users.get(participant.userId);
-    if (!user || !user.active) {
-      console.warn(`${MODULE_ID} | User ${participant.userId} is not connected, falling back to chat`);
-      return false;
-    }
 
     game.afflictioner.storyframeService.pendingRequests.set(requestId, {
       tokenId: token.id,
@@ -179,7 +120,7 @@ export class StoryframeIntegrationService {
 
     try {
       await game.storyframe.socketManager.requestAddPendingRoll(request);
-      await game.storyframe.socketManager.triggerSkillCheckOnPlayer(participant.userId, request);
+      await game.storyframe.socketManager.triggerSkillCheckOnPlayer(user.id, request);
 
       const skillName = this.getSkillName(skillSlug);
       ui.notifications.info(`${skillName} check requested from ${casterActor.name} via Storyframe`);
@@ -243,6 +184,19 @@ export class StoryframeIntegrationService {
     }
   }
 
+  findRollMessage(actorId, total) {
+    const recent = game.messages.contents.slice(-20);
+    for (let i = recent.length - 1; i >= 0; i--) {
+      const msg = recent[i];
+      if (msg.flags?.pf2e?.context?.type === 'saving-throw' &&
+          msg.actor?.id === actorId &&
+          msg.rolls?.[0]?.total === total) {
+        return msg.id;
+      }
+    }
+    return null;
+  }
+
   async handleRollResult(result, context) {
     const token = canvas.tokens.get(context.tokenId);
     if (!token) {
@@ -257,12 +211,14 @@ export class StoryframeIntegrationService {
       return;
     }
 
+    const rollMessageId = result.chatMessageId || this.findRollMessage(token.actor?.id, result.total);
+
     if (context.saveType === 'initial') {
-      const { AfflictionService } = await import('./AfflictionService.js');
-      await AfflictionService.handleInitialSave(token, affliction, result.total, context.dc);
+      const { SocketService } = await import('./SocketService.js');
+      await SocketService.requestHandleInitialSave(context.tokenId, context.afflictionId, rollMessageId, context.dc);
     } else if (context.saveType === 'stage') {
       const { SocketService } = await import('./SocketService.js');
-      await SocketService.requestHandleSave(context.tokenId, context.afflictionId, result.total, context.dc);
+      await SocketService.requestHandleSave(context.tokenId, context.afflictionId, rollMessageId, context.dc);
     } else if (context.counteractData) {
       const { AfflictionService } = await import('./AfflictionService.js');
       const { CounteractService } = await import('./CounteractService.js');

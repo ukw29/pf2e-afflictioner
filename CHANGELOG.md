@@ -23,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Visual Indicator Setting Scope**: Changed "Show Visual Indicators" setting from client to world scope
 
+### Fixed
+
+- **Storyframe Integration**: Rolls sent through Storyframe now work correctly with the save confirmation system
+  - Removed unnecessary participant requirement — requests now use actor UUID and user ID directly
+  - Save results route through SocketService with the roll message ID, enabling "Apply Consequences" button injection
+  - Added fallback to find roll message by actor and total when `chatMessageId` is unavailable
+
 ## [1.0.0-alpha.10] - 2026-02-19
 
 ### Changed
