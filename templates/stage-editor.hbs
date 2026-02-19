@@ -2,8 +2,6 @@
   <div class="stage-editor-header">
     <h3>{{localize 'PF2E_AFFLICTIONER.EDITOR.STAGE_EDITOR_TITLE' number=stage.number}}</h3>
   </div>
-
-  <!-- Duration (compact, at top) -->
   <div class="form-group duration-group-compact">
     <label>{{localize 'PF2E_AFFLICTIONER.EDITOR.DURATION'}}</label>
     <input type="number" name="duration.value" value="{{stage.duration.value}}" min="1" placeholder="1" class="duration-value" />
@@ -15,8 +13,6 @@
       <option value="week" {{#if (eq stage.duration.unit "week")}}selected{{/if}}>Week(s)</option>
     </select>
   </div>
-
-  <!-- Effects text area -->
   <div class="form-group effects-textarea-group">
     <label for="stage-effects">{{localize 'PF2E_AFFLICTIONER.EDITOR.INSTRUCTIONS'}}</label>
     <div class="effects-textarea-wrapper">
@@ -26,8 +22,6 @@
       </button>
     </div>
   </div>
-
-  <!-- Auto-applied effects section -->
   <div class="form-section effects-section">
     <div class="section-header">
       <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.AUTO_EFFECTS'}}</h4>
@@ -55,8 +49,6 @@
       </div>
     {{/if}}
   </div>
-
-  <!-- Rule Elements (Parsed Bonuses) -->
   <div class="form-section rule-elements-section">
     <div class="section-header">
       <h4>Stage Bonuses (Rule Elements)</h4>
@@ -93,8 +85,6 @@
       </p>
     {{/if}}
   </div>
-
-  <!-- Damage entries -->
   <div class="form-section damage-section">
     <div class="section-header">
       <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.DAMAGE'}}</h4>
@@ -146,8 +136,6 @@
       {{/each}}
     </div>
   </div>
-
-  <!-- Condition entries -->
   <div class="form-section condition-section">
     <div class="section-header">
       <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.CONDITIONS'}}</h4>
@@ -187,8 +175,6 @@
             <option value="unconscious" {{#if (eq name "unconscious")}}selected{{/if}}>Unconscious</option>
             <option value="wounded" {{#if (eq name "wounded")}}selected{{/if}}>Wounded</option>
           </select>
-
-          <!-- Persistent damage specific fields (always rendered, shown via CSS) -->
           <input type="text" name="condition.{{@index}}.persistentFormula" value="{{persistentFormula}}" placeholder="1d6" class="persistent-formula" />
           <select name="condition.{{@index}}.persistentType" class="persistent-type">
             <option value="">Type...</option>
@@ -209,8 +195,6 @@
             <option value="vitality" {{#if (eq persistentType "vitality")}}selected{{/if}}>Vitality</option>
             <option value="void" {{#if (eq persistentType "void")}}selected{{/if}}>Void</option>
           </select>
-
-          <!-- Regular condition value (always rendered, shown via CSS) -->
           <input type="number" name="condition.{{@index}}.value" value="{{value}}" placeholder="Value" min="0" max="4" class="condition-value" />
 
           <button type="button" data-action="removeCondition" data-index="{{@index}}" class="remove-button">
@@ -220,8 +204,6 @@
       {{/each}}
     </div>
   </div>
-
-  <!-- Weakness entries -->
   <div class="form-section weakness-section">
     <div class="section-header">
       <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.WEAKNESS'}}</h4>
@@ -334,8 +316,6 @@
       {{/each}}
     </div>
   </div>
-
-  <!-- Action buttons -->
   <div class="editor-footer">
     <button type="button" data-action="saveStage" class="primary-button">
       <i class="fas fa-save"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.SAVE_CHANGES'}}

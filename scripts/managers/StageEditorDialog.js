@@ -1,7 +1,3 @@
-/**
- * Stage Editor Dialog - UI for editing individual affliction stage details
- */
-
 import { VALUELESS_CONDITIONS } from '../constants.js';
 
 export class StageEditorDialog extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -52,14 +48,12 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     this.afflictionName = options.afflictionName || 'Affliction';
     this.stageNumber = options.stageNumber || this.stageData.number;
 
-    // Ensure arrays exist
     if (!this.stageData.damage) this.stageData.damage = [];
     if (!this.stageData.conditions) this.stageData.conditions = [];
     if (!this.stageData.weakness) this.stageData.weakness = [];
     if (!this.stageData.autoEffects) this.stageData.autoEffects = [];
     if (!this.stageData.ruleElements) this.stageData.ruleElements = [];
 
-    // Update window title
     this.options.window.title = game.i18n.format('PF2E_AFFLICTIONER.EDITOR.STAGE_EDITOR_TITLE', {
       number: this.stageData.number
     });
@@ -68,23 +62,21 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
   async _prepareContext(_options) {
     const effectsText = this.stageData.effects || '';
 
-    // Parse damage formulas into structured parts for display
     const stageWithParsedDamage = {
       ...this.stageData,
-      effects: this.stripEnrichers(effectsText), // Show cleaned text in textarea
+      effects: this.stripEnrichers(effectsText),
       conditions: this.stageData.conditions.map(c => ({
         ...c,
         isValueless: VALUELESS_CONDITIONS.includes(c.name?.toLowerCase())
       })),
       damage: this.stageData.damage.map(dmg => {
-        // Parse formula like "2d6+3" or "1d8" into parts
         const parsed = this.parseDamageFormula(dmg.formula);
         return {
           ...dmg,
           diceCount: parsed.diceCount,
           diceType: parsed.diceType,
           bonus: parsed.bonus,
-          damageType: dmg.type // Rename 'type' to 'damageType' for clarity
+          damageType: dmg.type
         };
       }),
       parsedEnrichers: this.parseEffectEnrichers(effectsText)
@@ -95,49 +87,30 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     };
   }
 
-  /**
-   * Strip enricher tags from text, leaving only plain text
-   * @param {string} text - Text with @UUID, @Damage, etc.
-   * @returns {string} - Cleaned text
-   */
   stripEnrichers(text) {
     if (!text) return '';
 
     let cleaned = text;
 
-    // Remove @UUID[uuid]{Label} tags, keeping just the label
     cleaned = cleaned.replace(/@UUID\[[^\]]+\]\{([^}]+)\}/g, '$1');
-
-    // Remove @Damage[formula[type]] tags completely (shown as separate damage entries)
     cleaned = cleaned.replace(/@Damage\[[^\]]+\]/g, '');
-
-    // Remove @Check[type:dc] tags
     cleaned = cleaned.replace(/@Check\[[^\]]+\]/g, '');
-
-    // Clean up extra whitespace and "and" artifacts
     cleaned = cleaned.replace(/\s+and\s*$/g, '').trim();
     cleaned = cleaned.replace(/\s+/g, ' ');
 
     return cleaned;
   }
 
-  /**
-   * Parse PF2e enrichers from effects text
-   * @param {string} effectsText - The effects text with @UUID, @Damage, etc.
-   * @returns {Array} - Array of enricher objects with type, label, and icon
-   */
   parseEffectEnrichers(effectsText) {
     if (!effectsText) return [];
 
     const enrichers = [];
 
-    // Parse @UUID[uuid]{Label} tags
     const uuidMatches = effectsText.matchAll(/@UUID\[([^\]]+)\]\{([^}]+)\}/g);
     for (const match of uuidMatches) {
       const uuid = match[1];
       const label = match[2];
 
-      // Determine icon based on UUID content
       let icon = 'fa-link';
       let type = 'uuid';
       if (uuid.includes('conditionitems')) {
@@ -156,7 +129,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       });
     }
 
-    // Parse @Damage[formula[type]] tags
     const damageMatches = effectsText.matchAll(/@Damage\[([^[]+)\[([^\]]+)\]\]/g);
     for (const match of damageMatches) {
       const formula = match[1];
@@ -170,7 +142,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       });
     }
 
-    // Parse @Check[type:dc] tags
     const checkMatches = effectsText.matchAll(/@Check\[([^:]+):(\d+)\]/g);
     for (const match of checkMatches) {
       const checkType = match[1];
@@ -186,15 +157,9 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     return enrichers;
   }
 
-  /**
-   * Parse a damage formula into structured parts
-   * @param {string} formula - Formula like "2d6+3" or "1d8"
-   * @returns {Object} - {diceCount, diceType, bonus}
-   */
   parseDamageFormula(formula) {
     if (!formula) return { diceCount: 1, diceType: 'd6', bonus: 0 };
 
-    // Match patterns like "2d6+3", "1d8", "3d4-2"
     const match = formula.match(/^(\d+)(d\d+)([+-]\d+)?$/);
     if (match) {
       return {
@@ -204,14 +169,12 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       };
     }
 
-    // Default if can't parse
     return { diceCount: 1, diceType: 'd6', bonus: 0 };
   }
 
   static async parseEffectsText(_event, _button) {
     const dialog = this;
 
-    // Get current effects text
     const textarea = dialog.element.querySelector('#stage-effects');
     if (!textarea) return;
 
@@ -221,69 +184,51 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       return;
     }
 
-    // Parse damage formulas (e.g., "2d6 fire", "1d8 poison")
     const damageMatches = text.matchAll(/(\d+d\d+(?:[+-]\d+)?)\s+(\w+)/gi);
     for (const match of damageMatches) {
       const formula = match[1];
       const type = match[2].toLowerCase();
 
-      // Check if this damage type is valid
       const validTypes = ['acid', 'bleed', 'bludgeoning', 'cold', 'electricity', 'fire', 'force', 'mental', 'piercing', 'poison', 'slashing', 'sonic', 'spirit', 'vitality', 'void', 'untyped'];
       if (validTypes.includes(type)) {
-        // Check if not already added
         if (!dialog.stageData.damage.some(d => d.formula === formula && d.type === type)) {
           dialog.stageData.damage.push({ formula, type });
         }
       }
     }
 
-    // Parse conditions (e.g., "enfeebled 2", "drained 1", "sickened")
     const conditionPattern = /(blinded|clumsy|confused|dazzled|deafened|doomed|drained|dying|enfeebled|fascinated|fatigued|fleeing|frightened|grabbed|immobilized|paralyzed|prone|restrained|sickened|slowed|stunned|stupefied|unconscious|wounded)(?:\s+(\d+))?/gi;
     const conditionMatches = text.matchAll(conditionPattern);
     for (const match of conditionMatches) {
       const name = match[1].toLowerCase();
       const value = match[2] ? parseInt(match[2]) : null;
 
-      // Check if not already added
       if (!dialog.stageData.conditions.some(c => c.name === name)) {
         dialog.stageData.conditions.push({ name, value });
       }
     }
 
-    // Parse weakness - handle multiple formats
-    // Patterns: "weakness to cold 5", "weakness 5 to fire", "5 weakness to cold", "cold weakness 5"
     const weaknessPatterns = [
-      /weakness\s+to\s+([\w-]+)\s+(\d+)/gi,       // weakness to cold-iron 5
-      /weakness\s+(\d+)\s+to\s+([\w-]+)/gi,       // weakness 5 to fire
-      /(\d+)\s+weakness\s+to\s+([\w-]+)/gi,       // 5 weakness to cold-iron
-      /([\w-]+)\s+weakness\s+(\d+)/gi             // cold-iron weakness 5
+      /weakness\s+to\s+([\w-]+)\s+(\d+)/gi,
+      /weakness\s+(\d+)\s+to\s+([\w-]+)/gi,
+      /(\d+)\s+weakness\s+to\s+([\w-]+)/gi,
+      /([\w-]+)\s+weakness\s+(\d+)/gi
     ];
 
     const validTypes = [
-      // Energy & Damage
       'acid', 'cold', 'electricity', 'fire', 'sonic', 'force', 'vitality', 'void',
-      // Physical
       'physical', 'bludgeoning', 'piercing', 'slashing',
-      // Special
       'bleed', 'mental', 'poison', 'spirit', 'emotion',
-      // Materials
       'cold-iron', 'silver', 'adamantine', 'orichalcum', 'abysium', 'dawnsilver',
       'djezet', 'duskwood', 'inubrix', 'noqual', 'peachwood', 'siccatite',
-      // Alignment
       'holy', 'unholy',
-      // Traditions
       'arcane', 'divine', 'occult', 'primal',
-      // Properties
       'magical', 'non-magical', 'ghost-touch', 'alchemical',
-      // Specialized
       'area-damage', 'critical-hits', 'precision', 'splash-damage', 'persistent-damage',
       'spells', 'weapons', 'unarmed-attacks',
-      // Rare/Special
       'arrow-vulnerability', 'axe-vulnerability', 'vampire-weaknesses', 'vulnerable-to-sunlight',
       'vorpal', 'vorpal-fear', 'weapons-shedding-bright-light',
-      // Elemental
       'air', 'earth', 'water', 'salt-water', 'salt',
-      // Other
       'all-damage', 'energy', 'glass', 'light', 'metal', 'plant', 'radiation', 'time', 'wood'
     ];
 
@@ -292,22 +237,17 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       for (const match of matches) {
         let type, value;
 
-        // Determine which capture groups have the type and value
         if (match[1] && isNaN(match[1])) {
-          // Pattern: type value (e.g., "cold weakness 5")
           type = match[1].toLowerCase();
           value = parseInt(match[2]);
         } else if (match[2] && isNaN(match[2])) {
-          // Pattern: value type (e.g., "5 weakness to cold")
           value = parseInt(match[1]);
           type = match[2].toLowerCase();
         } else {
-          // Pattern: standard (e.g., "weakness to cold 5")
           type = (match[1] && isNaN(match[1])) ? match[1].toLowerCase() : match[2].toLowerCase();
           value = parseInt((match[1] && !isNaN(match[1])) ? match[1] : match[2]);
         }
 
-        // Handle "physical" as special case - add all three physical types
         if (type === 'physical') {
           ['bludgeoning', 'piercing', 'slashing'].forEach(physType => {
             if (!dialog.stageData.weakness.some(w => w.type === physType)) {
@@ -315,7 +255,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
             }
           });
         } else if (validTypes.includes(type)) {
-          // Check if not already added
           if (!dialog.stageData.weakness.some(w => w.type === type)) {
             dialog.stageData.weakness.push({ type, value });
           }
@@ -323,33 +262,24 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       }
     }
 
-    // Parse bonuses and create Rule Elements
-    // Pattern: "+1 item bonus to saving throws against mental effects"
-    // Pattern: "-2 status penalty to AC"
-    // Pattern: "+3 circumstance bonus to Stealth checks"
     const bonusPattern = /([+-]\d+)\s+(item|circumstance|status)\s+(bonus|penalty)\s+to\s+([\w\s]+?)(?:\s+against\s+([\w\s]+?))?(?=\.|,|$|\s+and\s+)/gi;
     const bonusMatches = text.matchAll(bonusPattern);
 
     for (const match of bonusMatches) {
-      const value = parseInt(match[1]); // +1, -2, etc.
-      const bonusType = match[2].toLowerCase(); // item, circumstance, status
-      const bonusPenalty = match[3].toLowerCase(); // bonus or penalty
-      const targetRaw = match[4].trim().toLowerCase(); // "saving throws", "AC", "Stealth checks"
-      const againstRaw = match[5] ? match[5].trim().toLowerCase() : null; // "mental effects", null
+      const value = parseInt(match[1]);
+      const bonusType = match[2].toLowerCase();
+      const bonusPenalty = match[3].toLowerCase();
+      const targetRaw = match[4].trim().toLowerCase();
+      const againstRaw = match[5] ? match[5].trim().toLowerCase() : null;
 
-      // Adjust value if it's a penalty
       const adjustedValue = bonusPenalty === 'penalty' ? -Math.abs(value) : value;
 
-      // Determine selector and predicate based on target
       let selector = '';
       const predicate = [];
 
-      // Parse target to determine selector
-      // Use regex word boundaries to avoid false matches (e.g., "attacks" matching "ac")
       const hasWord = (word) => new RegExp(`\\b${word}\\b`, 'i').test(targetRaw);
 
       if (hasWord('saving throw') || hasWord('save')) {
-        // Saving throws
         if (hasWord('fortitude')) {
           selector = 'fortitude';
         } else if (hasWord('reflex')) {
@@ -357,10 +287,9 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
         } else if (hasWord('will')) {
           selector = 'will';
         } else {
-          selector = 'saving-throw'; // All saves
+          selector = 'saving-throw';
         }
       } else if (targetRaw.includes('attack roll') || hasWord('attack')) {
-        // Attack rolls (keep "attack roll" as includes to catch multi-word)
         if (hasWord('spell')) {
           selector = 'spell-attack-roll';
         } else {
@@ -375,7 +304,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       } else if (hasWord('damage')) {
         selector = 'damage';
       } else if (hasWord('check')) {
-        // Skill checks
         if (hasWord('stealth')) {
           selector = 'stealth';
         } else if (hasWord('athletics')) {
@@ -409,11 +337,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
         } else if (hasWord('thievery')) {
           selector = 'thievery';
         } else {
-          selector = 'skill-check'; // All skills
+          selector = 'skill-check';
         }
       }
 
-      // Parse "against X" to create predicate
       if (againstRaw) {
         if (againstRaw.includes('mental')) {
           predicate.push('item:trait:mental');
@@ -436,13 +363,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
         }
       }
 
-      // Only create Rule Element if we have a valid selector
       if (selector) {
-        // Build label
         const predicateText = predicate.length > 0 ? ` (${againstRaw})` : '';
         const label = `${dialog.afflictionName} - Stage ${dialog.stageNumber}: ${match[1]} ${bonusType} ${bonusPenalty} to ${match[4]}${predicateText}`;
 
-        // Create Rule Element config
         const ruleElement = {
           key: 'FlatModifier',
           type: bonusType,
@@ -451,12 +375,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
           label: label
         };
 
-        // Add predicate if exists
         if (predicate.length > 0) {
           ruleElement.predicate = predicate;
         }
 
-        // Check if this Rule Element already exists (avoid duplicates)
         const exists = dialog.stageData.ruleElements.some(re =>
           re.key === ruleElement.key &&
           re.type === ruleElement.type &&
@@ -478,10 +400,8 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
   static async addDamage(_event, _button) {
     const dialog = this;
 
-    // Save current form values first
     await dialog.updateFromForm();
 
-    // Add new damage entry
     dialog.stageData.damage.push({
       formula: '1d6',
       type: 'poison'
@@ -499,10 +419,8 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
   static async addCondition(_event, _button) {
     const dialog = this;
 
-    // Save current form values first
     await dialog.updateFromForm();
 
-    // Add new condition entry
     dialog.stageData.conditions.push({
       name: '',
       value: null
@@ -520,10 +438,8 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
   static async addWeakness(_event, _button) {
     const dialog = this;
 
-    // Save current form values first
     await dialog.updateFromForm();
 
-    // Add new weakness entry
     dialog.stageData.weakness.push({
       type: '',
       value: 0
@@ -543,13 +459,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const uuid = button.dataset.uuid;
     if (!uuid) return;
 
-    // Check if it's an auto-generated effect (not a real document)
     if (uuid.startsWith('custom-')) {
-      // Find the effect data
       const effectData = dialog.stageData.autoEffects.find(e => e.uuid === uuid);
       if (!effectData) return;
 
-      // Format the Rule Element for display
       const ruleElement = effectData.system?.rules?.[0];
       let ruleDetails = '<p><strong>Auto-Generated Effect Preview</strong></p>';
       ruleDetails += '<p><em>This effect will be created dynamically when the stage becomes active.</em></p>';
@@ -569,7 +482,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
         ruleDetails += '</ul>';
       }
 
-      // Show preview dialog
       new foundry.applications.api.DialogV2({
         window: { title: 'Effect Preview' },
         content: ruleDetails,
@@ -596,10 +508,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       ui.notifications.error('Failed to open effect');
     }
   }
+
   static async addRuleElement(_event, button) {
     const dialog = this;
 
-    // Create form for adding a Rule Element
     const content = `
       <form>
         <div class="form-group">
@@ -733,17 +645,13 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
 
     if (!result) return;
 
-    // Determine which predicate to use (custom takes precedence)
     const finalPredicate = result.customPredicate?.trim() || result.predicate;
 
-    // Build label - get predicate display text
     let predicateText = '';
     if (finalPredicate) {
       if (result.customPredicate?.trim()) {
-        // Use custom predicate as-is for display
         predicateText = ` (${finalPredicate})`;
       } else {
-        // Use dropdown text
         const predicateOption = button.querySelector(`select[name="predicate"] option[value="${finalPredicate}"]`);
         predicateText = predicateOption ? ` (${predicateOption.textContent})` : ` (${finalPredicate})`;
       }
@@ -753,7 +661,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const bonusPenalty = result.value >= 0 ? 'bonus' : 'penalty';
     const label = `${dialog.afflictionName} - Stage ${dialog.stageNumber}: ${result.value >= 0 ? '+' : ''}${result.value} ${result.type} ${bonusPenalty} to ${selectorName}${predicateText}`;
 
-    // Create Rule Element
     const ruleElement = {
       key: 'FlatModifier',
       type: result.type,
@@ -762,31 +669,22 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       label: label
     };
 
-    // Add predicate if specified
     if (finalPredicate) {
       ruleElement.predicate = [finalPredicate];
     }
 
-    // Add to stage data
     dialog.stageData.ruleElements.push(ruleElement);
 
     ui.notifications.info('Rule Element added');
     await dialog.render({ force: true });
   }
 
-  /**
-   * Helper to determine if predicate is custom or from dropdown
-   * @param {Object} ruleElement - The Rule Element to check
-   * @returns {string} - The custom predicate value if it's not in dropdown, empty string otherwise
-   */
   static getCustomPredicateValue(ruleElement) {
     if (!ruleElement.predicate || ruleElement.predicate.length === 0) return '';
 
     const predicate = ruleElement.predicate[0];
 
-    // List of predefined dropdown values (expanded based on PF2e documentation)
     const dropdownValues = [
-      // Item damage traits
       'item:trait:fire',
       'item:trait:cold',
       'item:trait:acid',
@@ -794,40 +692,32 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       'item:trait:sonic',
       'item:trait:mental',
       'item:trait:poison',
-      // Item effect traits
       'item:trait:disease',
       'item:trait:fear',
       'item:trait:visual',
       'item:trait:auditory',
       'item:trait:linguistic',
       'item:trait:emotion',
-      // Item types
       'item:type:spell',
       'item:type:weapon',
       'item:ranged',
       'item:melee',
-      // Attack traits
       'attack:trait:ranged',
       'attack:trait:melee',
-      // Self conditions
       'self:condition:frightened',
       'self:condition:sickened',
       'self:condition:off-guard',
       'self:condition:hidden',
       'self:condition:concealed',
-      // Target conditions
       'target:condition:off-guard',
       'target:condition:frightened',
       'target:condition:prone',
-      // Target traits
       'target:trait:dragon',
       'target:trait:undead',
       'target:trait:demon',
       'target:trait:devil'
     ];
 
-    // If predicate is in dropdown, return empty (use dropdown)
-    // Otherwise return the predicate as custom
     return dropdownValues.includes(predicate) ? '' : predicate;
   }
 
@@ -838,7 +728,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
 
     if (!ruleElement) return;
 
-    // Create form for editing the Rule Element, pre-populated with current values
     const content = `
       <form>
         <div class="form-group">
@@ -972,17 +861,13 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
 
     if (!result) return;
 
-    // Determine which predicate to use (custom takes precedence)
     const finalPredicate = result.customPredicate?.trim() || result.predicate;
 
-    // Build updated label - get predicate display text
     let predicateText = '';
     if (finalPredicate) {
       if (result.customPredicate?.trim()) {
-        // Use custom predicate as-is for display
         predicateText = ` (${finalPredicate})`;
       } else {
-        // Use dropdown text
         const predicateOption = button.querySelector(`select[name="predicate"] option[value="${finalPredicate}"]`);
         predicateText = predicateOption ? ` (${predicateOption.textContent})` : ` (${finalPredicate})`;
       }
@@ -992,7 +877,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const bonusPenalty = result.value >= 0 ? 'bonus' : 'penalty';
     const label = `${dialog.afflictionName} - Stage ${dialog.stageNumber}: ${result.value >= 0 ? '+' : ''}${result.value} ${result.type} ${bonusPenalty} to ${selectorName}${predicateText}`;
 
-    // Update Rule Element
     dialog.stageData.ruleElements[index] = {
       key: 'FlatModifier',
       type: result.type,
@@ -1001,7 +885,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       label: label
     };
 
-    // Add predicate if specified
     if (finalPredicate) {
       dialog.stageData.ruleElements[index].predicate = [finalPredicate];
     }
@@ -1040,7 +923,6 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
   static async removeAllEffects(_event, _button) {
     const dialog = this;
 
-    // Confirm removal
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       title: 'Clear All Effects',
       content: '<p>Remove all auto-applied effects from this stage?</p>',
@@ -1062,20 +944,16 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const element = this.element;
     if (!element) return;
 
-    // Find the effects drop zone - re-attach listeners each render since DOM is recreated
     const dropZone = element.querySelector('.effects-drop-zone');
     if (dropZone) {
-      // Remove old listeners if they exist (though they should be auto-removed with DOM recreation)
       dropZone.removeEventListener('drop', this._boundOnDropEffect);
       dropZone.removeEventListener('dragover', this._boundOnDragOver);
       dropZone.removeEventListener('dragleave', this._boundOnDragLeave);
 
-      // Store bound functions for removal later
       this._boundOnDropEffect = this._onDropEffect.bind(this);
       this._boundOnDragOver = this._onDragOver.bind(this);
       this._boundOnDragLeave = this._onDragLeave.bind(this);
 
-      // Add event listeners
       dropZone.addEventListener('drop', this._boundOnDropEffect);
       dropZone.addEventListener('dragover', this._boundOnDragOver);
       dropZone.addEventListener('dragleave', this._boundOnDragLeave);
@@ -1105,32 +983,27 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       return;
     }
 
-    // Check if it's an Item
     if (data.type !== 'Item') {
       ui.notifications.warn('Only effect items can be dropped here');
       return;
     }
 
-    // Load the item
     const item = await fromUuid(data.uuid);
     if (!item) {
       ui.notifications.error('Could not load effect');
       return;
     }
 
-    // Check if it's an effect
     if (item.type !== 'effect') {
       ui.notifications.warn('Only effect items can be added');
       return;
     }
 
-    // Check if already added
     if (this.stageData.autoEffects.some(e => e.uuid === item.uuid)) {
       ui.notifications.warn('Effect already added to this stage');
       return;
     }
 
-    // Add to autoEffects
     this.stageData.autoEffects.push({
       uuid: item.uuid,
       name: item.name,
@@ -1141,40 +1014,31 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     await this.render({ force: true });
   }
 
-  /**
-   * Update stageData from current form values (without closing)
-   */
   async updateFromForm() {
     const FormDataClass = foundry.applications?.ux?.FormDataExtended || FormDataExtended;
     const formData = new FormDataClass(this.element).object;
 
-    // Update effects
     if (formData.effects !== undefined) {
       this.stageData.effects = formData.effects || '';
     }
 
-    // Update duration - handle both nested and flat structure
     if (formData.duration) {
       this.stageData.duration = {
         value: parseInt(formData.duration.value) || 1,
         unit: formData.duration.unit || 'day'
       };
     } else if (formData['duration.value'] !== undefined || formData['duration.unit'] !== undefined) {
-      // Fallback: handle flat structure if FormDataExtended doesn't nest it
       this.stageData.duration = {
         value: parseInt(formData['duration.value']) || 1,
         unit: formData['duration.unit'] || 'day'
       };
     }
 
-    // Update damage - construct formula from parts
-    // Extract from flat or nested structure
     const damageArray = [];
     if (formData.damage !== undefined) {
       const arr = Array.isArray(formData.damage) ? formData.damage : [formData.damage];
       damageArray.push(...arr);
     } else {
-      // Flat structure: damage.0.diceCount, damage.1.diceCount, etc.
       let index = 0;
       while (formData[`damage.${index}.diceType`] !== undefined) {
         damageArray.push({
@@ -1207,15 +1071,11 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
         });
     }
 
-    // Update conditions
-    // Extract from flat or nested structure
     const conditionArray = [];
     if (formData.condition !== undefined) {
-      // Nested structure (if FormDataExtended creates it)
       const arr = Array.isArray(formData.condition) ? formData.condition : [formData.condition];
       conditionArray.push(...arr);
     } else {
-      // Flat structure: condition.0.name, condition.1.name, etc.
       let index = 0;
       while (formData[`condition.${index}.name`] !== undefined) {
         conditionArray.push({
@@ -1230,19 +1090,18 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
 
     if (conditionArray.length > 0) {
       this.stageData.conditions = conditionArray
-        .filter(c => c.name) // Only keep conditions with a selected name
+        .filter(c => c.name)
         .map(c => {
           const condition = {
             name: c.name
           };
 
-          // Handle persistent damage specially
           if (c.name === 'persistent damage') {
             condition.persistentFormula = c.persistentFormula || '1d6';
             condition.persistentType = c.persistentType || 'fire';
-            condition.value = null; // Persistent damage doesn't use value
+            condition.value = null;
           } else if (VALUELESS_CONDITIONS.includes(c.name?.toLowerCase())) {
-            condition.value = null; // On/off conditions don't use value
+            condition.value = null;
           } else {
             condition.value = c.value !== undefined && c.value !== '' ? parseInt(c.value) : null;
           }
@@ -1251,14 +1110,11 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
         });
     }
 
-    // Update weakness
-    // Extract from flat or nested structure
     const weaknessArray = [];
     if (formData.weakness !== undefined) {
       const arr = Array.isArray(formData.weakness) ? formData.weakness : [formData.weakness];
       weaknessArray.push(...arr);
     } else {
-      // Flat structure: weakness.0.type, weakness.1.type, etc.
       let index = 0;
       while (formData[`weakness.${index}.type`] !== undefined) {
         weaknessArray.push({
@@ -1282,10 +1138,8 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
   static async saveStage(_event, _button) {
     const dialog = this;
 
-    // Update from form values
     await dialog.updateFromForm();
 
-    // Call save callback
     if (dialog.onSave) {
       await dialog.onSave(dialog.stageData);
     }

@@ -1,23 +1,14 @@
-/**
- * Affliction Chat Service - Handles all chat message generation and prompts
- */
-
 import { MODULE_ID } from '../constants.js';
 
 export class AfflictionChatService {
-  /**
-   * Send initial save prompt to players
-   */
   static async promptInitialSave(token, affliction, afflictionData, afflictionId) {
     const actor = token.actor;
     const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
     const anonymizeSaves = game.settings.get(MODULE_ID, 'anonymizeSaveMessages') ?? false;
     const gmRollMysteriousSaves = game.settings.get(MODULE_ID, 'gmRollMysteriousSaves') ?? false;
 
-    // Check if affliction is mysterious (has onset or stage 1 has no mechanical effects)
     const isMysterious = this._isAfflictionMysterious(afflictionData);
 
-    // If mysterious and GM roll setting enabled, only send GM message
     if (gmRollMysteriousSaves && isMysterious) {
       const gmContent = `
         <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000; padding: 12px;">
@@ -42,10 +33,9 @@ export class AfflictionChatService {
         speaker: ChatMessage.getSpeaker({ token: token }),
         whisper: game.users.filter(u => u.isGM).map(u => u.id)
       });
-      return; // Don't send player message
+      return;
     }
 
-    // Normal flow: send to players (maybe via storyframe)
     const { StoryframeIntegrationService } = await import('./StoryframeIntegrationService.js');
     const sentToStoryframe = await StoryframeIntegrationService.sendSaveRequest(token, affliction, 'initial');
 
@@ -59,7 +49,6 @@ export class AfflictionChatService {
         anonymizeSaves
       );
 
-      // Send save message (whisper to GM for NPCs)
       const whisperTargets = actor.hasPlayerOwner
         ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
         : game.users.filter(u => u.isGM).map(u => u.id);
@@ -73,7 +62,6 @@ export class AfflictionChatService {
       }
     }
 
-    // Send GM-only message if DCs are hidden from players
     if (!showDCToPlayers && actor.hasPlayerOwner) {
       const gmContent = `
         <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000; padding: 8px;">
@@ -88,17 +76,11 @@ export class AfflictionChatService {
     }
   }
 
-  /**
-   * Check if affliction is mysterious (has onset or stage 1 has no mechanical effects)
-   * @private
-   */
   static _isAfflictionMysterious(afflictionData) {
-    // Has onset = mysterious
     if (afflictionData.onset) {
       return true;
     }
 
-    // Check if stage 1 has mechanical effects
     const stage1 = afflictionData.stages?.[0];
     if (!stage1) return false;
 
@@ -106,19 +88,14 @@ export class AfflictionChatService {
     const hasWeakness = stage1.weakness && stage1.weakness.length > 0;
     const hasDamage = stage1.damage && stage1.damage.length > 0;
 
-    // If no mechanical effects, it's mysterious
     return !hasConditions && !hasWeakness && !hasDamage;
   }
 
-  /**
-   * Send stage save prompt to players
-   */
   static async promptStageSave(token, affliction) {
     const actor = token.actor;
     const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
     const anonymizeSaves = game.settings.get(MODULE_ID, 'anonymizeSaveMessages') ?? false;
 
-    // Try storyframe integration first
     const { StoryframeIntegrationService } = await import('./StoryframeIntegrationService.js');
     const sentToStoryframe = await StoryframeIntegrationService.sendSaveRequest(token, affliction, 'stage');
 
@@ -131,7 +108,6 @@ export class AfflictionChatService {
         anonymizeSaves
       );
 
-      // Send save message (whisper to GM for NPCs)
       const whisperTargets = actor.hasPlayerOwner
         ? game.users.filter(u => !u.isGM && actor.testUserPermission(u, 'OWNER')).map(u => u.id)
         : game.users.filter(u => u.isGM).map(u => u.id);
@@ -145,7 +121,6 @@ export class AfflictionChatService {
       }
     }
 
-    // Send GM-only message if DCs are hidden from players
     if (!showDCToPlayers && actor.hasPlayerOwner) {
       const gmContent = `
         <div class="pf2e-afflictioner-save-request" style="border-color: #8b0000; padding: 8px;">
@@ -160,13 +135,9 @@ export class AfflictionChatService {
     }
   }
 
-  /**
-   * Prompt for stage damage
-   */
   static async promptDamage(token, affliction) {
     const actor = token.actor;
 
-    // Get current stage
     const currentStageIndex = affliction.currentStage - 1;
     if (currentStageIndex < 0 || !affliction.stages || !affliction.stages[currentStageIndex]) {
       ui.notifications.warn('No active stage to roll damage for');
@@ -179,7 +150,6 @@ export class AfflictionChatService {
       return;
     }
 
-    // Build damage links
     const damageLinks = stage.damage.map(d => {
       const formula = typeof d === 'string' ? d : d.formula;
       const type = typeof d === 'object' ? d.type : 'untyped';
@@ -225,13 +195,8 @@ export class AfflictionChatService {
     });
   }
 
-  /**
-   * Build initial save message for players
-   * @private
-   */
   static _buildInitialSaveMessage(actor, token, afflictionData, afflictionId, showDCToPlayers, anonymizeSaves) {
     if (anonymizeSaves) {
-      // Anonymized version
       return `
         <div class="pf2e-afflictioner-save-request">
           <h3><i class="fas fa-dice-d20"></i> Fortitude Save Required</h3>
@@ -248,7 +213,6 @@ export class AfflictionChatService {
       `;
     }
 
-    // Standard version
     return `
       <div class="pf2e-afflictioner-save-request">
         <h3><i class="fas fa-biohazard"></i> ${afflictionData.name} - Initial Save</h3>
@@ -266,13 +230,8 @@ export class AfflictionChatService {
     `;
   }
 
-  /**
-   * Build stage save message for players
-   * @private
-   */
   static _buildStageSaveMessage(actor, token, affliction, showDCToPlayers, anonymizeSaves) {
     if (anonymizeSaves) {
-      // Anonymized version
       return `
         <div class="pf2e-afflictioner-save-request">
           <h3><i class="fas fa-dice-d20"></i> Fortitude Save Required</h3>
@@ -287,7 +246,6 @@ export class AfflictionChatService {
       `;
     }
 
-    // Standard version
     return `
       <div class="pf2e-afflictioner-save-request">
         <h3><i class="fas fa-biohazard"></i> ${affliction.name} Save Required${affliction.isVirulent ? ' <span style="color: #c45500; font-size: 0.75em;">(Virulent)</span>' : ''}</h3>
@@ -304,9 +262,6 @@ export class AfflictionChatService {
     `;
   }
 
-  /**
-   * Post max duration expired message
-   */
   static async postMaxDurationExpired(token, affliction) {
     const maxDurationText = affliction.maxDuration
       ? `${affliction.maxDuration.value} ${affliction.maxDuration.unit}(s)`
@@ -336,9 +291,6 @@ export class AfflictionChatService {
     });
   }
 
-  /**
-   * Post stage change message
-   */
   static async postStageChange(token, affliction, oldStage, newStage) {
     const oldStageText = oldStage === 0 ? 'Initial Exposure' : `Stage ${oldStage}`;
     const stageDirection = newStage > oldStage ? 'increased' : 'decreased';
@@ -348,7 +300,6 @@ export class AfflictionChatService {
 
     const newStageData = affliction.stages[newStage - 1];
 
-    // Build stage effects summary
     let effectsSummary = '';
     if (newStageData) {
       const effects = [];
@@ -392,9 +343,6 @@ export class AfflictionChatService {
     });
   }
 
-  /**
-   * Prompt GM to confirm killing a token from a lethal affliction stage
-   */
   static async promptDeathConfirmation(token, affliction) {
     const actor = token.actor;
 
@@ -420,9 +368,6 @@ export class AfflictionChatService {
     });
   }
 
-  /**
-   * Post poison re-exposure message
-   */
   static async postPoisonReExposure(token, affliction, stageIncrease, newStage) {
     const content = `
       <div class="pf2e-afflictioner-save-request" style="border-color: #8b008b;">
@@ -440,9 +385,6 @@ export class AfflictionChatService {
     });
   }
 
-  /**
-   * Post multiple exposure message
-   */
   static async postMultipleExposure(token, afflictionData, multipleExposure, newStage) {
     const content = `
       <div class="pf2e-afflictioner-save-request" style="border-color: #c45500;">

@@ -1,32 +1,18 @@
-/**
- * Affliction Button Handlers - Damage, target, and apply affliction buttons
- */
-
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
 
-/**
- * Register affliction-related button handlers
- */
 export function registerAfflictionButtonHandlers(root, message) {
-  // Handle damage roll buttons
   registerDamageButtons(root);
-
-  // Handle target token buttons
   registerTargetButtons(root);
 
-  // Add "Apply Affliction" buttons and drag support to chat messages
   if (message) {
-    addApplyAfflictionButton(message, root);           // For attack messages with targets
-    addApplyAfflictionToSelectedButton(message, root); // For items sent directly to chat
+    addApplyAfflictionButton(message, root);
+    addApplyAfflictionToSelectedButton(message, root);
     addAfflictionDragSupport(message, root);
   }
 }
 
-/**
- * Register damage roll button handlers
- */
 function registerDamageButtons(root) {
   const rollDamageButtons = root.querySelectorAll('.affliction-roll-damage');
   rollDamageButtons.forEach(button => {
@@ -47,7 +33,6 @@ function registerDamageButtons(root) {
         return;
       }
 
-      // Get current stage
       const currentStageIndex = affliction.currentStage - 1;
       if (currentStageIndex < 0 || !affliction.stages || !affliction.stages[currentStageIndex]) {
         ui.notifications.warn('No active stage to roll damage for');
@@ -62,30 +47,23 @@ function registerDamageButtons(root) {
         return;
       }
 
-      // Roll and display typed damage - let PF2e handle resistances
       for (const damageEntry of stage.damage) {
         try {
-          // Handle both old format (string) and new format (object)
           const formula = typeof damageEntry === 'string' ? damageEntry : damageEntry.formula;
           const type = typeof damageEntry === 'object' ? damageEntry.type : 'untyped';
 
-          // Validate formula
           if (!formula || formula.trim() === '') {
             continue;
           }
 
-          // Clean formula - remove any trailing brackets
           const cleanFormula = formula.trim().replace(/\[.*$/, '');
 
-          // Roll plain formula for display
           const damageRoll = await new Roll(cleanFormula).evaluate({ async: true });
 
-          // Create flavor with @Damage formula enrichment - creates clickable damage roll!
           const enrichedFlavor = type !== 'untyped'
             ? `${affliction.name} - Stage ${affliction.currentStage}: @Damage[${cleanFormula}[${type}]]`
             : `${affliction.name} - Stage ${affliction.currentStage}: @Damage[${cleanFormula}]`;
 
-          // Show damage roll in chat - @Damage creates clickable roll button
           await damageRoll.toMessage({
             speaker: ChatMessage.getSpeaker({ token: token }),
             flavor: enrichedFlavor
@@ -99,15 +77,11 @@ function registerDamageButtons(root) {
         }
       }
 
-      // Disable button after use
       btn.disabled = true;
     });
   });
 }
 
-/**
- * Register target token button handlers
- */
 function registerTargetButtons(root) {
   const targetTokenButtons = root.querySelectorAll('.affliction-target-token');
   targetTokenButtons.forEach(button => {
@@ -121,36 +95,25 @@ function registerTargetButtons(root) {
         return;
       }
 
-      // Target the token
       token.setTarget(true, { user: game.user, releaseOthers: true, groupSelection: false });
 
-      // Pan to token
       ui.notifications.info(`Targeted ${token.name}`);
     });
   });
 }
 
-/**
- * Add "Apply Affliction" button to chat messages with affliction notes
- */
 async function addApplyAfflictionButton(message, htmlElement) {
-  // Only for GMs
   if (!game.user.isGM) return;
 
-  // Check if already initialized
   if (htmlElement.dataset.applyAfflictionEnabled === 'true') return;
 
-  // Check for affliction data in message flags (PF2e context notes)
   const notes = message.flags?.pf2e?.context?.notes || [];
 
-  // Try to find a note with standard affliction format (poisons/diseases)
   let afflictionNote = notes.find(note => {
     const text = note.text || '';
     return text.includes('Saving Throw') && (text.includes('Stage 1') || text.includes('Stage 2'));
   });
 
-  // If no standard format found, look for any note that might be a curse or simpler affliction
-  // Check if the note title matches an item with curse/poison/disease trait
   if (!afflictionNote) {
     const actor = message.actor;
     if (actor) {
@@ -170,18 +133,14 @@ async function addApplyAfflictionButton(message, htmlElement) {
 
   if (!afflictionNote) return;
 
-  // Check if there's a target
   const target = message.flags?.pf2e?.context?.target;
   if (!target?.token) return;
 
-  // Mark as initialized
   htmlElement.dataset.applyAfflictionEnabled = 'true';
 
-  // Get the affliction item by searching the actor's items for one matching the note title
   const actor = message.actor;
   if (!actor) return;
 
-  // Search actor's items for the affliction
   let item = actor.items.find(i => {
     if (i.name === afflictionNote.title) {
       const traits = i.system?.traits?.value || [];
@@ -192,15 +151,12 @@ async function addApplyAfflictionButton(message, htmlElement) {
 
   if (!item) return;
 
-  // Parse affliction
   const afflictionData = AfflictionParser.parseFromItem(item);
   if (!afflictionData) return;
 
-  // Find the roll-note element to add our button
   const rollNote = htmlElement.querySelector('.roll-note');
   if (!rollNote) return;
 
-  // Create button
   const buttonContainer = document.createElement('div');
   buttonContainer.className = 'affliction-apply-container';
   buttonContainer.style.cssText = 'margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(139, 0, 0, 0.3);';
@@ -214,7 +170,6 @@ async function addApplyAfflictionButton(message, htmlElement) {
 
   button.addEventListener('click', async () => {
     try {
-      // Get target token
       const targetTokenDoc = await fromUuid(target.token);
       if (!targetTokenDoc) {
         ui.notifications.error('Target token not found');
@@ -227,10 +182,8 @@ async function addApplyAfflictionButton(message, htmlElement) {
         return;
       }
 
-      // Apply affliction
       await AfflictionService.promptInitialSave(token, afflictionData);
 
-      // Disable button
       button.disabled = true;
       button.textContent = 'Applied';
     } catch (error) {
@@ -243,20 +196,13 @@ async function addApplyAfflictionButton(message, htmlElement) {
   rollNote.appendChild(buttonContainer);
 }
 
-/**
- * Add "Apply Affliction" button for items sent directly to chat (no target)
- */
 async function addApplyAfflictionToSelectedButton(message, htmlElement) {
-  // Only for GMs
   if (!game.user.isGM) return;
 
-
-  // Check if already initialized
   if (htmlElement.dataset.applyAfflictionToSelectedEnabled === 'true') {
     return;
   }
 
-  // Try to get item from flags (for action cards sent to chat)
   const itemUuid = message.flags?.pf2e?.origin?.uuid;
 
   if (!itemUuid) {
@@ -272,38 +218,30 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
 
   if (!item) return;
 
-  // Check if item is an affliction (poison/disease/curse trait)
   const traits = item.system?.traits?.value || [];
   if (!traits.includes('poison') && !traits.includes('disease') && !traits.includes('curse')) {
     return;
   }
 
-  // Don't show this button if there's already a target-specific button
   if (message.flags?.pf2e?.context?.target?.token) {
     return;
   }
 
-  // Parse affliction
   const afflictionData = AfflictionParser.parseFromItem(item);
   if (!afflictionData) {
     return;
   }
 
-  // For spells, DC is dynamic (not on the item) — extract from message save button
-  const defaultDC = game.settings.get('pf2e-afflictioner', 'defaultDC');
-  if (!afflictionData.dc || afflictionData.dc === defaultDC) {
+  if (!afflictionData.dc) {
     const dcMatch = message.content?.match(/data-dc="(\d+)"/);
     if (dcMatch) afflictionData.dc = parseInt(dcMatch[1]);
   }
 
-  // Mark as initialized
   htmlElement.dataset.applyAfflictionToSelectedEnabled = 'true';
 
-  // Find where to add the button
   const messageContent = htmlElement.querySelector('.message-content') || htmlElement.querySelector('.card-content');
   if (!messageContent) return;
 
-  // Create button container
   const buttonContainer = document.createElement('div');
   buttonContainer.className = 'affliction-apply-container';
   buttonContainer.style.cssText = 'margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(139, 0, 0, 0.3);';
@@ -315,7 +253,6 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
 
   button.addEventListener('click', async () => {
     try {
-      // Get target tokens: user targets > selected tokens
       let tokens = Array.from(game.user.targets);
       if (!tokens.length) {
         tokens = canvas.tokens.controlled;
@@ -325,12 +262,10 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
         return;
       }
 
-      // Apply affliction to all target tokens
       for (const token of tokens) {
         await AfflictionService.promptInitialSave(token, afflictionData);
       }
 
-      // Disable button
       button.disabled = true;
       button.textContent = `Applied to ${tokens.length} token(s)`;
       button.style.opacity = '0.5';
@@ -344,35 +279,25 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
   messageContent.appendChild(buttonContainer);
 }
 
-/**
- * Add drag support for affliction items in chat messages
- */
 async function addAfflictionDragSupport(message, htmlElement) {
-  // Only for GMs
   if (!game.user.isGM) return;
 
-  // Check if already initialized (prevent duplicate listeners)
   if (htmlElement.dataset.afflictionDragEnabled === 'true') return;
 
-  // Check if message contains an item with poison/disease/curse trait
   const item = message.getAssociatedItem?.();
   if (!item) return;
 
   const traits = item.system?.traits?.value || [];
   if (!traits.includes('poison') && !traits.includes('disease') && !traits.includes('curse')) return;
 
-  // Parse affliction data
   const afflictionData = AfflictionParser.parseFromItem(item);
   if (!afflictionData) return;
 
-  // Mark as initialized
   htmlElement.dataset.afflictionDragEnabled = 'true';
 
-  // Make the message draggable
   htmlElement.setAttribute('draggable', 'true');
   htmlElement.style.cursor = 'grab';
 
-  // Add visual indicator (check if it doesn't already exist)
   const contentElement = htmlElement.querySelector('.message-content');
   if (contentElement && !contentElement.querySelector('.affliction-drag-hint')) {
     const dragHint = document.createElement('div');
@@ -381,11 +306,9 @@ async function addAfflictionDragSupport(message, htmlElement) {
     contentElement.appendChild(dragHint);
   }
 
-  // Handle drag start
   const onDragStart = (event) => {
     htmlElement.style.cursor = 'grabbing';
 
-    // Store affliction data for drag-drop
     const dragData = {
       type: 'Affliction',
       afflictionData: afflictionData,
@@ -396,7 +319,6 @@ async function addAfflictionDragSupport(message, htmlElement) {
     event.dataTransfer.effectAllowed = 'copy';
   };
 
-  // Handle drag end
   const onDragEnd = () => {
     htmlElement.style.cursor = 'grab';
   };

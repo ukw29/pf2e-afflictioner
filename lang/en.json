@@ -106,6 +106,7 @@
       "IMPORT_TOOLTIP": "Import edited afflictions from JSON file"
     },
     "NOTIFICATIONS": {
+      "NO_DC_FOUND": "No DC found for affliction item \"{itemName}\".",
       "RESISTED": "{tokenName} resisted {afflictionName}!",
       "AFFLICTED": "{tokenName} is afflicted by {afflictionName}!",
       "STAGE_CHANGED": "{tokenName} is now at stage {stage} of {afflictionName}",

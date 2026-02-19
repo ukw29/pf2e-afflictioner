@@ -1,14 +1,6 @@
-/**
- * Treatment Button Handlers - Treatment actions and affliction selection
- */
-
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 
-/**
- * Register treatment button handlers
- */
 export function registerTreatmentButtonHandlers(root) {
-  // Handle roll treatment buttons
   const rollTreatmentButtons = root.querySelectorAll('.affliction-roll-treatment');
   rollTreatmentButtons.forEach(button => {
     button.addEventListener('click', async (event) => {
@@ -29,7 +21,6 @@ export function registerTreatmentButtonHandlers(root) {
         return;
       }
 
-      // Get treating character (whoever clicked or controlled token)
       const treater = canvas.tokens.controlled[0] || token;
       const treatingActor = treater.actor;
 
@@ -38,59 +29,44 @@ export function registerTreatmentButtonHandlers(root) {
         return;
       }
 
-      // Roll Medicine
       const roll = await treatingActor.skills.medicine.roll({ dc: { value: dc } });
 
-      // Send to GM for processing via socket
       const { SocketService } = await import('../services/SocketService.js');
       await SocketService.requestHandleTreatment(tokenId, afflictionId, roll.total, dc);
 
-      // Disable button after use
       btn.disabled = true;
     });
   });
 }
 
-/**
- * Add treatment affliction selection for Treat Poison/Disease actions
- */
 export async function addTreatmentAfflictionSelection(message, htmlElement) {
-  // Only for GMs
   if (!game.user.isGM) return;
 
-  // Check if already initialized
   if (htmlElement.dataset.treatmentSelectionEnabled === 'true') return;
 
-  // Check if this is a skill check for Medicine
   const flags = message.flags?.pf2e;
   if (!flags?.context?.type || flags.context.type !== 'skill-check') return;
 
-  // Check if it's specifically Treat Poison or Treat Disease (in options array)
   const options = flags.context?.options || [];
   const isTreatPoison = options.includes('action:treat-poison');
   const isTreatDisease = options.includes('action:treat-disease');
 
   if (!isTreatPoison && !isTreatDisease) return;
 
-  // Get the roll total
   const rollTotal = message.rolls?.[0]?.total;
   if (typeof rollTotal !== 'number') return;
 
-  // Get the actor who performed the treatment (the roller)
   const actorId = flags.context?.actor;
   if (!actorId) return;
 
   const actor = game.actors.get(actorId);
   if (!actor) return;
 
-  // Check if canvas is ready
   if (!canvas?.tokens) return;
 
-  // Get targeted tokens with matching afflictions
   const afflictionType = isTreatPoison ? 'poison' : 'disease';
   const tokensWithAfflictions = [];
 
-  // Check for targeted tokens first
   const tokensToCheck = game.user.targets.size > 0
     ? Array.from(game.user.targets)
     : canvas.tokens.placeables;
@@ -105,14 +81,11 @@ export async function addTreatmentAfflictionSelection(message, htmlElement) {
 
   if (tokensWithAfflictions.length === 0) return;
 
-  // Mark as initialized
   htmlElement.dataset.treatmentSelectionEnabled = 'true';
 
-  // Find where to add the buttons
   const messageContent = htmlElement.querySelector('.message-content') || htmlElement.querySelector('.card-content');
   if (!messageContent) return;
 
-  // Create selection UI
   const selectionDiv = document.createElement('div');
   selectionDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: rgba(74, 124, 42, 0.15); border-left: 3px solid #4a7c2a; border-radius: 4px;';
 
@@ -121,7 +94,6 @@ export async function addTreatmentAfflictionSelection(message, htmlElement) {
   header.innerHTML = '<i class="fas fa-medkit"></i> Apply Treatment To:';
   selectionDiv.appendChild(header);
 
-  // Add button for each token's afflictions
   for (const { token, afflictions: matchingAfflictions } of tokensWithAfflictions) {
     for (const affliction of matchingAfflictions) {
       const button = document.createElement('button');
@@ -131,7 +103,6 @@ export async function addTreatmentAfflictionSelection(message, htmlElement) {
 
       button.addEventListener('click', async () => {
         try {
-          // Apply treatment with the roll total and affliction DC
           const { TreatmentService } = await import('../services/TreatmentService.js');
           await TreatmentService.handleTreatmentResult(token, affliction, rollTotal, affliction.dc);
 

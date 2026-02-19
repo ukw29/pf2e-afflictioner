@@ -1,7 +1,3 @@
-/**
- * Constants for pf2e-afflictioner
- */
-
 export const MODULE_ID = 'pf2e-afflictioner';
 
 export const AFFLICTION_TYPES = {
@@ -32,15 +28,6 @@ export const DEFAULT_SETTINGS = {
     scope: 'world',
     type: Boolean,
     default: true,
-    config: true,
-    restricted: true
-  },
-  'defaultDC': {
-    name: 'Default DC',
-    hint: 'Default DC for afflictions if none can be parsed',
-    scope: 'world',
-    type: Number,
-    default: 15,
     config: true,
     restricted: true
   },
@@ -104,12 +91,20 @@ export const DEFAULT_SETTINGS = {
     scope: 'world',
     type: Object,
     default: {},
-    config: false,  // Hidden from standard settings UI
+    config: false,
+    restricted: true
+  },
+  'communityDataVersion': {
+    name: 'Community Data Version',
+    hint: 'Version of community afflictions data last imported',
+    scope: 'world',
+    type: String,
+    default: '',
+    config: false,
     restricted: true
   }
 };
 
-// PF2e conditions that have no value (just on/off)
 export const VALUELESS_CONDITIONS = [
   'blinded', 'confused', 'controlled', 'dazzled', 'deafened', 'fascinated',
   'fatigued', 'fleeing', 'grabbed', 'hidden', 'immobilized', 'invisible',
@@ -117,7 +112,6 @@ export const VALUELESS_CONDITIONS = [
   'restrained', 'unconscious', 'undetected'
 ];
 
-// PF2e condition names for parsing
 export const PF2E_CONDITIONS = [
   'blinded', 'broken', 'clumsy', 'concealed', 'confused', 'controlled',
   'cursebound', 'dazzled', 'deafened', 'doomed', 'drained', 'dying',
@@ -129,7 +123,6 @@ export const PF2E_CONDITIONS = [
   'undetected', 'unfriendly', 'unnoticed', 'wounded'
 ];
 
-// Duration unit multipliers to seconds
 export const DURATION_MULTIPLIERS = {
   'round': 6,
   'minute': 60,

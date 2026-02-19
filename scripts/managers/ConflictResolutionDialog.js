@@ -1,6 +1,3 @@
-/**
- * Conflict Resolution Dialog - Git-like merge UI for affliction imports
- */
 import * as AfflictionDefinitionStore from '../stores/AfflictionDefinitionStore.js';
 import { AfflictionEditorService } from '../services/AfflictionEditorService.js';
 import { MODULE_ID } from '../constants.js';
@@ -45,18 +42,14 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     this.autoImport = analysisResult.autoImport;
     this.summary = analysisResult.summary;
 
-    // Track resolutions: { key: { strategy, resolved, fieldSelections, mergedData } }
     this.resolutions = {};
-
-    // Current conflict being viewed
     this.currentConflictIndex = 0;
 
-    // Initialize resolutions as unresolved
     this.conflicts.forEach(conflict => {
       this.resolutions[conflict.key] = {
         strategy: null,
         resolved: false,
-        fieldSelections: {}, // { stageIndex: { fieldName: 'current'|'incoming' } }
+        fieldSelections: {},
         mergedData: null
       };
     });
@@ -94,7 +87,6 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     return {
       ...conflict,
       resolution,
-      // Prepare side-by-side comparison data
       comparison: {
         basic: this.prepareBasicComparison(conflict),
         stages: this.prepareStageComparison(conflict)
@@ -138,10 +130,8 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
       const currentStage = currentDef.stages?.[i];
       const incomingStage = incomingDef.stages?.[i];
 
-      // Get field selections for this stage
       const fieldSelections = resolution.fieldSelections[i] || {};
 
-      // Prepare field differences as a map for easier template access
       const fieldDiffsMap = {};
       (stageDiff?.fieldDiffs || []).forEach(diff => {
         fieldDiffsMap[diff.field] = true;
@@ -149,14 +139,13 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
 
       stages.push({
         number: i + 1,
-        stageIndex: i, // For data attributes
+        stageIndex: i,
         current: currentStage,
         incoming: incomingStage,
         diffType: stageDiff?.type || 'identical',
         fieldDiffs: stageDiff?.fieldDiffs || [],
-        fieldDiffsMap, // Easy lookup: {duration: true, damage: true, ...}
-        fieldSelections, // Field-level selections for merge strategy
-        // Check if all fields have been selected for this stage
+        fieldDiffsMap,
+        fieldSelections,
         allFieldsSelected: this.areAllFieldsSelected(currentStage, incomingStage, fieldSelections, fieldDiffsMap)
       });
     }
@@ -164,22 +153,16 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     return stages;
   }
 
-  /**
-   * Check if all necessary fields have been selected for a stage in merge mode
-   */
   areAllFieldsSelected(currentStage, incomingStage, fieldSelections, fieldDiffsMap) {
     if (!currentStage && !incomingStage) return true;
 
-    // If there are no field differences, the stage is identical - no selection needed
     if (!fieldDiffsMap || Object.keys(fieldDiffsMap).length === 0) return true;
 
-    // Only check fields that actually differ
     const differingFields = Object.keys(fieldDiffsMap);
 
     return differingFields.every(field => fieldSelections[field] !== undefined);
   }
 
-  // Action handlers
   static async selectConflict(event, button) {
     const dialog = this;
     const index = parseInt(button.dataset.index);
@@ -189,19 +172,17 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
 
   static async resolveConflict(event, button) {
     const dialog = this;
-    const strategy = button.dataset.strategy; // 'keep', 'accept', 'merge'
+    const strategy = button.dataset.strategy;
     const currentConflict = dialog.conflicts[dialog.currentConflictIndex];
 
     if (strategy === 'merge') {
-      // Switch to custom merge view
       dialog.resolutions[currentConflict.key] = {
         strategy: 'merge',
-        resolved: false, // Not resolved until all fields selected
+        resolved: false,
         fieldSelections: {},
         mergedData: null
       };
     } else {
-      // Simple resolution
       const mergedData = strategy === 'keep'
         ? foundry.utils.deepClone(currentConflict.currentDef)
         : foundry.utils.deepClone(currentConflict.incomingDef);
@@ -213,7 +194,6 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
         fieldSelections: {}
       };
 
-      // Auto-advance to next conflict
       if (dialog.currentConflictIndex < dialog.conflicts.length - 1) {
         dialog.currentConflictIndex++;
       }
@@ -226,8 +206,8 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     const dialog = this;
     const currentConflict = dialog.conflicts[dialog.currentConflictIndex];
     const stageIndex = parseInt(button.dataset.stageIndex);
-    const field = button.dataset.field; // 'duration', 'damage', 'conditions', etc.
-    const version = button.dataset.version; // 'current' or 'incoming'
+    const field = button.dataset.field;
+    const version = button.dataset.version;
 
     const resolution = dialog.resolutions[currentConflict.key];
     if (!resolution.fieldSelections[stageIndex]) {
@@ -236,7 +216,6 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
 
     resolution.fieldSelections[stageIndex][field] = version;
 
-    // Check if ALL stages have all fields selected
     const maxStages = Math.max(
       currentConflict.currentDef.stages?.length || 0,
       currentConflict.incomingDef.stages?.length || 0
@@ -247,7 +226,6 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
       const is = currentConflict.incomingDef.stages?.[i];
       const fs = resolution.fieldSelections[i] || {};
 
-      // Get fieldDiffsMap for this stage
       const stageDiff = currentConflict.differences.stages.find(s => s.stageNumber === i + 1);
       const fieldDiffsMap = {};
       (stageDiff?.fieldDiffs || []).forEach(diff => {
@@ -258,7 +236,6 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     });
 
     if (allStagesComplete) {
-      // Build merged data and mark as resolved
       resolution.mergedData = dialog.buildMergedData(currentConflict, resolution);
       resolution.resolved = true;
     } else {
@@ -272,23 +249,20 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     const dialog = this;
     const currentConflict = dialog.conflicts[dialog.currentConflictIndex];
     const stageIndex = parseInt(button.dataset.stageIndex);
-    const version = button.dataset.version; // 'current' or 'incoming'
+    const version = button.dataset.version;
 
     const resolution = dialog.resolutions[currentConflict.key];
     if (!resolution.fieldSelections[stageIndex]) {
       resolution.fieldSelections[stageIndex] = {};
     }
 
-    // Get fields that differ for this stage
     const stageDiff = currentConflict.differences.stages.find(s => s.stageNumber === stageIndex + 1);
     const differingFields = (stageDiff?.fieldDiffs || []).map(diff => diff.field);
 
-    // Only set selections for fields that actually differ
     differingFields.forEach(field => {
       resolution.fieldSelections[stageIndex][field] = version;
     });
 
-    // Check if all stages are now complete
     const maxStages = Math.max(
       currentConflict.currentDef.stages?.length || 0,
       currentConflict.incomingDef.stages?.length || 0
@@ -299,7 +273,6 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
       const is = currentConflict.incomingDef.stages?.[i];
       const fs = resolution.fieldSelections[i] || {};
 
-      // Get fieldDiffsMap for this stage
       const sDiff = currentConflict.differences.stages.find(s => s.stageNumber === i + 1);
       const fieldDiffsMap = {};
       (sDiff?.fieldDiffs || []).forEach(diff => {
@@ -319,9 +292,8 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
 
   static async bulkResolve(event, button) {
     const dialog = this;
-    const strategy = button.dataset.strategy; // 'keep' or 'accept'
+    const strategy = button.dataset.strategy;
 
-    // Apply strategy to all unresolved conflicts
     for (const conflict of dialog.conflicts) {
       if (!dialog.resolutions[conflict.key].resolved) {
         const mergedData = strategy === 'keep'
@@ -340,17 +312,12 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     await dialog.render({ force: true });
   }
 
-  /**
-   * Build merged affliction data from field selections
-   */
   buildMergedData(conflict, resolution) {
     const { currentDef, incomingDef } = conflict;
     const { fieldSelections } = resolution;
 
-    // Start with incoming as base (for metadata, name, type, etc.)
     const merged = foundry.utils.deepClone(incomingDef);
 
-    // Build stages array based on field selections
     merged.stages = [];
     const maxStages = Math.max(
       currentDef.stages?.length || 0,
@@ -362,10 +329,8 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
       const incomingStage = incomingDef.stages?.[i];
       const selections = fieldSelections[i] || {};
 
-      // If stage doesn't exist in either version, skip
       if (!currentStage && !incomingStage) continue;
 
-      // Build merged stage by field
       const mergedStage = {
         number: i + 1,
         duration: this.selectField(selections, 'duration', currentStage, incomingStage),
@@ -385,9 +350,6 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     return merged;
   }
 
-  /**
-   * Select a field value based on user selection
-   */
   selectField(selections, fieldName, currentStage, incomingStage) {
     const selection = selections[fieldName];
 
@@ -401,7 +363,6 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
         : (currentStage?.[fieldName] !== undefined ? foundry.utils.deepClone(currentStage[fieldName]) : undefined);
     }
 
-    // Default fallback: prefer incoming
     return incomingStage?.[fieldName] !== undefined
       ? foundry.utils.deepClone(incomingStage[fieldName])
       : (currentStage?.[fieldName] !== undefined ? foundry.utils.deepClone(currentStage[fieldName]) : undefined);
@@ -410,50 +371,45 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
   static async finishImport(event, button) {
     const dialog = this;
 
-    // Check all conflicts resolved
     if (!Object.values(dialog.resolutions).every(r => r.resolved)) {
       ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.CONFLICT.CONFLICTS_REMAINING'));
       return;
     }
 
-    // Build final import data
     const finalEdits = {};
 
-    // Add resolved conflicts
     for (const [key, resolution] of Object.entries(dialog.resolutions)) {
-      // Validate merged data
       const validation = AfflictionEditorService.validateEditedData(resolution.mergedData);
       if (!validation.valid) {
         ui.notifications.error(`Validation failed for ${resolution.mergedData.name}: ${validation.errors.join(', ')}`);
         return;
       }
 
-      // Update metadata
       resolution.mergedData.editedAt = Date.now();
       resolution.mergedData.editedBy = game.user.id;
 
       finalEdits[key] = resolution.mergedData;
     }
 
-    // Add auto-import items
     for (const item of dialog.autoImport) {
-      // Update metadata
       const definition = foundry.utils.deepClone(item.definition);
       definition.editedAt = Date.now();
       definition.editedBy = game.user.id;
       finalEdits[item.key] = definition;
     }
 
-    // Save to settings
     try {
       await game.settings.set(MODULE_ID, 'editedAfflictions', finalEdits);
 
       const totalImported = Object.keys(finalEdits).length;
       ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.CONFLICT.IMPORT_SUCCESSFUL', { count: totalImported }));
 
+      if (typeof dialog.onFinish === 'function') {
+        await dialog.onFinish();
+      }
+
       await dialog.close();
 
-      // Refresh any open managers
       Object.values(ui.windows).forEach(app => {
         if (app.constructor.name === 'EditedAfflictionsManager') {
           app.render({ force: true });

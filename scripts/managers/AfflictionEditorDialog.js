@@ -1,7 +1,3 @@
-/**
- * Affliction Editor Dialog - Main UI for editing affliction definitions
- */
-
 import * as AfflictionDefinitionStore from '../stores/AfflictionDefinitionStore.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionEditorService } from '../services/AfflictionEditorService.js';
@@ -45,20 +41,17 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
   constructor(afflictionData, options = {}) {
     super(options);
 
-    // GM-only access
     if (!game.user.isGM) {
       ui.notifications.error('Only GMs can edit affliction definitions');
       this.close();
       return;
     }
 
-    // Store original and working copy
     this.originalData = foundry.utils.deepClone(afflictionData);
     this.editedData = AfflictionEditorService.prepareEditStructure(afflictionData);
   }
 
   async _prepareContext(_options) {
-    // Enrich stage effects text with clickable links
     const affliction = foundry.utils.deepClone(this.editedData);
 
     if (affliction.stages) {
@@ -85,10 +78,8 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
       return;
     }
 
-    // Open stage editor dialog
     const stageEditor = new StageEditorDialog(stage, {
       onSave: async (updatedStage) => {
-        // Update the stage in our data
         const index = dialog.editedData.stages.findIndex(s => s.number === stageNumber);
         if (index !== -1) {
           dialog.editedData.stages[index] = updatedStage;
@@ -103,7 +94,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
   static async addStage(_event, _button) {
     const dialog = this;
 
-    // Create new stage with next stage number
     const nextStageNumber = dialog.editedData.stages.length + 1;
     const newStage = {
       number: nextStageNumber,
@@ -130,7 +120,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
       return;
     }
 
-    // Confirm removal
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       title: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.REMOVE_STAGE'),
       content: `<p>${game.i18n.format('PF2E_AFFLICTIONER.EDITOR.CONFIRM_REMOVE_STAGE', { number: stageNumber })}</p>`,
@@ -141,12 +130,10 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
     if (!confirmed) return;
 
-    // Remove the stage
     const index = dialog.editedData.stages.findIndex(s => s.number === stageNumber);
     if (index !== -1) {
       dialog.editedData.stages.splice(index, 1);
 
-      // Renumber remaining stages
       dialog.editedData.stages.forEach((stage, idx) => {
         stage.number = idx + 1;
       });
@@ -160,11 +147,9 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     const dialog = this;
 
     if (dialog.editedData.onset && dialog.editedData.onset.value > 0) {
-      // Remove onset
       dialog.editedData.onset = null;
       ui.notifications.info('Onset removed');
     } else {
-      // Add default onset
       dialog.editedData.onset = {
         value: 1,
         unit: 'round'
@@ -179,11 +164,9 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     const dialog = this;
 
     if (dialog.editedData.maxDuration && dialog.editedData.maxDuration.value > 0) {
-      // Remove max duration
       dialog.editedData.maxDuration = null;
       ui.notifications.info('Maximum duration removed (affliction is now indefinite)');
     } else {
-      // Add default max duration
       dialog.editedData.maxDuration = {
         value: 6,
         unit: 'round'
@@ -199,19 +182,14 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     const FormDataClass = foundry.applications?.ux?.FormDataExtended || FormDataExtended;
     const formData = new FormDataClass(dialog.element).object;
 
-
-
-    // Update DC
     if (formData.dc !== undefined) {
       dialog.editedData.dc = Math.max(1, Math.min(50, parseInt(formData.dc) || 15));
     }
 
-    // Update save type
     if (formData.saveType) {
       dialog.editedData.saveType = formData.saveType.toLowerCase();
     }
 
-    // Update onset (handle flat structure from Foundry v13+)
     if (formData['onset.value'] !== undefined || formData.onset) {
       const onsetValue = parseInt(formData['onset.value'] || formData.onset?.value);
       const onsetUnit = formData['onset.unit'] || formData.onset?.unit || 'round';
@@ -226,7 +204,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
       }
     }
 
-    // Update maximum duration (handle flat structure from Foundry v13+)
     if (formData['maxDuration.value'] !== undefined || formData.maxDuration) {
       const maxDurationValue = parseInt(formData['maxDuration.value'] || formData.maxDuration?.value);
       const maxDurationUnit = formData['maxDuration.unit'] || formData.maxDuration?.unit || 'round';
@@ -240,12 +217,9 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
         dialog.editedData.maxDuration = null;
       }
     } else if (!dialog.editedData.maxDuration) {
-      // If form has no maxDuration fields and editedData doesn't have it, it's null (indefinite)
       dialog.editedData.maxDuration = null;
     }
-    // Otherwise, preserve existing editedData.maxDuration
 
-    // Validate the edited data
     const validation = AfflictionEditorService.validateEditedData(dialog.editedData);
     if (!validation.valid) {
       ui.notifications.error('Validation failed: ' + validation.errors.join(', '));
@@ -253,7 +227,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
       return;
     }
 
-    // Generate key and save
     const key = AfflictionDefinitionStore.generateDefinitionKey(dialog.originalData);
     if (!key) {
       ui.notifications.error('Could not generate definition key');
@@ -263,7 +236,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     try {
       await AfflictionDefinitionStore.saveEditedDefinition(key, dialog.editedData);
 
-      // Apply changes to active afflictions
       await dialog.applyToActiveAfflictions(key, dialog.editedData);
 
       ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.CHANGES_SAVED'));
@@ -274,23 +246,17 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     }
   }
 
-  /**
-   * Apply edited definition changes to active afflictions
-   */
   async applyToActiveAfflictions(definitionKey, editedData) {
     if (!canvas?.tokens) return;
 
     let updatedCount = 0;
 
-    // Iterate through all tokens on canvas
     for (const token of canvas.tokens.placeables) {
       const afflictions = AfflictionStore.getAfflictions(token);
 
       for (const [id, affliction] of Object.entries(afflictions)) {
-        // Check if this affliction matches the edited definition
         const afflictionKey = AfflictionDefinitionStore.generateDefinitionKey(affliction);
         if (afflictionKey === definitionKey) {
-          // Update affliction properties
           const updates = {
             name: editedData.name,
             type: editedData.type,
@@ -301,23 +267,18 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
             multipleExposure: editedData.multipleExposure
           };
 
-          // Update max duration if changed
           if (editedData.maxDuration) {
             updates.maxDuration = editedData.maxDuration;
           } else {
             updates.maxDuration = null;
           }
 
-          // Don't update onset (already in progress)
-
           await AfflictionStore.updateAffliction(token, id, updates);
 
-          // Re-fetch and update effects/conditions for current stage
           const updatedAffliction = AfflictionStore.getAffliction(token, id);
           const currentStageData = updatedAffliction.stages[updatedAffliction.currentStage - 1];
 
           if (currentStageData) {
-            // Re-apply stage effects with updated definition
             await AfflictionService.removeStageEffects(token, updatedAffliction, currentStageData, currentStageData);
             await AfflictionService.applyStageEffects(token, updatedAffliction, currentStageData);
           }
@@ -340,7 +301,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
   static async resetToDefault(_event, _button) {
     const dialog = this;
 
-    // Confirm reset
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       title: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.RESET_TO_DEFAULT'),
       content: `<p>${game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.CONFIRM_RESET')}</p>`,
@@ -351,7 +311,6 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
     if (!confirmed) return;
 
-    // Generate key and remove edit
     const key = AfflictionDefinitionStore.generateDefinitionKey(dialog.originalData);
     if (!key) {
       ui.notifications.error('Could not generate definition key');

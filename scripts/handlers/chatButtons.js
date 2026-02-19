@@ -1,52 +1,27 @@
-/**
- * Chat Button Handler Orchestrator
- * Coordinates all chat message button handlers
- */
-
 import { registerSaveButtonHandlers, injectConfirmationButton } from './saveButtons.js';
 import { registerAfflictionButtonHandlers } from './afflictionButtons.js';
 import { registerTreatmentButtonHandlers, addTreatmentAfflictionSelection } from './treatmentButtons.js';
 import { registerCounteractButtonHandlers, addCounteractAfflictionSelection, injectCounteractConfirmButton } from './counteractButtons.js';
 
-/**
- * Handle chat message rendering - add all button handlers
- */
 export function onRenderChatMessage(message, html) {
   const root = html?.jquery ? html[0] : html;
   if (!root) return;
 
-  // Inject confirmation button on roll messages (when requireSaveConfirmation enabled)
   injectConfirmationButton(message, root);
   injectCounteractConfirmButton(message, root);
 
-  // Register save button handlers
   registerSaveButtonHandlers(root);
-
-  // Register affliction button handlers
   registerAfflictionButtonHandlers(root, message);
-
-  // Register treatment button handlers
   registerTreatmentButtonHandlers(root);
-
-  // Register counteract button handlers
   registerCounteractButtonHandlers(root);
 
-  // Add treatment affliction selection
   addTreatmentAfflictionSelection(message, root);
-
-  // Add counteract affliction selection
   addCounteractAfflictionSelection(message, root);
 
-  // Register max duration removal button handler
   registerMaxDurationRemovalHandler(root);
-
-  // Register death confirmation button handler
   registerDeathConfirmationHandler(root);
 }
 
-/**
- * Register handler for max duration removal buttons
- */
 function registerMaxDurationRemovalHandler(root) {
   const removeBtn = root.querySelector('.pf2e-afflictioner-remove-expired-btn');
   if (!removeBtn) return;
@@ -69,7 +44,6 @@ function registerMaxDurationRemovalHandler(root) {
       return;
     }
 
-    // If the current stage has a resolved duration, update the effect to expire naturally
     const resolved = affliction.currentStageResolvedDuration;
     if (resolved?.value > 0 && affliction.appliedEffectUuid) {
       try {
@@ -90,11 +64,8 @@ function registerMaxDurationRemovalHandler(root) {
       }
     }
 
-    // Remove affliction from tracking only
-    // Effect and conditions remain on actor per PF2e rules (effect will expire via its own duration)
     await AfflictionStore.removeAffliction(token, afflictionId);
 
-    // Remove visual indicator
     const { VisualService } = await import('../services/VisualService.js');
     await VisualService.removeAfflictionIndicator(token);
 
@@ -103,15 +74,11 @@ function registerMaxDurationRemovalHandler(root) {
       : `Effect and conditions persist on ${token.name} per PF2e rules.`;
     ui.notifications.info(`Removed ${affliction.name} from tracking. ${expiryNote}`);
 
-    // Disable button
     button.disabled = true;
     button.textContent = '✓ Affliction Removed';
   });
 }
 
-/**
- * Register handler for death confirmation buttons
- */
 function registerDeathConfirmationHandler(root) {
   const killBtn = root.querySelector('.pf2e-afflictioner-confirm-kill-btn');
   if (!killBtn) return;
@@ -136,7 +103,6 @@ function registerDeathConfirmationHandler(root) {
     const AfflictionStore = await import('../stores/AfflictionStore.js');
     const affliction = AfflictionStore.getAffliction(token, afflictionId);
 
-    // Set HP to 0 and raise dying to max (triggers death in PF2e)
     await actor.update({ 'system.attributes.hp.value': 0 });
     await actor.increaseCondition('dying');
     const dying = actor.getCondition('dying');

@@ -1,14 +1,5 @@
-/**
- * Affliction Conflict Detector - Detects and categorizes conflicts between imported and existing afflictions
- */
 export class AfflictionConflictDetector {
 
-  /**
-   * Analyze import data against current data
-   * @param {Object} incomingEdits - The edits being imported
-   * @param {Object} currentEdits - The currently stored edits
-   * @returns {Object} - { conflicts: [], autoImport: [], summary: {} }
-   */
   static analyzeImport(incomingEdits, currentEdits) {
     const conflicts = [];
     const autoImport = [];
@@ -17,15 +8,12 @@ export class AfflictionConflictDetector {
       const currentDef = currentEdits[key];
 
       if (!currentDef) {
-        // No conflict - doesn't exist locally
         autoImport.push({ key, definition: incomingDef });
       } else {
-        // Potential conflict - analyze differences
         const conflictData = this.detectConflict(key, currentDef, incomingDef);
         if (conflictData.hasConflict) {
           conflicts.push(conflictData);
         } else {
-          // Definitions are identical
           autoImport.push({ key, definition: incomingDef, isIdentical: true });
         }
       }
@@ -42,17 +30,13 @@ export class AfflictionConflictDetector {
     };
   }
 
-  /**
-   * Detect conflicts between two affliction definitions
-   */
   static detectConflict(key, currentDef, incomingDef) {
     const differences = {
-      basic: [],      // dc, saveType, onset changes
-      stages: [],     // stage-level differences
-      metadata: []    // editedAt, editedBy
+      basic: [],
+      stages: [],
+      metadata: []
     };
 
-    // Check basic properties
     if (currentDef.dc !== incomingDef.dc) {
       differences.basic.push({
         field: 'dc',
@@ -69,7 +53,6 @@ export class AfflictionConflictDetector {
       });
     }
 
-    // Check onset (handle null/undefined)
     const onsetDiffers = !this.isOnsetEqual(currentDef.onset, incomingDef.onset);
     if (onsetDiffers) {
       differences.basic.push({
@@ -79,14 +62,12 @@ export class AfflictionConflictDetector {
       });
     }
 
-    // Check stages
     const stageDiffs = this.detectStageDifferences(
       currentDef.stages || [],
       incomingDef.stages || []
     );
     differences.stages = stageDiffs;
 
-    // Metadata differences (informational only)
     if (currentDef.editedAt !== incomingDef.editedAt) {
       differences.metadata.push({
         field: 'editedAt',
@@ -110,9 +91,6 @@ export class AfflictionConflictDetector {
     };
   }
 
-  /**
-   * Detect stage-level differences
-   */
   static detectStageDifferences(currentStages, incomingStages) {
     const stageDiffs = [];
     const maxStages = Math.max(currentStages.length, incomingStages.length);
@@ -122,21 +100,18 @@ export class AfflictionConflictDetector {
       const incomingStage = incomingStages[i];
 
       if (!currentStage && incomingStage) {
-        // Incoming has additional stage
         stageDiffs.push({
           stageNumber: i + 1,
           type: 'added',
           incoming: incomingStage
         });
       } else if (currentStage && !incomingStage) {
-        // Current has additional stage (incoming removed it)
         stageDiffs.push({
           stageNumber: i + 1,
           type: 'removed',
           current: currentStage
         });
       } else if (currentStage && incomingStage) {
-        // Both exist - check for modifications
         if (!this.isStageEqual(currentStage, incomingStage)) {
           stageDiffs.push({
             stageNumber: i + 1,
@@ -152,43 +127,33 @@ export class AfflictionConflictDetector {
     return stageDiffs;
   }
 
-  /**
-   * Get field-level differences within a stage
-   */
   static getStageFieldDifferences(currentStage, incomingStage) {
     const diffs = [];
 
-    // Check duration
     if (!this.isDurationEqual(currentStage.duration, incomingStage.duration)) {
       diffs.push({ field: 'duration', current: currentStage.duration, incoming: incomingStage.duration });
     }
 
-    // Check effects text
     if (currentStage.effects !== incomingStage.effects) {
       diffs.push({ field: 'effects', current: currentStage.effects, incoming: incomingStage.effects });
     }
 
-    // Check damage arrays
     if (!this.isDamageArrayEqual(currentStage.damage, incomingStage.damage)) {
       diffs.push({ field: 'damage', current: currentStage.damage, incoming: incomingStage.damage });
     }
 
-    // Check conditions arrays
     if (!this.isConditionArrayEqual(currentStage.conditions, incomingStage.conditions)) {
       diffs.push({ field: 'conditions', current: currentStage.conditions, incoming: incomingStage.conditions });
     }
 
-    // Check weakness arrays
     if (!this.isWeaknessArrayEqual(currentStage.weakness, incomingStage.weakness)) {
       diffs.push({ field: 'weakness', current: currentStage.weakness, incoming: incomingStage.weakness });
     }
 
-    // Check autoEffects arrays
     if (!this.isAutoEffectsArrayEqual(currentStage.autoEffects, incomingStage.autoEffects)) {
       diffs.push({ field: 'autoEffects', current: currentStage.autoEffects, incoming: incomingStage.autoEffects });
     }
 
-    // Check ruleElements arrays
     if (!this.isRuleElementsArrayEqual(currentStage.ruleElements, incomingStage.ruleElements)) {
       diffs.push({ field: 'ruleElements', current: currentStage.ruleElements, incoming: incomingStage.ruleElements });
     }
@@ -196,7 +161,6 @@ export class AfflictionConflictDetector {
     return diffs;
   }
 
-  // Equality comparison helpers
   static isOnsetEqual(onset1, onset2) {
     if (!onset1 && !onset2) return true;
     if (!onset1 || !onset2) return false;
@@ -214,14 +178,12 @@ export class AfflictionConflictDetector {
   }
 
   static isDamageArrayEqual(arr1, arr2) {
-    // Normalize: treat undefined/null same as empty array
     const a1 = arr1 || [];
     const a2 = arr2 || [];
 
     if (a1.length !== a2.length) return false;
-    if (a1.length === 0) return true; // Both empty
+    if (a1.length === 0) return true;
 
-    // Sort and compare
     const sorted1 = [...a1].sort((a, b) => `${a.formula}${a.type}`.localeCompare(`${b.formula}${b.type}`));
     const sorted2 = [...a2].sort((a, b) => `${a.formula}${a.type}`.localeCompare(`${b.formula}${b.type}`));
 
@@ -232,12 +194,11 @@ export class AfflictionConflictDetector {
   }
 
   static isConditionArrayEqual(arr1, arr2) {
-    // Normalize: treat undefined/null same as empty array
     const a1 = arr1 || [];
     const a2 = arr2 || [];
 
     if (a1.length !== a2.length) return false;
-    if (a1.length === 0) return true; // Both empty
+    if (a1.length === 0) return true;
 
     const sorted1 = [...a1].sort((a, b) => a.name.localeCompare(b.name));
     const sorted2 = [...a2].sort((a, b) => a.name.localeCompare(b.name));
@@ -249,12 +210,11 @@ export class AfflictionConflictDetector {
   }
 
   static isWeaknessArrayEqual(arr1, arr2) {
-    // Normalize: treat undefined/null same as empty array
     const a1 = arr1 || [];
     const a2 = arr2 || [];
 
     if (a1.length !== a2.length) return false;
-    if (a1.length === 0) return true; // Both empty
+    if (a1.length === 0) return true;
 
     const sorted1 = [...a1].sort((a, b) => a.type.localeCompare(b.type));
     const sorted2 = [...a2].sort((a, b) => a.type.localeCompare(b.type));
@@ -266,12 +226,11 @@ export class AfflictionConflictDetector {
   }
 
   static isAutoEffectsArrayEqual(arr1, arr2) {
-    // Normalize: treat undefined/null same as empty array
     const a1 = arr1 || [];
     const a2 = arr2 || [];
 
     if (a1.length !== a2.length) return false;
-    if (a1.length === 0) return true; // Both empty
+    if (a1.length === 0) return true;
 
     const sorted1 = [...a1].sort((a, b) => a.uuid.localeCompare(b.uuid));
     const sorted2 = [...a2].sort((a, b) => a.uuid.localeCompare(b.uuid));
@@ -283,14 +242,12 @@ export class AfflictionConflictDetector {
   }
 
   static isRuleElementsArrayEqual(arr1, arr2) {
-    // Normalize: treat undefined/null same as empty array
     const a1 = arr1 || [];
     const a2 = arr2 || [];
 
     if (a1.length !== a2.length) return false;
-    if (a1.length === 0) return true; // Both empty
+    if (a1.length === 0) return true;
 
-    // Sort by key, type, selector, and value for consistent comparison
     const sorted1 = [...a1].sort((a, b) =>
       `${a.key}-${a.type}-${a.selector}-${a.value}`.localeCompare(`${b.key}-${b.type}-${b.selector}-${b.value}`)
     );
@@ -305,7 +262,6 @@ export class AfflictionConflictDetector {
       if (r1.selector !== r2.selector) return false;
       if (r1.value !== r2.value) return false;
 
-      // Compare predicates
       const p1 = r1.predicate || [];
       const p2 = r2.predicate || [];
       if (p1.length !== p2.length) return false;

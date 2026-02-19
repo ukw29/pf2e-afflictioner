@@ -1,7 +1,3 @@
-/**
- * Socket Service - Cross-client sync via socketlib
- */
-
 import { MODULE_ID, DEGREE_OF_SUCCESS } from '../constants.js';
 import { VisualService } from './VisualService.js';
 import { AfflictionService } from './AfflictionService.js';
@@ -9,9 +5,6 @@ import { AfflictionService } from './AfflictionService.js';
 export class SocketService {
   static socket = null;
 
-  /**
-   * Convert DEGREE_OF_SUCCESS constant to string key for UI
-   */
   static degreeToString(degree) {
     const map = {
       [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: DEGREE_OF_SUCCESS.CRITICAL_SUCCESS,
@@ -22,18 +15,13 @@ export class SocketService {
     return map[degree] || DEGREE_OF_SUCCESS.FAILURE;
   }
 
-  /**
-   * Initialize socket communication
-   */
   static initialize() {
-    // Check if socketlib is available
     if (!game.modules.get('socketlib')?.active) {
       return;
     }
 
     this.socket = socketlib.registerModule(MODULE_ID);
 
-    // Register socket handlers
     this.socket.register('refreshAfflictionIndicators', this.refreshAfflictionIndicators.bind(this));
     this.socket.register('notifyAfflictionChange', this.notifyAfflictionChange.bind(this));
     this.socket.register('gmRemoveAffliction', this.gmRemoveAffliction.bind(this));
@@ -46,15 +34,10 @@ export class SocketService {
     this.socket.register('unlockSaveButton', this.handleUnlockSaveButton.bind(this));
     this.socket.register('syncButtonState', this.handleSyncButtonState.bind(this));
 
-    // Register PF2e-specific reroll hooks (preReroll captures old message before deletion)
     const preRerollHookId = Hooks.on('pf2e.preReroll', this.onPf2ePreReroll.bind(this));
     const rerollHookId = Hooks.on('pf2e.reroll', this.onPf2eReroll.bind(this));
-
   }
 
-  /**
-   * Request GM to process save result
-   */
   static async requestHandleSave(tokenId, afflictionId, rollMessageId, dc) {
     if (!this.socket) return false;
 
@@ -67,11 +50,7 @@ export class SocketService {
     }
   }
 
-  /**
-   * GM handler for processing save result
-   */
   static async gmHandleSave(tokenId, afflictionId, rollMessageId, dc) {
-
     if (!game.user.isGM) return;
 
     const token = canvas.tokens.get(tokenId);
@@ -83,12 +62,10 @@ export class SocketService {
     const affliction = AfflictionStoreModule.getAffliction(token, afflictionId);
     if (!affliction) return;
 
-    // Check if confirmation is required
     const { MODULE_ID } = await import('../constants.js');
     const requireConfirmation = game.settings.get(MODULE_ID, 'requireSaveConfirmation');
 
     if (requireConfirmation) {
-      // Add flag to roll message to trigger button injection in renderChatMessage hook
       const rollMessage = game.messages.get(rollMessageId);
       if (rollMessage) {
         await rollMessage.update({
@@ -100,8 +77,6 @@ export class SocketService {
         });
       }
     } else {
-      // Apply immediately - read current result from message
-      // Add small delay to ensure message is fully created
       await new Promise(resolve => setTimeout(resolve, 150));
       const message = game.messages.get(rollMessageId);
       const saveTotal = await this.getCurrentRollTotal(rollMessageId);
@@ -114,9 +89,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * Request GM to process initial save result
-   */
   static async requestHandleInitialSave(tokenId, afflictionId, rollMessageId, dc) {
     if (!this.socket) return false;
 
@@ -129,11 +101,7 @@ export class SocketService {
     }
   }
 
-  /**
-   * GM handler for processing initial save result
-   */
   static async gmHandleInitialSave(tokenId, afflictionId, rollMessageId, dc) {
-
     if (!game.user.isGM) return;
 
     const token = canvas.tokens.get(tokenId);
@@ -145,12 +113,10 @@ export class SocketService {
     const affliction = AfflictionStoreModule.getAffliction(token, afflictionId);
     if (!affliction) return;
 
-    // Check if confirmation is required
     const { MODULE_ID } = await import('../constants.js');
     const requireConfirmation = game.settings.get(MODULE_ID, 'requireSaveConfirmation');
 
     if (requireConfirmation) {
-      // Add flag to roll message to trigger button injection in renderChatMessage hook
       const rollMessage = game.messages.get(rollMessageId);
       if (rollMessage) {
         await rollMessage.update({
@@ -162,8 +128,6 @@ export class SocketService {
         });
       }
     } else {
-      // Apply immediately - read current result from message
-      // Add small delay to ensure message is fully created
       await new Promise(resolve => setTimeout(resolve, 150));
       const message = game.messages.get(rollMessageId);
       const saveTotal = await this.getCurrentRollTotal(rollMessageId);
@@ -176,9 +140,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * Request GM to process treatment result
-   */
   static async requestHandleTreatment(tokenId, afflictionId, total, dc) {
     if (!this.socket) return false;
 
@@ -191,9 +152,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * GM handler for processing treatment result
-   */
   static async gmHandleTreatment(tokenId, afflictionId, total, dc) {
     if (!game.user.isGM) return;
 
@@ -209,9 +167,6 @@ export class SocketService {
     await TreatmentService.handleTreatmentResult(token, affliction, total, dc);
   }
 
-  /**
-   * Request GM to process counteract result
-   */
   static async requestHandleCounteract(tokenId, afflictionId, counteractRank, afflictionRank, degree) {
     if (!this.socket) return false;
 
@@ -224,9 +179,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * GM handler for processing counteract result
-   */
   static async gmHandleCounteract(tokenId, afflictionId, counteractRank, afflictionRank, degree) {
     if (!game.user.isGM) return;
 
@@ -242,11 +194,7 @@ export class SocketService {
     await CounteractService.handleCounteractResult(token, affliction, counteractRank, afflictionRank, degree);
   }
 
-  /**
-   * Post a save confirmation button to chat
-   */
   static async postSaveConfirmation(token, affliction, rollMessageId, dc, saveType) {
-    // Read current result from the roll message (in case of rerolls)
     const message = game.messages.get(rollMessageId);
     if (!message) {
       console.error('PF2e Afflictioner | Message not found for confirmation');
@@ -259,7 +207,6 @@ export class SocketService {
       return;
     }
 
-    // Get die value for nat 1/20 handling
     const dieValue = AfflictionService.getDieValue(message);
 
     const degreeConstant = AfflictionService.calculateDegreeOfSuccess(saveTotal, dc, dieValue);
@@ -316,12 +263,8 @@ export class SocketService {
         }
       }
     });
-
   }
 
-  /**
-   * Get the current roll total from a chat message (handles rerolls)
-   */
   static async getCurrentRollTotal(messageId) {
     if (!messageId) {
       return null;
@@ -332,25 +275,20 @@ export class SocketService {
       return null;
     }
 
-    // Try multiple methods to extract the roll total
     let total = null;
 
-    // Method 1: Standard rolls array
     const roll = message.rolls?.[0];
     if (roll?.total !== undefined) {
       total = roll.total;
       return total;
     }
 
-    // Method 2: PF2e flags (some messages store total here)
     if (message.flags?.pf2e?.context?.rollTotal !== undefined) {
       total = message.flags.pf2e.context.rollTotal;
       return total;
     }
 
-    // Method 3: Parse from content HTML
     if (message.content) {
-      // Look for result-total class (PF2e v11+)
       const match = message.content.match(/class="result-total[^"]*">(\d+)</);
       if (match) {
         total = parseInt(match[1]);
@@ -358,7 +296,6 @@ export class SocketService {
       }
     }
 
-    // If all methods fail, log detailed info for debugging
     console.error('PF2e Afflictioner | Could not extract roll total from message:', {
       messageId,
       hasRolls: !!message.rolls?.length,
@@ -369,9 +306,6 @@ export class SocketService {
     return null;
   }
 
-  /**
-   * Request GM to apply save consequences after confirmation
-   */
   static async requestApplySaveConsequences(tokenId, afflictionId, rollMessageId, dc, saveType) {
     if (!this.socket) return false;
 
@@ -384,11 +318,7 @@ export class SocketService {
     }
   }
 
-  /**
-   * GM handler for applying save consequences
-   */
   static async gmApplySaveConsequences(tokenId, afflictionId, rollMessageId, dc, saveType) {
-
     if (!game.user.isGM) return;
 
     const token = canvas.tokens.get(tokenId);
@@ -400,8 +330,6 @@ export class SocketService {
     const affliction = AfflictionStoreModule.getAffliction(token, afflictionId);
     if (!affliction) return;
 
-    // Read current result from message (captures rerolls)
-    // Add small delay to ensure any recent rerolls are fully processed
     await new Promise(resolve => setTimeout(resolve, 100));
 
     const saveTotal = await this.getCurrentRollTotal(rollMessageId);
@@ -410,7 +338,6 @@ export class SocketService {
       ui.notifications.error('Could not read roll result from message');
       console.error('PF2e Afflictioner | Failed to read save result from message ID:', rollMessageId);
 
-      // Try to get the message and log its full structure
       const msg = game.messages.get(rollMessageId);
       if (msg) {
         console.error('PF2e Afflictioner | Message exists but no roll total. Full message:', msg);
@@ -422,7 +349,6 @@ export class SocketService {
       return;
     }
 
-    // Get die value for nat 1/20 handling
     const message = game.messages.get(rollMessageId);
     const dieValue = AfflictionService.getDieValue(message);
 
@@ -433,9 +359,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * Request GM to remove an affliction (for non-GM users)
-   */
   static async requestRemoveAffliction(tokenId, afflictionId) {
     if (!this.socket) {
       console.error('PF2e Afflictioner | Socket not initialized');
@@ -451,9 +374,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * GM handler for removing affliction
-   */
   static async gmRemoveAffliction(tokenId, afflictionId) {
     if (!game.user.isGM) return;
 
@@ -467,13 +387,9 @@ export class SocketService {
     const path = `flags.${MODULE_ID}.afflictions`;
     await token.document.update({ [path]: afflictions }, { diff: false });
 
-    // Broadcast refresh to all clients
     await this.broadcastAfflictionChange(tokenId, '', 'removed');
   }
 
-  /**
-   * Request GM to update afflictions (for non-GM users)
-   */
   static async requestUpdateAfflictions(tokenId, afflictions) {
     if (!this.socket) {
       console.error('PF2e Afflictioner | Socket not initialized');
@@ -489,9 +405,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * GM handler for updating afflictions
-   */
   static async gmUpdateAfflictions(tokenId, afflictions) {
     if (!game.user.isGM) return;
 
@@ -502,13 +415,9 @@ export class SocketService {
     const path = `flags.${MODULE_ID}.afflictions`;
     await token.document.update({ [path]: afflictions }, { diff: false });
 
-    // Broadcast refresh to all clients
     await this.broadcastAfflictionChange(tokenId, '', 'updated');
   }
 
-  /**
-   * Broadcast affliction indicator refresh to all clients
-   */
   static async broadcastRefreshIndicators(tokenId) {
     if (!this.socket) return;
 
@@ -519,9 +428,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * Handle refresh indicators message
-   */
   static async refreshAfflictionIndicators(tokenId) {
     const token = canvas.tokens.get(tokenId);
     if (token) {
@@ -529,9 +435,6 @@ export class SocketService {
     }
   }
 
-  /**
-   * Broadcast affliction change notification
-   */
   static async broadcastAfflictionChange(tokenId, afflictionName, type) {
     if (!this.socket) return;
 
@@ -542,30 +445,19 @@ export class SocketService {
     }
   }
 
-  /**
-   * Handle affliction change notification
-   */
   static async notifyAfflictionChange(tokenId, _afflictionName, _type) {
     const token = canvas.tokens.get(tokenId);
     if (!token) return;
 
-    // Refresh manager if open
     const { AfflictionManager } = await import('../managers/AfflictionManager.js');
     if (AfflictionManager.currentInstance) {
       AfflictionManager.currentInstance.render({ force: true });
     }
   }
 
-  /**
-   * Handle PF2e pre-reroll event (captures old message before deletion)
-   */
   static async onPf2ePreReroll(oldRoll, ...args) {
-
-    // Only GMs need to track this
     if (!game.user.isGM) return;
 
-    // Try to find message by messageId on the roll options first (most reliable)
-    // Fall back to roll total matching
     const messageId = oldRoll?.options?.messageId || oldRoll?.messageId;
     let oldMessage = messageId ? game.messages.get(messageId) : null;
     if (!oldMessage) {
@@ -579,10 +471,8 @@ export class SocketService {
       return;
     }
 
-    // Store the old message ID (use simple property since rerolls happen sequentially)
     this._lastRerollOldMessageId = oldMessage.id;
 
-    // Also store the confirmation flags if they exist (to copy to new message after reroll)
     if (oldMessage.flags?.['pf2e-afflictioner']?.needsConfirmation) {
       this._lastRerollConfirmationFlags = {
         needsConfirmation: true,
@@ -593,42 +483,27 @@ export class SocketService {
       };
     }
 
-    // For counteract flags: register a createChatMessage hook to reliably catch the new message
     if (oldMessage.flags?.['pf2e-afflictioner']?.needsCounteractConfirmation) {
       const counteractFlags = { ...oldMessage.flags['pf2e-afflictioner'] };
       const speakerActorId = oldMessage.speaker?.actor;
       Hooks.once('createChatMessage', async (newMsg) => {
-        // Only copy if from same actor (the reroll)
         if (!speakerActorId || newMsg.speaker?.actor === speakerActorId || newMsg.actor?.id === speakerActorId) {
           await newMsg.update({ 'flags.pf2e-afflictioner': counteractFlags });
         }
       });
     }
-
   }
 
-  /**
-   * Handle PF2e reroll event
-   * @param {CheckRoll} oldRoll - The original roll before reroll
-   * @param {CheckRoll} newRoll - The new roll after reroll
-   * @param {*} arg2 - Unknown parameter
-   * @param {string} rerollMode - 'lower', 'higher', etc.
-   */
   static async onPf2eReroll(oldRoll, newRoll, arg2, rerollMode) {
-    // Only GMs need to update confirmation messages
     if (!game.user.isGM) return;
 
-    // Get the old message ID that was stored in preReroll
     const oldMessageId = this._lastRerollOldMessageId;
     if (!oldMessageId) {
       return;
     }
 
-
-    // Wait for new message to be created
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    // Find the NEW message - try messageId first, then fall back to total matching
     const newMessageId = newRoll?.options?.messageId || newRoll?.messageId;
     let newMessage = newMessageId ? game.messages.get(newMessageId) : null;
     if (!newMessage) {
@@ -642,8 +517,6 @@ export class SocketService {
       return;
     }
 
-
-    // If old message had confirmation flags, copy them to new message
     if (this._lastRerollConfirmationFlags) {
       await newMessage.update({
         'flags.pf2e-afflictioner': this._lastRerollConfirmationFlags
@@ -651,26 +524,18 @@ export class SocketService {
       this._lastRerollConfirmationFlags = null;
     }
 
-    // Note: counteract flags are copied via Hooks.once('createChatMessage') in onPf2ePreReroll
-
-    // Clean up tracking
     this._lastRerollOldMessageId = null;
   }
 
-  /**
-   * Update a confirmation message with new roll result
-   */
   static async updateConfirmationMessage(confirmationMessage, rollMessage) {
     const flags = confirmationMessage.flags['pf2e-afflictioner'];
     const { tokenId, afflictionId, afflictionName, saveType, dc } = flags;
 
-    // Get new roll total using the robust extraction method
     const saveTotal = await this.getCurrentRollTotal(rollMessage.id);
     if (saveTotal === null) {
       return;
     }
 
-    // Get die value for nat 1/20 handling
     const dieValue = AfflictionService.getDieValue(rollMessage);
 
     const degreeConstant = AfflictionService.calculateDegreeOfSuccess(saveTotal, dc, dieValue);
@@ -699,7 +564,7 @@ export class SocketService {
         <p style="margin: 4px 0;"><strong>${token?.name || 'Token'}</strong> rolled <strong>${saveTotal}</strong> vs DC ${dc}</p>
         <p style="margin: 4px 0; color: ${degreeColor}; font-weight: bold;">Result: ${degreeText}</p>
         <p style="margin: 8px 0 4px 0; font-size: 0.9em; font-style: italic; color: #ccc;">Awaiting confirmation to apply consequences...</p>
-        <p style="margin: 4px 0; font-size: 0.85em; color: #ffa500;">✨ Updated from reroll</p>
+        <p style="margin: 4px 0; font-size: 0.85em; color: #ffa500;">Updated from reroll</p>
         <button class="affliction-confirm-save"
                 data-token-id="${tokenId}"
                 data-affliction-id="${afflictionId}"
@@ -715,28 +580,16 @@ export class SocketService {
     await confirmationMessage.update({ content: newContent });
   }
 
-  /**
-   * Request unlock of a save button for all users (delegates to syncButtonState)
-   */
   static async unlockSaveButton(messageId, buttonClass) {
-    // Just call syncButtonState with false (enabled)
     return await this.syncButtonState(messageId, buttonClass, false);
   }
 
-  /**
-   * Handle unlock save button for all users (delegates to handleSyncButtonState)
-   */
   static async handleUnlockSaveButton(messageId, buttonClass) {
-    // Delegate to the unified sync handler
     await this.handleSyncButtonState(messageId, buttonClass, false);
     ui.notifications.info('Save button unlocked');
   }
 
-  /**
-   * Sync button state across all clients
-   */
   static async syncButtonState(messageId, buttonClass, disabled) {
-
     if (!this.socket) {
       console.error('PF2e Afflictioner | Socket not initialized');
       return false;
@@ -751,16 +604,11 @@ export class SocketService {
     }
   }
 
-  /**
-   * Handle button state sync for all users
-   */
   static async handleSyncButtonState(messageId, buttonClass, disabled) {
-
     if (!messageId || !buttonClass) {
       return;
     }
 
-    // Find the chat container (try multiple methods for compatibility)
     let chatLog = document.getElementById('chat-log');
     if (!chatLog) {
       chatLog = document.querySelector('#chat .chat-log');
@@ -785,15 +633,11 @@ export class SocketService {
         return;
       }
 
-
-      // Set disabled state
       button.disabled = disabled;
       button.style.opacity = disabled ? '0.6' : '1';
 
       if (disabled && game.user.isGM) {
-        // Add unlock button for GMs when button is disabled
         if (!button.nextElementSibling?.classList.contains('affliction-unlock-save')) {
-          // Wrap button in relative container if not already wrapped
           let container = button.parentElement;
           if (!container.classList.contains('affliction-button-wrapper')) {
             const wrapper = document.createElement('div');
@@ -827,11 +671,9 @@ export class SocketService {
             await SocketService.syncButtonState(messageId, buttonClass, false);
           });
 
-          // Add to container (completely overlays the button)
           container.appendChild(unlockBtn);
         }
       } else if (!disabled) {
-        // Remove unlock button when re-enabled
         const unlockBtn = button.nextElementSibling;
         if (unlockBtn?.classList.contains('affliction-unlock-save')) {
           unlockBtn.remove();

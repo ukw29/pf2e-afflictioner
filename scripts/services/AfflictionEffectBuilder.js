@@ -1,17 +1,9 @@
-/**
- * Affliction Effect Builder - Handles effect creation and updates
- */
-
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 
 export class AfflictionEffectBuilder {
-  /**
-   * Create or update affliction effect with counter badge
-   */
   static async createOrUpdateEffect(token, actor, affliction, stage) {
     const bonuses = this.extractBonuses(stage.effects);
 
-    // Check if effect already exists
     if (affliction.appliedEffectUuid) {
       return await this.updateEffect(token, actor, affliction, stage, bonuses);
     }
@@ -19,30 +11,23 @@ export class AfflictionEffectBuilder {
     return await this.createEffect(token, actor, affliction, stage, bonuses);
   }
 
-  /**
-   * Create new affliction effect
-   */
   static async createEffect(token, actor, affliction, stage, bonuses) {
     try {
-      // Build all components using helper methods
       const rules = await this._buildRulesFromStage(affliction, stage, bonuses);
       const stageDesc = this._buildStageDescription(affliction, stage);
       const shouldBeUnidentified = this.shouldBeUnidentified(affliction);
       const badgeConfig = this._buildBadgeConfig(affliction);
       const durationConfig = this._buildDurationConfig(affliction, stage);
 
-      // Get source item image
-      let itemImg = 'icons/svg/hazard.svg'; // default
+      let itemImg = 'icons/svg/hazard.svg';
       if (affliction.sourceItemUuid) {
         try {
-          // Suppress notifications for missing items
           const notify = ui.notifications.notify;
           ui.notifications.notify = () => { };
           const sourceItem = await fromUuid(affliction.sourceItemUuid);
           ui.notifications.notify = notify;
           if (sourceItem?.img) itemImg = sourceItem.img;
         } catch {
-          // Restore notifications on error
           ui.notifications.notify = ui.notifications.notify.bind?.(ui.notifications) || ui.notifications.notify;
         }
       }
@@ -76,29 +61,23 @@ export class AfflictionEffectBuilder {
     }
   }
 
-  /**
-   * Update existing affliction effect for new stage
-   */
   static async updateEffect(token, _actor, affliction, stage, bonuses) {
     try {
       const effect = await fromUuid(affliction.appliedEffectUuid);
       if (!effect) return null;
 
-      // Build all components using helper methods
       const rules = await this._buildRulesFromStage(affliction, stage, bonuses);
       const stageDesc = this._buildStageDescription(affliction, stage);
       const shouldBeUnidentified = this.shouldBeUnidentified(affliction);
       const badgeConfig = this._buildBadgeConfig(affliction);
       const durationConfig = this._buildDurationConfig(affliction, stage);
 
-      // If transitioning from unidentified to identified, mark the affliction permanently
       if (!shouldBeUnidentified && !affliction.hasBeenIdentified) {
         await AfflictionStore.updateAffliction(token, affliction.id, {
           hasBeenIdentified: true
         });
       }
 
-      // Update effect with new stage data
       await effect.update({
         'system.badge': badgeConfig,
         'system.duration': durationConfig,
@@ -114,24 +93,18 @@ export class AfflictionEffectBuilder {
     }
   }
 
-  /**
-   * Determine if affliction effect should be unidentified for players
-   */
   static shouldBeUnidentified(affliction) {
-    // If currently in onset, keep it mysterious
     if (affliction.inOnset) {
       return true;
     }
 
-    // If already identified (flag set), stay identified
     if (affliction.hasBeenIdentified) {
       return false;
     }
 
-    // Check current stage for any visible mechanical effects
     const currentStageIndex = affliction.currentStage - 1;
     if (currentStageIndex < 0 || !affliction.stages || !affliction.stages[currentStageIndex]) {
-      return true; // No valid stage, keep unidentified
+      return true;
     }
 
     const currentStage = affliction.stages[currentStageIndex];
@@ -139,16 +112,11 @@ export class AfflictionEffectBuilder {
     const hasWeakness = currentStage.weakness && currentStage.weakness.length > 0;
     const hasDamage = currentStage.damage && currentStage.damage.length > 0;
 
-    // Only mechanical effects (conditions, weakness, damage) make the affliction identifiable
     const hasVisibleEffects = hasConditions || hasWeakness || hasDamage;
 
-    // If no visible mechanical effects yet, keep unidentified
     return !hasVisibleEffects;
   }
 
-  /**
-   * Normalize time unit from singular to plural for PF2e compatibility
-   */
   static _normalizeUnit(unit) {
     if (unit === 'round') return 'rounds';
     if (unit === 'minute') return 'minutes';
@@ -158,12 +126,8 @@ export class AfflictionEffectBuilder {
     return unit;
   }
 
-  /**
-   * Build duration configuration for effect
-   */
   static _buildDurationConfig(affliction, stage) {
     if (affliction.inOnset && stage.duration && typeof stage.duration === 'object' && stage.duration.value) {
-      // Onset: use onset duration for effect
       return {
         value: stage.duration.value,
         unit: this._normalizeUnit(stage.duration.unit || 'rounds'),
@@ -172,7 +136,6 @@ export class AfflictionEffectBuilder {
       };
     }
 
-    // Stages always have unlimited duration (they end via saves, not time)
     return {
       value: -1,
       unit: 'unlimited',
@@ -181,9 +144,6 @@ export class AfflictionEffectBuilder {
     };
   }
 
-  /**
-   * Build badge configuration for effect
-   */
   static _buildBadgeConfig(affliction) {
     if (affliction.inOnset || affliction.currentStage < 1) {
       return null;
@@ -197,9 +157,6 @@ export class AfflictionEffectBuilder {
     };
   }
 
-  /**
-   * Build stage description for effect
-   */
   static _buildStageDescription(affliction, stage) {
     if (affliction.inOnset) {
       return '<p><strong>Onset</strong></p>';
@@ -212,13 +169,9 @@ export class AfflictionEffectBuilder {
     return `<p>Stage ${affliction.currentStage}</p>`;
   }
 
-  /**
-   * Build rules array from stage data
-   */
   static async _buildRulesFromStage(affliction, stage, bonuses) {
     const rules = [];
 
-    // Add bonus rules
     rules.push(...bonuses.map(bonus => {
       const rule = {
         key: 'FlatModifier',
@@ -231,7 +184,6 @@ export class AfflictionEffectBuilder {
       return rule;
     }));
 
-    // Add weakness rules
     if (stage.weakness && stage.weakness.length > 0) {
       for (const weak of stage.weakness) {
         rules.push({
@@ -243,7 +195,6 @@ export class AfflictionEffectBuilder {
       }
     }
 
-    // Add GrantItem rules for conditions (skip persistent damage - handled separately)
     if (stage.conditions && stage.conditions.length > 0) {
       for (const condition of stage.conditions) {
         if (condition.name === 'persistent damage' || condition.name === 'persistent-damage') continue;
@@ -274,9 +225,6 @@ export class AfflictionEffectBuilder {
     return rules;
   }
 
-  /**
-   * Extract bonuses/penalties from effect text
-   */
   static extractBonuses(effectText) {
     const bonuses = [];
 
@@ -309,9 +257,6 @@ export class AfflictionEffectBuilder {
     return bonuses;
   }
 
-  /**
-   * Parse selector from bonus text
-   */
   static parseSelector(text) {
     const lower = text.toLowerCase().trim();
 
@@ -333,9 +278,6 @@ export class AfflictionEffectBuilder {
     return 'attack-roll';
   }
 
-  /**
-   * Parse predicate from bonus text
-   */
   static parsePredicate(text) {
     const lower = text.toLowerCase().trim();
     const predicates = [];
@@ -349,9 +291,6 @@ export class AfflictionEffectBuilder {
     return predicates.length > 0 ? predicates : undefined;
   }
 
-  /**
-   * Apply persistent damage conditions directly on the actor
-   */
   static async applyPersistentDamage(actor, affliction, stage) {
     if (!stage.conditions) return;
 
@@ -377,9 +316,6 @@ export class AfflictionEffectBuilder {
     }
   }
 
-  /**
-   * Remove persistent damage conditions applied by an affliction
-   */
   static async removePersistentDamage(actor, afflictionId) {
     const persistentConditions = actor.itemTypes.condition.filter(c =>
       c.slug === 'persistent-damage' &&
@@ -392,9 +328,6 @@ export class AfflictionEffectBuilder {
     }
   }
 
-  /**
-   * Get condition UUID from name for GrantItem rules
-   */
   static async getConditionUuid(conditionName) {
     const slug = conditionName.toLowerCase();
 

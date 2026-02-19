@@ -1,5 +1,4 @@
 <div class="conflict-resolution-content">
-  <!-- Summary Header -->
   <div class="import-summary">
     <h3>
       <i class="fas fa-code-branch"></i>
@@ -22,7 +21,6 @@
   </div>
 
   {{#if hasConflicts}}
-    <!-- Progress Bar -->
     <div class="conflict-progress">
       <div class="progress-bar">
         <div class="progress-fill" style="width: {{progress.percentage}}%"></div>
@@ -32,13 +30,10 @@
       </span>
     </div>
 
-    <!-- Conflict Layout -->
     <div class="conflict-layout">
-      <!-- Sidebar -->
       <div class="conflict-sidebar">
         <h4>{{localize "PF2E_AFFLICTIONER.CONFLICT.CONFLICTS_LIST"}}</h4>
 
-        <!-- Bulk actions -->
         <div class="bulk-actions-compact">
           <button type="button" data-action="bulkResolve" data-strategy="keep"
                   data-tooltip="{{localize 'PF2E_AFFLICTIONER.CONFLICT.KEEP_ALL_TIP'}}">
@@ -75,7 +70,6 @@
         </div>
       </div>
 
-      <!-- Main Conflict View -->
       <div class="conflict-main">
         {{#if currentConflict}}
           <div class="conflict-header">
@@ -83,7 +77,6 @@
             <span class="conflict-type-badge">{{currentConflict.type}}</span>
           </div>
 
-          <!-- Resolution Strategy Buttons -->
           {{#unless currentConflict.resolution.resolved}}
             <div class="resolution-strategy">
               <button type="button" data-action="resolveConflict" data-strategy="keep"
@@ -114,9 +107,7 @@
             </div>
           {{/unless}}
 
-          <!-- Side-by-Side Comparison -->
           <div class="conflict-comparison">
-            <!-- Basic Properties -->
             <section class="comparison-section">
               <h4>{{localize "PF2E_AFFLICTIONER.CONFLICT.BASIC_PROPERTIES"}}</h4>
               <table class="comparison-table">
@@ -159,7 +150,6 @@
               </table>
             </section>
 
-            <!-- Stages Comparison -->
             <section class="comparison-section stages-comparison">
               <h4>{{localize "PF2E_AFFLICTIONER.CONFLICT.STAGES"}}</h4>
 
@@ -197,7 +187,6 @@
                   </div>
 
                   <div class="stage-comparison-body">
-                    <!-- Duration Field -->
                     {{#if fieldDiffsMap.duration}}
                     <div class="field-row differs">
                       <div class="field-label">
@@ -252,7 +241,6 @@
                     </div>
                     {{/if}}
 
-                    <!-- Effects Text Field -->
                     {{#if fieldDiffsMap.effects}}
                     <div class="field-row differs">
                       <div class="field-label">
@@ -307,7 +295,6 @@
                     </div>
                     {{/if}}
 
-                    <!-- Damage Field -->
                     {{#if fieldDiffsMap.damage}}
                     <div class="field-row differs">
                       <div class="field-label">
@@ -366,7 +353,6 @@
                     </div>
                     {{/if}}
 
-                    <!-- Conditions Field -->
                     {{#if fieldDiffsMap.conditions}}
                     <div class="field-row differs">
                       <div class="field-label">
@@ -425,7 +411,6 @@
                     </div>
                     {{/if}}
 
-                    <!-- Weakness Field -->
                     {{#if fieldDiffsMap.weakness}}
                     <div class="field-row differs">
                       <div class="field-label">
@@ -484,7 +469,6 @@
                     </div>
                     {{/if}}
 
-                    <!-- Auto Effects Field -->
                     {{#if fieldDiffsMap.autoEffects}}
                     <div class="field-row differs">
                       <div class="field-label">
@@ -543,7 +527,6 @@
                     </div>
                     {{/if}}
 
-                    <!-- Rule Elements Field -->
                     {{#if fieldDiffsMap.ruleElements}}
                     <div class="field-row differs">
                       <div class="field-label">
@@ -614,7 +597,6 @@
       </div>
     </div>
 
-    <!-- Footer Actions -->
     <div class="conflict-footer">
       <button type="button" data-action="cancelImport" class="cancel-button">
         <i class="fas fa-times"></i> {{localize "PF2E_AFFLICTIONER.CONFLICT.CANCEL_IMPORT"}}
@@ -627,7 +609,6 @@
     </div>
 
   {{else}}
-    <!-- No conflicts -->
     <div class="no-conflicts">
       <i class="fas fa-check-circle"></i>
       <h3>{{localize "PF2E_AFFLICTIONER.CONFLICT.NO_CONFLICTS_TITLE"}}</h3>

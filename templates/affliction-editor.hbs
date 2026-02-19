@@ -1,10 +1,7 @@
 <div class="affliction-editor-content">
-  <!-- Header with affliction name and type -->
   <div class="editor-header">
     <h3>{{affliction.name}} <span class="affliction-type">({{affliction.type}})</span></h3>
   </div>
-
-  <!-- Basic properties section -->
   <section class="editor-section basic-properties">
     <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.BASIC_PROPERTIES'}}</h4>
 
@@ -66,8 +63,6 @@
       {{/if}}
     </div>
   </section>
-
-  <!-- Stages section -->
   <section class="editor-section stages-section">
     <div class="section-header-with-actions">
       <h4>{{localize 'PF2E_AFFLICTIONER.EDITOR.STAGES'}}</h4>
@@ -161,8 +156,6 @@
       </div>
     {{/each}}
   </section>
-
-  <!-- Action buttons -->
   <div class="editor-footer">
     <button type="button" data-action="saveChanges" class="primary-button">
       <i class="fas fa-save"></i> {{localize 'PF2E_AFFLICTIONER.EDITOR.SAVE_CHANGES'}}

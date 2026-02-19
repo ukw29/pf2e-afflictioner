@@ -1,16 +1,10 @@
-/**
- * Settings registration
- */
-
 import { MODULE_ID, DEFAULT_SETTINGS } from './constants.js';
 
 export function registerSettings() {
-  // Register all settings
   Object.entries(DEFAULT_SETTINGS).forEach(([key, config]) => {
     game.settings.register(MODULE_ID, key, config);
   });
 
-  // Register menu button for Edited Afflictions Manager
   game.settings.registerMenu(MODULE_ID, 'editedAfflictionsMenu', {
     name: 'PF2E_AFFLICTIONER.SETTINGS.EDITED_AFFLICTIONS_MENU',
     label: 'PF2E_AFFLICTIONER.SETTINGS.EDITED_AFFLICTIONS_LABEL',
@@ -23,7 +17,6 @@ export function registerSettings() {
   console.log('PF2e Afflictioner | Settings registered');
 }
 
-// Menu button class for Edited Afflictions Manager
 class EditedAfflictionsMenuButton extends FormApplication {
   constructor(object, options) {
     super(object, options);
@@ -37,11 +30,9 @@ class EditedAfflictionsMenuButton extends FormApplication {
   }
 
   async _updateObject(event, formData) {
-    // No form data to process
   }
 
   render() {
-    // Immediately open the manager instead of rendering a form
     this.openManager();
     return this;
   }

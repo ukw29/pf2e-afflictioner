@@ -1,26 +1,11 @@
-/**
- * Save Button Handlers - Initial saves, stage saves, and confirmation buttons
- */
-
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 
-/**
- * Register save button handlers
- */
 export function registerSaveButtonHandlers(root) {
-  // Handle initial save buttons
   registerInitialSaveButtons(root);
-
-  // Handle stage save buttons
   registerStageSaveButtons(root);
-
-  // Handle save confirmation buttons
   registerConfirmationButtons(root);
 }
 
-/**
- * Register initial save button handlers
- */
 function registerInitialSaveButtons(root) {
   const rollInitialSaveButtons = root.querySelectorAll('.affliction-roll-initial-save');
   rollInitialSaveButtons.forEach(button => {
@@ -42,7 +27,6 @@ function registerInitialSaveButtons(root) {
         return;
       }
 
-      // Check for edited definition and apply it to get current DC
       const AfflictionDefinitionStore = await import('../stores/AfflictionDefinitionStore.js');
       const key = AfflictionDefinitionStore.generateDefinitionKey(affliction);
       const editedDef = AfflictionDefinitionStore.getEditedDefinition(key);
@@ -51,26 +35,20 @@ function registerInitialSaveButtons(root) {
         affliction = AfflictionEditorService.applyEditedDefinition(affliction, editedDef);
       }
 
-      // Use the current DC from the affliction (potentially edited)
       const currentDC = affliction.dc || dc;
 
-      // Try storyframe integration first
       const { StoryframeIntegrationService } = await import('../services/StoryframeIntegrationService.js');
       const sentToStoryframe = await StoryframeIntegrationService.sendSaveRequest(token, affliction, 'initial');
 
       if (sentToStoryframe) {
-        // Disable button - result will be handled via polling
         btn.disabled = true;
         return;
       }
 
-      // Fallback: Roll the save via chat button
       const actor = token.actor;
 
-      // Check if this should be a blind GM roll (mysterious afflictions or NPC actors)
       const isBlindRoll = btn.dataset.blindRoll === 'true' || actor.type === 'npc';
 
-      // Capture the message ID by tracking message creation
       let rollMessageId = null;
       Hooks.once('createChatMessage', (message) => {
         if (message.actor?.id === actor.id && message.flags?.pf2e?.context?.type === 'saving-throw') {
@@ -78,7 +56,6 @@ function registerInitialSaveButtons(root) {
         }
       });
 
-      // Roll with blind mode if this is a GM secret roll
       const rollOptions = { dc: { value: currentDC } };
       if (isBlindRoll) {
         rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
@@ -86,30 +63,24 @@ function registerInitialSaveButtons(root) {
 
       await actor.saves.fortitude.roll(rollOptions);
 
-      // Wait a bit for the hook to fire
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // If hook didn't capture it, fall back to finding the last message
       if (!rollMessageId) {
         rollMessageId = game.messages.contents[game.messages.contents.length - 1]?.id;
       }
 
-      // Send roll message ID to GM for processing (not the total, so rerolls are captured)
       const { SocketService } = await import('../services/SocketService.js');
       await SocketService.requestHandleInitialSave(tokenId, afflictionId, rollMessageId, currentDC);
 
-      // Disable button after use and broadcast to all clients
       btn.disabled = true;
 
-      // Broadcast button disable to all clients
       const messageElement = btn.closest('.message');
       const msgId = messageElement?.dataset.messageId;
       if (msgId) {
         const { SocketService } = await import('../services/SocketService.js');
-        await SocketService.syncButtonState(msgId, btn.className, true); // true = disabled
+        await SocketService.syncButtonState(msgId, btn.className, true);
       }
 
-      // Add small unlock button for GMs (inline next to the disabled button)
       if (game.user.isGM && !btn.nextElementSibling?.classList.contains('affliction-unlock-save')) {
         const unlockBtn = document.createElement('button');
         unlockBtn.className = 'affliction-unlock-save';
@@ -120,7 +91,6 @@ function registerInitialSaveButtons(root) {
           e.preventDefault();
           e.stopPropagation();
 
-          // Find message ID from the chat message element
           const messageElement = btn.closest('.message');
           const messageId = messageElement?.dataset.messageId;
 
@@ -133,16 +103,12 @@ function registerInitialSaveButtons(root) {
           }
         });
 
-        // Insert after the button
         btn.insertAdjacentElement('afterend', unlockBtn);
       }
     });
   });
 }
 
-/**
- * Register stage save button handlers
- */
 function registerStageSaveButtons(root) {
   const rollSaveButtons = root.querySelectorAll('.affliction-roll-save');
   rollSaveButtons.forEach(button => {
@@ -164,7 +130,6 @@ function registerStageSaveButtons(root) {
         return;
       }
 
-      // Check for edited definition and apply it to get current DC
       const AfflictionDefinitionStore = await import('../stores/AfflictionDefinitionStore.js');
       const key = AfflictionDefinitionStore.generateDefinitionKey(affliction);
       const editedDef = AfflictionDefinitionStore.getEditedDefinition(key);
@@ -173,23 +138,18 @@ function registerStageSaveButtons(root) {
         affliction = AfflictionEditorService.applyEditedDefinition(affliction, editedDef);
       }
 
-      // Use the current DC from the affliction (potentially edited)
       const currentDC = affliction.dc || dc;
 
-      // Try storyframe integration first
       const { StoryframeIntegrationService } = await import('../services/StoryframeIntegrationService.js');
       const sentToStoryframe = await StoryframeIntegrationService.sendSaveRequest(token, affliction, 'stage');
 
       if (sentToStoryframe) {
-        // Disable button - result will be handled via polling
         btn.disabled = true;
         return;
       }
 
-      // Fallback: Roll the save via chat button
       const actor = token.actor;
 
-      // Capture the message ID by tracking message creation
       let rollMessageId = null;
       Hooks.once('createChatMessage', (message) => {
         if (message.actor?.id === actor.id && message.flags?.pf2e?.context?.type === 'saving-throw') {
@@ -197,7 +157,6 @@ function registerStageSaveButtons(root) {
         }
       });
 
-      // Use blind roll for NPC actors
       const stageRollOptions = { dc: { value: currentDC } };
       if (actor.type === 'npc') {
         stageRollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
@@ -205,30 +164,24 @@ function registerStageSaveButtons(root) {
 
       await actor.saves.fortitude.roll(stageRollOptions);
 
-      // Wait a bit for the hook to fire
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // If hook didn't capture it, fall back to finding the last message
       if (!rollMessageId) {
         rollMessageId = game.messages.contents[game.messages.contents.length - 1]?.id;
       }
 
-      // Send roll message ID to GM for processing (not the total, so rerolls are captured)
       const { SocketService } = await import('../services/SocketService.js');
       await SocketService.requestHandleSave(tokenId, afflictionId, rollMessageId, currentDC);
 
-      // Disable button after use and broadcast to all clients
       btn.disabled = true;
 
-      // Broadcast button disable to all clients
       const messageElement = btn.closest('.message');
       const msgId = messageElement?.dataset.messageId;
       if (msgId) {
         const { SocketService } = await import('../services/SocketService.js');
-        await SocketService.syncButtonState(msgId, btn.className, true); // true = disabled
+        await SocketService.syncButtonState(msgId, btn.className, true);
       }
 
-      // Add small unlock button for GMs (inline next to the disabled button)
       if (game.user.isGM && !btn.nextElementSibling?.classList.contains('affliction-unlock-save')) {
         const unlockBtn = document.createElement('button');
         unlockBtn.className = 'affliction-unlock-save';
@@ -239,7 +192,6 @@ function registerStageSaveButtons(root) {
           e.preventDefault();
           e.stopPropagation();
 
-          // Find message ID from the chat message element
           const messageElement = btn.closest('.message');
           const messageId = messageElement?.dataset.messageId;
 
@@ -252,16 +204,12 @@ function registerStageSaveButtons(root) {
           }
         });
 
-        // Insert after the button
         btn.insertAdjacentElement('afterend', unlockBtn);
       }
     });
   });
 }
 
-/**
- * Register save confirmation button handlers
- */
 function registerConfirmationButtons(root) {
   const confirmSaveButtons = root.querySelectorAll('.affliction-confirm-save');
   confirmSaveButtons.forEach(button => {
@@ -273,11 +221,9 @@ function registerConfirmationButtons(root) {
       const dc = parseInt(btn.dataset.dc);
       const saveType = btn.dataset.saveType;
 
-      // Send to GM for processing via socket
       const { SocketService } = await import('../services/SocketService.js');
       await SocketService.requestApplySaveConsequences(tokenId, afflictionId, rollMessageId, dc, saveType);
 
-      // Disable button after use
       btn.disabled = true;
       btn.textContent = 'Applied';
       btn.style.opacity = '0.5';
@@ -285,23 +231,16 @@ function registerConfirmationButtons(root) {
   });
 }
 
-/**
- * Inject confirmation button directly onto roll messages (when requireSaveConfirmation is enabled)
- */
 export async function injectConfirmationButton(message, root) {
-  // Only for GMs
   if (!game.user.isGM) return;
 
-  // Check if this message needs a confirmation button
   if (!message.flags?.['pf2e-afflictioner']?.needsConfirmation) return;
 
-  // Check if already injected
   if (root.querySelector('.affliction-confirm-save')) return;
 
   const flags = message.flags['pf2e-afflictioner'];
   const { tokenId, afflictionId, saveType, dc } = flags;
 
-  // Get the roll result
   const { AfflictionService } = await import('../services/AfflictionService.js');
   const roll = message.rolls?.[0];
   if (!roll) return;
@@ -310,7 +249,6 @@ export async function injectConfirmationButton(message, root) {
   const dieValue = AfflictionService.getDieValue(message);
   const degreeConstant = AfflictionService.calculateDegreeOfSuccess(saveTotal, dc, dieValue);
 
-  // Convert to string for UI
   const { DEGREE_OF_SUCCESS } = await import('../constants.js');
   const degreeMap = {
     [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: DEGREE_OF_SUCCESS.CRITICAL_SUCCESS,
@@ -320,7 +258,6 @@ export async function injectConfirmationButton(message, root) {
   };
   const degree = degreeMap[degreeConstant] || DEGREE_OF_SUCCESS.FAILURE;
 
-  // Define colors and gradients for each degree
   const colorScheme = {
     [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: {
       gradient: 'linear-gradient(135deg, rgb(0, 180, 0) 0%, rgb(0, 128, 0) 100%)',
@@ -346,15 +283,12 @@ export async function injectConfirmationButton(message, root) {
 
   const colors = colorScheme[degree];
 
-  // Find the message content area
   const messageContent = root.querySelector('.message-content');
   if (!messageContent) return;
 
-  // Create button container
   const buttonContainer = document.createElement('div');
   buttonContainer.style.cssText = 'margin-top: 8px; padding-top: 8px;';
 
-  // Create the confirmation button with gradient and animations
   const button = document.createElement('button');
   button.className = 'affliction-confirm-save';
   button.dataset.tokenId = tokenId;
@@ -380,7 +314,6 @@ export async function injectConfirmationButton(message, root) {
   `;
   button.innerHTML = '<i class="fas fa-check"></i> Apply Consequences';
 
-  // Add hover effects
   button.addEventListener('mouseenter', () => {
     button.style.transform = 'translateY(-1px)';
     button.style.boxShadow = `0 5px 12px rgba(0,0,0,0.4), 0 0 25px ${colors.glow}`;
@@ -391,7 +324,6 @@ export async function injectConfirmationButton(message, root) {
     button.style.boxShadow = `0 3px 8px rgba(0,0,0,0.3), 0 0 15px ${colors.glow}`;
   });
 
-  // Add click animation
   button.addEventListener('mousedown', () => {
     button.style.transform = 'translateY(1px)';
   });
@@ -411,7 +343,6 @@ export async function injectConfirmationButton(message, root) {
       btn.dataset.saveType
     );
 
-    // Disable button and remove confirmation flag
     btn.disabled = true;
     btn.textContent = 'Applied';
     btn.style.opacity = '0.5';
@@ -420,9 +351,7 @@ export async function injectConfirmationButton(message, root) {
   buttonContainer.appendChild(button);
   messageContent.appendChild(buttonContainer);
 
-  // Scroll chat to show the button
   setTimeout(() => {
     ui.chat?.scrollBottom();
   }, 100);
 }
-

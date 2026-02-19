@@ -1,11 +1,3 @@
-/**
- * Affliction Monitor Indicator - floating, draggable indicator for background affliction monitoring
- * - Shows when tokens have afflictions with onset/pending saves
- * - Hover: shows tooltip with affliction details
- * - Left-click: opens affliction manager
- * - Drag to move; position persists in localStorage
- */
-
 import { MODULE_ID, DURATION_MULTIPLIERS } from '../constants.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
@@ -41,7 +33,6 @@ class AfflictionMonitorIndicator {
     this.#updateBadge();
     this._el.classList.add('pf2e-afflictioner-monitor--visible');
 
-    // Pulse if any afflictions need attention
     if (result.needsAttention) {
       this._el.classList.add('needs-attention');
     } else {
@@ -63,7 +54,6 @@ class AfflictionMonitorIndicator {
 
     if (!canvas.tokens) return { tokens, count: 0, needsAttention: false };
 
-    // Only check selected tokens (or all if none selected)
     const tokensToCheck = canvas.tokens.controlled.length > 0
       ? canvas.tokens.controlled
       : canvas.tokens.placeables;
@@ -75,7 +65,6 @@ class AfflictionMonitorIndicator {
       if (afflictionList.length > 0) {
         totalCount += afflictionList.length;
 
-        // Check if any afflictions need attention
         for (const aff of afflictionList) {
           if (this.#afflictionNeedsAttention(aff)) {
             needsAttention = true;
@@ -97,13 +86,10 @@ class AfflictionMonitorIndicator {
   #afflictionNeedsAttention(affliction) {
     const combat = game.combat;
 
-    // Onset complete but not advanced
     if (affliction.inOnset && affliction.onsetRemaining <= 0) return true;
 
-    // Save due in combat
     if (combat && affliction.nextSaveRound && combat.round >= affliction.nextSaveRound) return true;
 
-    // Save due out of combat (elapsed time >= stage duration)
     if (!combat && !affliction.inOnset) {
       const stage = affliction.stages?.[affliction.currentStage - 1];
       if (stage?.duration) {
@@ -148,7 +134,6 @@ class AfflictionMonitorIndicator {
       <div class="indicator-badge"></div>
     `;
 
-    // Restore position
     try {
       const saved = localStorage.getItem('pf2e-afflictioner-monitor-pos');
       if (saved) {
@@ -158,16 +143,13 @@ class AfflictionMonitorIndicator {
       }
     } catch { }
 
-    // Mouse handlers
     el.addEventListener('mousedown', (ev) => this.#onMouseDown(ev));
     document.addEventListener('mousemove', (ev) => this.#onMouseMove(ev));
     document.addEventListener('mouseup', (ev) => this.#onMouseUp(ev));
 
-    // Hover tooltip
     el.addEventListener('mouseenter', () => this.#showTooltip());
     el.addEventListener('mouseleave', () => this.#scheduleHideTooltip());
 
-    // Click to open manager
     el.addEventListener('click', async (ev) => {
       if (this._drag.moved) return;
       ev.preventDefault();
@@ -231,7 +213,6 @@ class AfflictionMonitorIndicator {
     this._tooltipEl = tip;
     this.#renderTooltipContents();
 
-    // Prevent tooltip from hiding when hovering over it
     tip.addEventListener('mouseenter', () => {
       if (this._hideTooltipTimeout) {
         clearTimeout(this._hideTooltipTimeout);
@@ -274,7 +255,6 @@ class AfflictionMonitorIndicator {
         return `Onset: ${AfflictionParser.formatDuration(a.onsetRemaining)}`;
       }
 
-      // Handle special stage values
       if (a.currentStage === -1 || a.needsInitialSave) {
         return 'Initial Save';
       }
@@ -299,7 +279,6 @@ class AfflictionMonitorIndicator {
     let content = '';
 
     if (hasSelection) {
-      // Flat list when tokens selected
       const rows = [];
       for (const t of tokens) {
         for (const a of t.afflictions) {
@@ -313,7 +292,6 @@ class AfflictionMonitorIndicator {
       }
       content = rows.join('');
     } else {
-      // Group by token when nothing selected
       const groups = tokens.map(t => {
         const afflictions = t.afflictions.map(a => `
           <div class="affliction-item">
@@ -344,7 +322,6 @@ class AfflictionMonitorIndicator {
       </div>
     `;
 
-    // Add click handlers for token headers
     this._tooltipEl.querySelectorAll('.token-header.clickable').forEach(header => {
       header.addEventListener('click', async (ev) => {
         ev.stopPropagation();

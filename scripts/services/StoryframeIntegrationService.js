@@ -1,20 +1,11 @@
-/**
- * Service for integrating with the Storyframe module
- * Handles sending save/counteract requests and processing results
- */
-
 import { MODULE_ID } from '../constants.js';
 
 export class StoryframeIntegrationService {
   constructor() {
-    // Track pending requests: { requestId: { tokenId, afflictionId, saveType/counteractData, timestamp } }
     this.pendingRequests = new Map();
     this.lastProcessedIndex = 0;
   }
 
-  /**
-   * Check if Storyframe integration is available
-   */
   static isAvailable() {
     const enabled = game.settings.get(MODULE_ID, 'integrateWithStoryframe');
     const storyframeActive = game.modules.get('storyframe')?.active;
@@ -23,11 +14,6 @@ export class StoryframeIntegrationService {
     return enabled && storyframeActive && apiAvailable;
   }
 
-  /**
-   * Find participant for actor in storyframe state
-   * @param {Actor} actor
-   * @returns {Object|null} participant or null if not found
-   */
   static findParticipant(actor) {
     if (!game.storyframe?.stateManager) return null;
 
@@ -37,11 +23,6 @@ export class StoryframeIntegrationService {
     return state.participants.find(p => p.actorUuid === actor.uuid);
   }
 
-  /**
-   * Prompt GM to add actor as participant
-   * @param {Actor} actor
-   * @returns {Promise<boolean>} true if added, false if declined
-   */
   static async promptAddParticipant(actor) {
     return new Promise((resolve) => {
       new Dialog({
@@ -79,44 +60,42 @@ export class StoryframeIntegrationService {
     });
   }
 
-  /**
-   * Send save request to storyframe
-   * @param {Token} token
-   * @param {Object} affliction
-   * @param {string} saveType - 'initial' or 'stage'
-   * @returns {Promise<boolean>} true if sent to storyframe, false to fallback
-   */
   static async sendSaveRequest(token, affliction, saveType) {
     if (!this.isAvailable()) return false;
 
     const actor = token.actor;
     let participant = this.findParticipant(actor);
 
-    // Fall back to chat if not a participant
     if (!participant) return false;
 
     const requestId = foundry.utils.randomID();
-    const dc = affliction.dc || game.settings.get(MODULE_ID, 'defaultDC');
+    const dc = affliction.dc;
+
+    if (!dc) {
+      console.warn(`PF2e Afflictioner | No DC found for affliction "${affliction.name}". Cannot send save request to Storyframe.`);
+      ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.NO_DC_FOUND', {
+        itemName: affliction.name
+      }));
+      return false;
+    }
 
     const request = {
       id: requestId,
       participantId: participant.id,
       actorUuid: actor.uuid,
       userId: participant.userId,
-      skillSlug: 'fortitude', // PF2e save name
+      skillSlug: 'fortitude',
       checkType: 'save',
-      dc, // Always pass DC - storyframe handles visibility
+      dc,
       isSecretRoll: false,
       timestamp: Date.now()
     };
 
-    // Store pending request context
     if (!game.afflictioner?.storyframeService) {
       console.error(`${MODULE_ID} | Storyframe service not initialized`);
       return false;
     }
 
-    // Check if user is online
     const user = game.users.get(participant.userId);
     if (!user || !user.active) {
       console.warn(`${MODULE_ID} | User ${participant.userId} is not connected, falling back to chat`);
@@ -131,7 +110,6 @@ export class StoryframeIntegrationService {
       timestamp: Date.now()
     });
 
-    // Send request
     try {
       await game.storyframe.socketManager.requestAddPendingRoll(request);
       await game.storyframe.socketManager.triggerSkillCheckOnPlayer(participant.userId, request);
@@ -145,26 +123,23 @@ export class StoryframeIntegrationService {
     }
   }
 
-  /**
-   * Send counteract request to storyframe
-   * @param {Token} token - Token with affliction
-   * @param {Object} affliction - Affliction data
-   * @param {Actor} casterActor - Actor performing counteract
-   * @param {string} skillSlug - Skill slug (e.g., 'med', 'rel', 'occ')
-   * @param {number} counteractRank
-   * @param {number} afflictionRank
-   * @returns {Promise<boolean>} true if sent to storyframe, false to fallback
-   */
   static async sendCounteractRequest(token, affliction, casterActor, skillSlug, counteractRank, afflictionRank) {
     if (!this.isAvailable()) return false;
 
     let participant = this.findParticipant(casterActor);
 
-    // Fall back to chat if not a participant
     if (!participant) return false;
 
     const requestId = foundry.utils.randomID();
-    const dc = affliction.dc || game.settings.get(MODULE_ID, 'defaultDC');
+    const dc = affliction.dc;
+
+    if (!dc) {
+      console.warn(`PF2e Afflictioner | No DC found for affliction "${affliction.name}". Cannot send counteract request to Storyframe.`);
+      ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.NO_DC_FOUND', {
+        itemName: affliction.name
+      }));
+      return false;
+    }
 
     const request = {
       id: requestId,
@@ -173,18 +148,16 @@ export class StoryframeIntegrationService {
       userId: participant.userId,
       skillSlug,
       checkType: 'skill',
-      dc, // Always pass DC - storyframe handles visibility
+      dc,
       isSecretRoll: false,
       timestamp: Date.now()
     };
 
-    // Store pending request context
     if (!game.afflictioner?.storyframeService) {
       console.error(`${MODULE_ID} | Storyframe service not initialized`);
       return false;
     }
 
-    // Check if user is online
     const user = game.users.get(participant.userId);
     if (!user || !user.active) {
       console.warn(`${MODULE_ID} | User ${participant.userId} is not connected, falling back to chat`);
@@ -204,7 +177,6 @@ export class StoryframeIntegrationService {
       timestamp: Date.now()
     });
 
-    // Send request
     try {
       await game.storyframe.socketManager.requestAddPendingRoll(request);
       await game.storyframe.socketManager.triggerSkillCheckOnPlayer(participant.userId, request);
@@ -219,9 +191,6 @@ export class StoryframeIntegrationService {
     }
   }
 
-  /**
-   * Get skill name from slug
-   */
   static getSkillName(slug) {
     const skillMap = {
       'med': 'Medicine',
@@ -245,10 +214,6 @@ export class StoryframeIntegrationService {
     return skillMap[slug] || slug.toUpperCase();
   }
 
-  /**
-   * Poll storyframe state for new results
-   * Called on interval by main.js
-   */
   async pollResults() {
     if (!StoryframeIntegrationService.isAvailable()) return;
     if (this.pendingRequests.size === 0) return;
@@ -256,7 +221,6 @@ export class StoryframeIntegrationService {
     const state = game.storyframe.stateManager.getState();
     if (!state?.rollHistory) return;
 
-    // Check all roll history for matches
     for (const result of state.rollHistory) {
       const requestId = result.id || result.requestId;
 
@@ -270,7 +234,6 @@ export class StoryframeIntegrationService {
       }
     }
 
-    // Clean up stale requests (> 5 minutes old)
     const now = Date.now();
     for (const [requestId, context] of this.pendingRequests.entries()) {
       if (now - context.timestamp > 300000) {
@@ -280,11 +243,6 @@ export class StoryframeIntegrationService {
     }
   }
 
-  /**
-   * Handle roll result from storyframe
-   * @param {Object} result - Roll result from storyframe
-   * @param {Object} context - Pending request context
-   */
   async handleRollResult(result, context) {
     const token = canvas.tokens.get(context.tokenId);
     if (!token) {
@@ -299,7 +257,6 @@ export class StoryframeIntegrationService {
       return;
     }
 
-    // Route to appropriate handler
     if (context.saveType === 'initial') {
       const { AfflictionService } = await import('./AfflictionService.js');
       await AfflictionService.handleInitialSave(token, affliction, result.total, context.dc);
@@ -310,7 +267,6 @@ export class StoryframeIntegrationService {
       const { AfflictionService } = await import('./AfflictionService.js');
       const { CounteractService } = await import('./CounteractService.js');
 
-      // Calculate degree of success from roll total and DC
       const degree = AfflictionService.calculateDegreeOfSuccess(result.total, context.dc);
 
       await CounteractService.handleCounteractResult(

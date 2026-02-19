@@ -1,19 +1,8 @@
-/**
- * Counteract Button Handlers - Counteract spells and affliction selection
- *
- * TODO: Extract full implementation from registration.js lines 686-748 and 1031+
- * For now, this is a placeholder - the actual implementation is still in registration.js
- */
-
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
 import { CounteractService } from '../services/CounteractService.js';
 
-/**
- * Register counteract button handlers
- */
 export function registerCounteractButtonHandlers(root) {
-  // Handle apply counteract consequences buttons (GM confirmation)
   const applyButtons = root.querySelectorAll('.affliction-apply-counteract');
   applyButtons.forEach(button => {
     button.addEventListener('click', async (event) => {
@@ -43,7 +32,6 @@ export function registerCounteractButtonHandlers(root) {
     });
   });
 
-  // Handle roll counteract buttons
   const rollCounteractButtons = root.querySelectorAll('.affliction-roll-counteract');
   rollCounteractButtons.forEach(button => {
     button.addEventListener('click', async (event) => {
@@ -67,11 +55,9 @@ export function registerCounteractButtonHandlers(root) {
         return;
       }
 
-      // Get caster (whoever has the spell or is doing the counteract)
       const caster = canvas.tokens.controlled[0] || token;
       const casterActor = caster.actor;
 
-      // Try storyframe integration first
       const { StoryframeIntegrationService } = await import('../services/StoryframeIntegrationService.js');
       const sentToStoryframe = await StoryframeIntegrationService.sendCounteractRequest(
         token,
@@ -83,12 +69,10 @@ export function registerCounteractButtonHandlers(root) {
       );
 
       if (sentToStoryframe) {
-        // Disable button - result will be handled via polling
         btn.disabled = true;
         return;
       }
 
-      // Capture roll message ID before rolling
       let rollMessageId = null;
       Hooks.once('createChatMessage', (message) => {
         if (message.speaker?.actor === casterActor.id || message.actor?.id === casterActor.id) {
@@ -96,14 +80,10 @@ export function registerCounteractButtonHandlers(root) {
         }
       });
 
-      // Fallback: Roll via chat button
-      // For spellcasting counteract: use spellcasting entry statistic (attr mod + proficiency)
-      // For skill counteract: use the skill directly
       let roll;
       if (skill.startsWith('spellcasting:')) {
         const identifier = skill.split(':')[1];
         const entries = casterActor.spellcasting?.contents || [];
-        // Try by entry ID first, fall back to tradition match (backward compat with existing messages)
         const entry = entries.find(e => e.id === identifier) || entries.find(e => e.tradition === identifier);
         const tradition = entry?.tradition || identifier;
         if (entry?.statistic?.check) {
@@ -125,13 +105,11 @@ export function registerCounteractButtonHandlers(root) {
         roll = await casterActor.skills[skill].roll({ dc: { value: dc } });
       }
 
-      // Wait for hook to fire
       await new Promise(resolve => setTimeout(resolve, 100));
       if (!rollMessageId) {
         rollMessageId = game.messages.contents[game.messages.contents.length - 1]?.id;
       }
 
-      // Compute degree as string
       const { DEGREE_OF_SUCCESS, MODULE_ID } = await import('../constants.js');
       const degreeConstant = AfflictionService.calculateDegreeOfSuccess(roll.total, dc);
       const degreeMap = {
@@ -142,7 +120,6 @@ export function registerCounteractButtonHandlers(root) {
       };
       const degree = degreeMap[degreeConstant] ?? 'criticalFailure';
 
-      // Check setting - if confirmation not required, apply immediately
       const requireConfirmation = game.settings.get(MODULE_ID, 'requireSaveConfirmation');
       if (!requireConfirmation) {
         if (game.user.isGM) {
@@ -155,9 +132,6 @@ export function registerCounteractButtonHandlers(root) {
         return;
       }
 
-      // Flag the roll message so injectCounteractConfirmButton can inject the Apply button
-      // Note: degree is NOT stored here - it's recomputed from message.rolls at render time
-      // so that rerolls (hero points, etc.) automatically update the button
       const rollMessage = game.messages.get(rollMessageId);
       if (rollMessage) {
         await rollMessage.update({
@@ -174,15 +148,11 @@ export function registerCounteractButtonHandlers(root) {
         });
       }
 
-      // Disable button after use
       btn.disabled = true;
     });
   });
 }
 
-/**
- * Inject "Apply Counteract Consequences" button onto the roll message (like save confirmation)
- */
 export async function injectCounteractConfirmButton(message, root) {
   if (!game.user.isGM) return;
   if (!message.flags?.['pf2e-afflictioner']?.needsCounteractConfirmation) return;
@@ -190,7 +160,6 @@ export async function injectCounteractConfirmButton(message, root) {
   const flags = message.flags['pf2e-afflictioner'];
   const { tokenId, afflictionId, counteractRank, afflictionRank, dc } = flags;
 
-  // Compute degree from current roll (supports rerolls - hero points etc.)
   const roll = message.rolls?.[0];
   if (!roll) return;
   const { AfflictionService } = await import('../services/AfflictionService.js');
@@ -223,7 +192,6 @@ export async function injectCounteractConfirmButton(message, root) {
 
   const color = degreeColors[degree];
 
-  // Remove existing container so it refreshes with updated degree after reroll
   root.querySelector('.pf2e-afflictioner-counteract-confirm')?.remove();
 
   const container = document.createElement('div');
@@ -244,7 +212,6 @@ export async function injectCounteractConfirmButton(message, root) {
   applyBtn.dataset.afflictionRank = afflictionRank;
   applyBtn.dataset.degree = degree;
 
-  // Attach handler directly since this button is injected after renderChatMessage fires
   applyBtn.addEventListener('click', async () => {
     const token = canvas.tokens.get(tokenId);
     if (!token) { ui.notifications.warn('Token not found'); return; }
@@ -274,22 +241,15 @@ export async function injectCounteractConfirmButton(message, root) {
   }
 }
 
-/**
- * Add affliction selection buttons to counteract spell messages
- */
 export async function addCounteractAfflictionSelection(message, htmlElement) {
-  // Only for GMs
   if (!game.user.isGM) return;
   if (!message) return;
 
-  // Check if already initialized
   if (htmlElement.dataset.counteractSelectionEnabled === 'true') return;
 
-  // Check if this is a spell message (check origin type)
   const originType = message.flags?.pf2e?.origin?.type;
   if (originType !== 'spell') return;
 
-  // Get item from message data
   const itemUuid = message.flags?.pf2e?.origin?.uuid;
   if (!itemUuid) return;
 
@@ -302,7 +262,6 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
   if (!item) return;
 
-  // Check if spell has healing trait and is counteract spell
   const traits = item.system?.traits?.value || [];
   const isCleanse = item.name.toLowerCase().includes('cleanse affliction');
   const isCounteractSpell = traits.includes('healing') &&
@@ -310,20 +269,16 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
   if (!isCounteractSpell) return;
 
-  // Get the spell rank (check castRank first, then heightened level, then base level)
   const spellRank = message.flags?.pf2e?.origin?.castRank ||
     item.system?.location?.heightenedLevel ||
     item.system?.level?.value || 1;
 
-  // Cleanse Affliction at rank 2 (base) doesn't counteract, just reduces stage
   const isBaseCleanse = isCleanse && spellRank === 2;
 
-  // Check if canvas is ready
   if (!canvas?.tokens) {
     return;
   }
 
-  // Get all tokens with afflictions (no target in message for willing creature spells)
   const tokensWithAfflictions = canvas.tokens.placeables.filter(t => {
     const afflictions = AfflictionStore.getAfflictions(t);
     return Object.keys(afflictions).length > 0;
@@ -331,14 +286,11 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
   if (tokensWithAfflictions.length === 0) return;
 
-  // Mark as initialized
   htmlElement.dataset.counteractSelectionEnabled = 'true';
 
-  // Find where to add the buttons (try both selectors)
   const messageContent = htmlElement.querySelector('.message-content') || htmlElement.querySelector('.card-content');
   if (!messageContent) return;
 
-  // Create selection UI
   const selectionDiv = document.createElement('div');
   selectionDiv.style.cssText = 'margin-top: 10px; padding: 10px; background: rgba(74, 124, 42, 0.15); border-left: 3px solid #4a7c2a; border-radius: 4px;';
 
@@ -351,35 +303,28 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
   }
   selectionDiv.appendChild(header);
 
-  // Track if any buttons were added
   let buttonsAdded = 0;
 
-  // Add button for each token with afflictions
   for (const token of tokensWithAfflictions) {
     const afflictions = AfflictionStore.getAfflictions(token);
     const allAfflictions = Object.values(afflictions);
 
     for (const affliction of allAfflictions) {
-      // For base Cleanse Affliction: Only show afflictions at stage 2+
       if (isBaseCleanse && affliction.currentStage < 2) {
         continue;
       }
 
-      // Check if already used (stored in affliction flags)
       if (isBaseCleanse && affliction.cleansedOnce) {
-        continue; // Can only be used once per affliction
+        continue;
       }
 
-      // For heightened Cleanse: Filter by affliction type
       if (!isBaseCleanse && isCleanse) {
         const afflictionType = affliction.type?.toLowerCase() || '';
         if (spellRank === 3) {
-          // Rank 3: Only disease or poison
           if (afflictionType !== 'disease' && afflictionType !== 'poison') {
             continue;
           }
         } else if (spellRank >= 4) {
-          // Rank 4+: curse, disease, or poison
           if (afflictionType !== 'curse' && afflictionType !== 'disease' && afflictionType !== 'poison') {
             continue;
           }
@@ -393,9 +338,7 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
       button.addEventListener('click', async () => {
         try {
-          // Base Cleanse Affliction: Directly apply stage reduction
           if (isBaseCleanse) {
-            // Confirm with GM
             const confirmed = await foundry.applications.api.DialogV2.confirm({
               window: { title: 'Cleanse Affliction' },
               content: `
@@ -412,28 +355,21 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
             if (!confirmed) return;
 
-            // Mark as cleansed once
             await AfflictionStore.updateAffliction(token, affliction.id, { cleansedOnce: true });
 
-            // Reduce stage by 1
             await CounteractService.reduceAfflictionStage(token, affliction);
 
             ui.notifications.info(`${affliction.name} stage reduced by 1 for ${token.name}`);
 
-            // Disable button after use
             button.disabled = true;
             button.style.opacity = '0.5';
             button.innerHTML = `${token.name}: ${affliction.name} - Applied`;
             return;
           }
 
-          // Heightened Cleanse or other counteract spells: Normal counteract flow
-          // Get caster actor from message
           const casterId = message.flags?.pf2e?.context?.actor || message.speaker?.actor;
           const casterActor = casterId ? game.actors.get(casterId) : null;
 
-          // Create counteract prompt directly (no intermediate dialog)
-          // Pass spellRank as the default counteract rank (per PF2e rules, spell rank = counteract rank)
           const spellEntryId = item.spellcasting?.id || item.system?.location?.value || null;
           await CounteractService.promptCounteract(token, affliction, casterActor, spellRank, spellEntryId);
         } catch (error) {
@@ -447,7 +383,6 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
     }
   }
 
-  // Only append if at least one button was added
   if (buttonsAdded > 0) {
     messageContent.appendChild(selectionDiv);
   }

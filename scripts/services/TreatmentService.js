@@ -1,15 +1,8 @@
-/**
- * Treatment Service - Handle Treat Poison/Disease action
- */
-
 import { AfflictionService } from './AfflictionService.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { DEGREE_OF_SUCCESS } from '../constants.js';
 
 export class TreatmentService {
-  /**
-   * Prompt for Treat Poison/Disease roll
-   */
   static async promptTreatment(token, affliction) {
     const actor = token.actor;
 
@@ -18,7 +11,6 @@ export class TreatmentService {
       return;
     }
 
-    // Build chat message content
     const content = `
       <div class="pf2e-afflictioner-treatment-request">
         <h3><i class="fas fa-briefcase-medical"></i> Treatment: ${affliction.type === 'poison' ? 'Poison' : 'Disease'}</h3>
@@ -31,7 +23,6 @@ export class TreatmentService {
       </div>
     `;
 
-    // Create chat message
     await ChatMessage.create({
       content: content,
       speaker: ChatMessage.getSpeaker({ token: token }),
@@ -39,9 +30,6 @@ export class TreatmentService {
     });
   }
 
-  /**
-   * Apply treatment result - creates Rule Element effect for bonus
-   */
   static async handleTreatmentResult(token, affliction, total, dc) {
     const degree = AfflictionService.calculateDegreeOfSuccess(total, dc);
     const actor = token.actor;
@@ -62,7 +50,6 @@ export class TreatmentService {
         break;
     }
 
-    // Create effect with rule element for treatment bonus
     if (bonus !== 0) {
       const effectUuid = await this.createTreatmentEffect(actor, affliction, bonus, degree);
 
@@ -95,12 +82,8 @@ export class TreatmentService {
     }
   }
 
-  /**
-   * Create treatment effect with rule element
-   */
   static async createTreatmentEffect(actor, affliction, bonus, degree) {
     try {
-      // Format degree name for display
       const degreeNames = {
         [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'Critical Success',
         [DEGREE_OF_SUCCESS.SUCCESS]: 'Success',

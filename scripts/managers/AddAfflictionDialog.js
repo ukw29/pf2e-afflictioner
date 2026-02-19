@@ -1,7 +1,3 @@
-/**
- * Add Affliction Dialog - Manual entry or item selection
- */
-
 import { AfflictionParser } from '../services/AfflictionParser.js';
 
 export class AddAfflictionDialog extends foundry.applications.api.HandlebarsApplicationMixin(
@@ -43,7 +39,6 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
   }
 
   async _prepareContext(_options) {
-    // Get all items with poison/disease/curse traits from actor
     const afflictionItems = [];
     if (this.token?.actor) {
       for (const item of this.token.actor.items) {
@@ -60,7 +55,6 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
       }
     }
 
-    // Also get compendium items
     const compendiumItems = await this.getCompendiumAfflictions();
 
     return {
@@ -78,7 +72,6 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
     const afflictions = [];
 
     try {
-      // Search PF2e compendiums for afflictions
       const packs = game.packs.filter(p =>
         p.metadata.type === 'Item' &&
         p.metadata.system === 'pf2e'
@@ -102,32 +95,28 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
       console.error('Error loading compendium afflictions:', error);
     }
 
-    return afflictions.slice(0, 20); // Limit to 20 for performance
+    return afflictions.slice(0, 20);
   }
 
   static async addFromItem(_event, button) {
     const itemUuid = button.dataset.itemUuid;
 
     try {
-      // Load item
       const item = await fromUuid(itemUuid);
       if (!item) {
         ui.notifications.error('Could not load item');
         return;
       }
 
-      // Parse affliction
       const afflictionData = AfflictionParser.parseFromItem(item);
       if (!afflictionData) {
         ui.notifications.error('Could not parse affliction from item');
         return;
       }
 
-      // Prompt for initial save - this will handle the full affliction flow
       const { AfflictionService } = await import('../services/AfflictionService.js');
       await AfflictionService.promptInitialSave(this.token, afflictionData);
 
-      // Close dialog
       this.close();
     } catch (error) {
       console.error('Error adding affliction:', error);
@@ -136,7 +125,6 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
   }
 
   static async addManual(_event, _button) {
-    // Create a basic affliction template and prompt for details
     const template = `
       <form>
         <div class="form-group">
@@ -173,7 +161,6 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
 
     if (!result) return;
 
-    // Create basic affliction data
     const stageCount = parseInt(result.stages) || 3;
     const stages = [];
     for (let i = 1; i <= stageCount; i++) {
@@ -201,29 +188,23 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
       multipleExposure: null
     };
 
-    // Prompt for initial save
     const { AfflictionService } = await import('../services/AfflictionService.js');
     await AfflictionService.promptInitialSave(this.token, afflictionData);
 
-    // Close dialog
     this.close();
 
-    // Notify user they can edit the affliction
     ui.notifications.info('Affliction added. Use the edit button to customize stages and effects.');
   }
 
   static async formHandler(_event, _form, _formData) {
-    // Handle form submission if needed
   }
 
-  // Enable drag and drop
   _onRender(context, options) {
     super._onRender(context, options);
 
     const element = this.element;
     if (!element) return;
 
-    // Make dialog a drop target
     element.addEventListener('drop', this._onDrop.bind(this));
     element.addEventListener('dragover', this._onDragOver.bind(this));
   }
@@ -243,28 +224,23 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
       return;
     }
 
-    // Check if it's an item
     if (data.type !== 'Item') return;
 
-    // Load item
     const item = await fromUuid(data.uuid);
     if (!item) return;
 
-    // Check if it has poison/disease/curse trait
     const traits = item.system?.traits?.value || [];
     if (!traits.includes('poison') && !traits.includes('disease') && !traits.includes('curse')) {
       ui.notifications.warn('Item must have poison, disease, or curse trait');
       return;
     }
 
-    // Parse affliction
     const afflictionData = AfflictionParser.parseFromItem(item);
     if (!afflictionData) {
       ui.notifications.error('Could not parse affliction from item');
       return;
     }
 
-    // Prompt for initial save - this will handle the full affliction flow
     const { AfflictionService } = await import('../services/AfflictionService.js');
     await AfflictionService.promptInitialSave(this.token, afflictionData);
 
