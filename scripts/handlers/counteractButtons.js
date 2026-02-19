@@ -58,21 +58,6 @@ export function registerCounteractButtonHandlers(root) {
       const caster = canvas.tokens.controlled[0] || token;
       const casterActor = caster.actor;
 
-      const { StoryframeIntegrationService } = await import('../services/StoryframeIntegrationService.js');
-      const sentToStoryframe = await StoryframeIntegrationService.sendCounteractRequest(
-        token,
-        affliction,
-        casterActor,
-        skill,
-        counteractRank,
-        afflictionRank
-      );
-
-      if (sentToStoryframe) {
-        btn.disabled = true;
-        return;
-      }
-
       let rollMessageId = null;
       Hooks.once('createChatMessage', (message) => {
         if (message.speaker?.actor === casterActor.id || message.actor?.id === casterActor.id) {

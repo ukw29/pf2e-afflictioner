@@ -143,29 +143,7 @@ export class CounteractService {
 
     const showDCToPlayers = game.pf2e?.settings?.metagame?.dcs ?? true;
 
-    let sentToStoryframe = false;
-    if (casterActor) {
-      const { StoryframeIntegrationService } = await import('./StoryframeIntegrationService.js');
-
-      const skillSlugMap = {
-        'acrobatics': 'acr', 'arcana': 'arc', 'athletics': 'ath', 'crafting': 'cra',
-        'deception': 'dec', 'diplomacy': 'dip', 'intimidation': 'itm', 'medicine': 'med',
-        'nature': 'nat', 'occultism': 'occ', 'performance': 'prf', 'religion': 'rel',
-        'society': 'soc', 'stealth': 'ste', 'survival': 'sur', 'thievery': 'thi'
-      };
-      const skillSlug = skillSlugMap[skill] || 'med';
-
-      sentToStoryframe = await StoryframeIntegrationService.sendCounteractRequest(
-        token,
-        affliction,
-        casterActor,
-        skillSlug,
-        counteractRank,
-        afflictionRank
-      );
-    }
-
-    if (!sentToStoryframe) {
+    {
       const playerContent = `
         <div class="pf2e-afflictioner-counteract-request">
           <h3><i class="fas fa-shield-alt"></i> Counteract: ${affliction.name}</h3>

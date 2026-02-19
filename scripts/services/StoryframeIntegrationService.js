@@ -72,89 +72,6 @@ export class StoryframeIntegrationService {
     }
   }
 
-  static async sendCounteractRequest(token, affliction, casterActor, skillSlug, counteractRank, afflictionRank) {
-    if (!this.isAvailable()) return false;
-
-    const user = this.findOwnerUser(casterActor);
-    if (!user) return false;
-
-    const dc = affliction.dc;
-    if (!dc) {
-      console.warn(`PF2e Afflictioner | No DC found for affliction "${affliction.name}". Cannot send counteract request to Storyframe.`);
-      ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.NO_DC_FOUND', {
-        itemName: affliction.name
-      }));
-      return false;
-    }
-
-    if (!game.afflictioner?.storyframeService) {
-      console.error(`${MODULE_ID} | Storyframe service not initialized`);
-      return false;
-    }
-
-    const requestId = foundry.utils.randomID();
-
-    const request = {
-      id: requestId,
-      actorUuid: casterActor.uuid,
-      userId: user.id,
-      skillSlug,
-      checkType: 'skill',
-      dc,
-      isSecretRoll: false,
-      timestamp: Date.now()
-    };
-
-    game.afflictioner.storyframeService.pendingRequests.set(requestId, {
-      tokenId: token.id,
-      afflictionId: affliction.id,
-      counteractData: {
-        casterActorUuid: casterActor.uuid,
-        skillSlug,
-        counteractRank,
-        afflictionRank
-      },
-      dc,
-      timestamp: Date.now()
-    });
-
-    try {
-      await game.storyframe.socketManager.requestAddPendingRoll(request);
-      await game.storyframe.socketManager.triggerSkillCheckOnPlayer(user.id, request);
-
-      const skillName = this.getSkillName(skillSlug);
-      ui.notifications.info(`${skillName} check requested from ${casterActor.name} via Storyframe`);
-      return true;
-    } catch (error) {
-      console.warn(`${MODULE_ID} | Failed to send to storyframe:`, error);
-      game.afflictioner.storyframeService.pendingRequests.delete(requestId);
-      return false;
-    }
-  }
-
-  static getSkillName(slug) {
-    const skillMap = {
-      'med': 'Medicine',
-      'rel': 'Religion',
-      'nat': 'Nature',
-      'arc': 'Arcana',
-      'occ': 'Occultism',
-      'cra': 'Crafting',
-      'dip': 'Diplomacy',
-      'itm': 'Intimidation',
-      'dec': 'Deception',
-      'prf': 'Performance',
-      'acr': 'Acrobatics',
-      'ath': 'Athletics',
-      'ste': 'Stealth',
-      'thi': 'Thievery',
-      'sur': 'Survival',
-      'soc': 'Society',
-      'per': 'Perception'
-    };
-    return skillMap[slug] || slug.toUpperCase();
-  }
-
   async pollResults() {
     if (!StoryframeIntegrationService.isAvailable()) return;
     if (this.pendingRequests.size === 0) return;
@@ -219,19 +136,6 @@ export class StoryframeIntegrationService {
     } else if (context.saveType === 'stage') {
       const { SocketService } = await import('./SocketService.js');
       await SocketService.requestHandleSave(context.tokenId, context.afflictionId, rollMessageId, context.dc);
-    } else if (context.counteractData) {
-      const { AfflictionService } = await import('./AfflictionService.js');
-      const { CounteractService } = await import('./CounteractService.js');
-
-      const degree = AfflictionService.calculateDegreeOfSuccess(result.total, context.dc);
-
-      await CounteractService.handleCounteractResult(
-        token,
-        affliction,
-        context.counteractData.counteractRank,
-        context.counteractData.afflictionRank,
-        degree
-      );
     }
   }
 }
