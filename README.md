@@ -193,7 +193,3 @@ api.refreshAllIndicators();                        // Refresh all visual indicat
 ### Optional
 
 - **Storyframe**: For integrated roll handling
-
-## Credits
-
-Based on architecture patterns from [pf2e-visioner](https://github.com/reonZ/pf2e-visioner).
