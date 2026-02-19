@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0-alpha.10] - 2026-02-19
+
+### Changed
+
+- **NPC Saves are Blind GM Rolls**: NPC affliction saves now automatically roll as blind GM rolls
+  - Both initial saves and stage saves use `CONST.DICE_ROLL_MODES.BLIND` for NPC actors
+  - Players never see NPC save rolls or results in chat
+
+- **NPC Save Messages Whispered to GM**: Save request messages for NPCs now whispered to GM instead of posted publicly
+  - Both initial save and stage save prompts whispered when actor has no player owner
+  - Prevents players from seeing NPC affliction save prompts
+
+- **Apply to Target / Selected Token**: Button now prioritizes user targets over selected tokens
+  - Checks `game.user.targets` first, falls back to `canvas.tokens.controlled`
+  - Button label updated to "Apply to Target / Selected Token"
+
+### Fixed
+
+- **Spell DC Parsing**: Afflictions from spells now extract DC from the chat message save button when the item has no DC
+  - Spells have dynamic DCs not stored on the item — now parsed from `data-dc` in message content
+  - Prevents afflictions from falling back to the default DC setting
+
+- **Storyframe Participant Prompt Removed**: Storyframe integration now silently falls back to chat buttons when actor is not a participant
+  - Previously prompted GM to add actor as participant, blocking the flow
+
 ## [1.0.0-alpha.9] - 2026-02-18
 
 ### Fixed
