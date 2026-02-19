@@ -264,10 +264,18 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
     return;
   }
 
-  const tokensWithAfflictions = canvas.tokens.placeables.filter(t => {
+  const targetedTokens = Array.from(game.user.targets).map(t => t);
+  const targetedWithAfflictions = targetedTokens.filter(t => {
     const afflictions = AfflictionStore.getAfflictions(t);
     return Object.keys(afflictions).length > 0;
   });
+
+  const tokensWithAfflictions = targetedWithAfflictions.length > 0
+    ? targetedWithAfflictions
+    : canvas.tokens.placeables.filter(t => {
+        const afflictions = AfflictionStore.getAfflictions(t);
+        return Object.keys(afflictions).length > 0;
+      });
 
   if (tokensWithAfflictions.length === 0) return;
 
