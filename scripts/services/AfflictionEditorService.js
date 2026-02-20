@@ -20,6 +20,7 @@ export class AfflictionEditorService {
     if (editedDef.saveType !== undefined) merged.saveType = editedDef.saveType;
     if (editedDef.onset !== undefined) merged.onset = editedDef.onset;
     if (editedDef.stages !== undefined) merged.stages = editedDef.stages;
+    if (editedDef.isVirulent !== undefined) merged.isVirulent = editedDef.isVirulent;
 
     return merged;
   }
@@ -141,6 +142,7 @@ export class AfflictionEditorService {
       type: afflictionData.type || 'affliction',
       dc: afflictionData.dc || 15,
       saveType: afflictionData.saveType || 'fortitude',
+      isVirulent: afflictionData.isVirulent || false,
       onset: afflictionData.onset || null,
       maxDuration: afflictionData.maxDuration || null,
       stages: afflictionData.stages || [],

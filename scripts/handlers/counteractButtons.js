@@ -15,10 +15,10 @@ export function registerCounteractButtonHandlers(root) {
       const degree = btn.dataset.degree;
 
       const token = canvas.tokens.get(tokenId);
-      if (!token) { ui.notifications.warn('Token not found'); return; }
+      if (!token) { ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND')); return; }
 
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
-      if (!affliction) { ui.notifications.warn('Affliction not found'); return; }
+      if (!affliction) { ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND')); return; }
 
       if (game.user.isGM) {
         await CounteractService.handleCounteractResult(token, affliction, counteractRank, afflictionRank, degree);
@@ -28,7 +28,7 @@ export function registerCounteractButtonHandlers(root) {
       }
 
       btn.disabled = true;
-      btn.textContent = '✓ Applied';
+      btn.textContent = `✓ ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLIED')}`;
       btn.style.opacity = '0.5';
     });
   });
@@ -46,13 +46,13 @@ export function registerCounteractButtonHandlers(root) {
 
       const token = canvas.tokens.get(tokenId);
       if (!token) {
-        ui.notifications.warn('Token not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
         return;
       }
 
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
       if (!affliction) {
-        ui.notifications.warn('Affliction not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND'));
         return;
       }
 
@@ -78,14 +78,14 @@ export function registerCounteractButtonHandlers(root) {
           const fallback = { arcane: 'arcana', divine: 'religion', occult: 'occultism', primal: 'nature' };
           const fallbackSkill = fallback[tradition] || 'arcana';
           if (!casterActor.skills?.[fallbackSkill]) {
-            ui.notifications.warn(`No ${tradition} spellcasting or ${fallbackSkill} skill found. Select the caster token first.`);
+            ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.ERRORS.NO_SPELLCASTING_OR_SKILL', { tradition, skill: fallbackSkill }));
             return;
           }
           roll = await casterActor.skills[fallbackSkill].roll({ dc: { value: dc } });
         }
       } else {
         if (!casterActor.skills?.[skill]) {
-          ui.notifications.warn(`No ${skill} skill found. Select the caster token first.`);
+          ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.ERRORS.NO_SKILL_FOUND', { skill }));
           return;
         }
         roll = await casterActor.skills[skill].roll({ dc: { value: dc } });
@@ -169,11 +169,11 @@ export async function injectCounteractConfirmButton(message, root) {
   const wouldSucceed = (afflictionRank - counteractRank) <= maxRankDiff;
   let rankExplanation;
   if (degree === DEGREE_OF_SUCCESS.CRITICAL_FAILURE) {
-    rankExplanation = `Cannot counteract anything.`;
+    rankExplanation = game.i18n.localize('PF2E_AFFLICTIONER.NOTIFICATIONS.CANNOT_COUNTERACT');
   } else if (wouldSucceed) {
-    rankExplanation = `Can counteract up to rank ${maxCounterableRank} — affliction rank ${afflictionRank} is within range.`;
+    rankExplanation = game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.CAN_COUNTERACT_RANGE', { maxRank: maxCounterableRank, afflictionRank });
   } else {
-    rankExplanation = `Can counteract up to rank ${maxCounterableRank}, but affliction is rank ${afflictionRank}.`;
+    rankExplanation = game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.CANNOT_COUNTERACT_RANK', { maxRank: maxCounterableRank, afflictionRank });
   }
 
   const color = degreeColors[degree];
@@ -191,7 +191,7 @@ export async function injectCounteractConfirmButton(message, root) {
   const applyBtn = document.createElement('button');
   applyBtn.className = 'pf2e-afflictioner-btn affliction-apply-counteract';
   applyBtn.style.cssText = `width:100%; background:${color}; border:none; color:white; padding:6px; border-radius:4px; cursor:pointer;`;
-  applyBtn.textContent = 'Apply Counteract Consequences';
+  applyBtn.textContent = game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_COUNTERACT');
   applyBtn.dataset.tokenId = tokenId;
   applyBtn.dataset.afflictionId = afflictionId;
   applyBtn.dataset.counteractRank = counteractRank;
@@ -200,9 +200,9 @@ export async function injectCounteractConfirmButton(message, root) {
 
   applyBtn.addEventListener('click', async () => {
     const token = canvas.tokens.get(tokenId);
-    if (!token) { ui.notifications.warn('Token not found'); return; }
+    if (!token) { ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND')); return; }
     const affliction = AfflictionStore.getAffliction(token, afflictionId);
-    if (!affliction) { ui.notifications.warn('Affliction not found'); return; }
+    if (!affliction) { ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND')); return; }
 
     if (game.user.isGM) {
       await CounteractService.handleCounteractResult(token, affliction, counteractRank, afflictionRank, degree);
@@ -211,7 +211,7 @@ export async function injectCounteractConfirmButton(message, root) {
       await SocketService.requestHandleCounteract(tokenId, afflictionId, counteractRank, afflictionRank, degree);
     }
     applyBtn.disabled = true;
-    applyBtn.textContent = '✓ Applied';
+    applyBtn.textContent = `✓ ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLIED')}`;
     applyBtn.style.opacity = '0.5';
   });
 
@@ -291,9 +291,9 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
   const header = document.createElement('div');
   header.style.cssText = 'font-weight: bold; color: #4a7c2a; margin-bottom: 8px;';
   if (isBaseCleanse) {
-    header.innerHTML = `<i class="fas fa-shield-alt"></i> Cleanse Affliction - Reduce Stage:`;
+    header.innerHTML = `<i class="fas fa-shield-alt"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.COUNTERACT_CLEANSE')}`;
   } else {
-    header.innerHTML = `<i class="fas fa-shield-alt"></i> Counteract Affliction (Rank ${spellRank}):`;
+    header.innerHTML = `<i class="fas fa-shield-alt"></i> ${game.i18n.format('PF2E_AFFLICTIONER.BUTTONS.COUNTERACT_RANK', { rank: spellRank })}`;
   }
   selectionDiv.appendChild(header);
 
@@ -329,14 +329,14 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
       const button = document.createElement('button');
       button.style.cssText = 'width: 100%; padding: 6px; margin: 4px 0; background: #4a7c2a; border: 1px solid #5a8c3a; color: white; border-radius: 4px; cursor: pointer;';
-      const stageDisplay = affliction.currentStage === -1 ? 'Initial Save' : `Stage ${affliction.currentStage}`;
+      const stageDisplay = affliction.currentStage === -1 ? game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.INITIAL_SAVE') : `${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.STAGE')} ${affliction.currentStage}`;
       button.innerHTML = `${token.name}: ${affliction.name} (${affliction.type}, ${stageDisplay})`;
 
       button.addEventListener('click', async () => {
         try {
           if (isBaseCleanse) {
             const confirmed = await foundry.applications.api.DialogV2.confirm({
-              window: { title: 'Cleanse Affliction' },
+              window: { title: game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.CLEANSE_TITLE') },
               content: `
                 <div style="padding: 10px; background: rgba(74, 124, 42, 0.1); border-left: 3px solid #4a7c2a; border-radius: 4px;">
                   <p style="margin: 0; font-size: 0.9em;"><strong>Spell:</strong> ${item.name} (Rank ${spellRank})</p>
@@ -345,8 +345,8 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
                   <p style="margin: 8px 0 0 0; font-size: 0.9em;">This will reduce the affliction stage by 1. This reduction can only be applied once to this affliction.</p>
                 </div>
               `,
-              yes: { label: 'Apply Stage Reduction' },
-              no: { label: 'Cancel' }
+              yes: { label: game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_STAGE_REDUCTION') },
+              no: { label: game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.CANCEL') }
             });
 
             if (!confirmed) return;
@@ -355,11 +355,11 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
 
             await CounteractService.reduceAfflictionStage(token, affliction);
 
-            ui.notifications.info(`${affliction.name} stage reduced by 1 for ${token.name}`);
+            ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.STAGE_REDUCED', { afflictionName: affliction.name, tokenName: token.name }));
 
             button.disabled = true;
             button.style.opacity = '0.5';
-            button.innerHTML = `${token.name}: ${affliction.name} - Applied`;
+            button.innerHTML = game.i18n.format('PF2E_AFFLICTIONER.BUTTONS.COUNTERACT_APPLIED', { tokenName: token.name, afflictionName: affliction.name });
             return;
           }
 
@@ -370,7 +370,7 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
           await CounteractService.promptCounteract(token, affliction, casterActor, spellRank, spellEntryId);
         } catch (error) {
           console.error('Error processing cleanse/counteract:', error);
-          ui.notifications.error('Failed to process spell effect');
+          ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.FAILED_PROCESS_SPELL'));
         }
       });
 

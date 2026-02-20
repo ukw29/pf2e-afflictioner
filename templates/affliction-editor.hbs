@@ -19,6 +19,12 @@
       </select>
     </div>
 
+    <div class="form-group">
+      <label for="affliction-virulent">{{localize 'PF2E_AFFLICTIONER.EDITOR.VIRULENT'}}</label>
+      <input type="checkbox" id="affliction-virulent" name="isVirulent" {{#if affliction.isVirulent}}checked{{/if}} />
+      <span class="form-hint">{{localize 'PF2E_AFFLICTIONER.EDITOR.VIRULENT_HINT'}}</span>
+    </div>
+
     <div class="form-group onset-group">
       <label>{{localize 'PF2E_AFFLICTIONER.EDITOR.ONSET'}}</label>
       {{#if affliction.onset}}

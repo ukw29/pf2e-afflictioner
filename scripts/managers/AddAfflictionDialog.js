@@ -105,17 +105,17 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
     try {
       const item = await fromUuid(itemUuid);
       if (!item) {
-        ui.notifications.error('Could not load item');
+        ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_LOAD_ITEM'));
         return;
       }
 
       const afflictionData = AfflictionParser.parseFromItem(item);
       if (shouldSkipAffliction(afflictionData)) {
-        ui.notifications.warn('Affliction has no valid stages or DC, skipping');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_SKIPPED'));
         return;
       }
       if (!afflictionData) {
-        ui.notifications.error('Could not parse affliction from item');
+        ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_PARSE'));
         return;
       }
 
@@ -125,7 +125,7 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
       this.close();
     } catch (error) {
       console.error('Error adding affliction:', error);
-      ui.notifications.error('Error adding affliction');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ERROR_ADDING_AFFLICTION'));
     }
   }
 
@@ -133,11 +133,11 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
     const template = `
       <form>
         <div class="form-group">
-          <label>Affliction Name</label>
-          <input type="text" name="name" value="Custom Affliction" required />
+          <label>${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.MANUAL_NAME')}</label>
+          <input type="text" name="name" value="${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.MANUAL_DEFAULT_NAME')}" required />
         </div>
         <div class="form-group">
-          <label>Type</label>
+          <label>${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.MANUAL_TYPE')}</label>
           <select name="type">
             <option value="poison">Poison</option>
             <option value="disease">Disease</option>
@@ -145,21 +145,21 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
           </select>
         </div>
         <div class="form-group">
-          <label>DC</label>
+          <label>${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.MANUAL_DC')}</label>
           <input type="number" name="dc" value="15" min="1" max="50" required />
         </div>
         <div class="form-group">
-          <label>Number of Stages</label>
+          <label>${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.MANUAL_STAGES')}</label>
           <input type="number" name="stages" value="3" min="1" max="10" required />
         </div>
       </form>
     `;
 
     const result = await foundry.applications.api.DialogV2.prompt({
-      window: { title: 'Manual Affliction Entry' },
+      window: { title: game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.MANUAL_ENTRY_TITLE') },
       content: template,
       ok: {
-        label: 'Create',
+        label: game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.MANUAL_CREATE'),
         callback: (_event, button, _dialog) => new FormDataExtended(button.form).object
       }
     });
@@ -198,7 +198,7 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
 
     this.close();
 
-    ui.notifications.info('Affliction added. Use the edit button to customize stages and effects.');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.AFFLICTION_ADDED'));
   }
 
   static async formHandler(_event, _form, _formData) {
@@ -236,17 +236,17 @@ export class AddAfflictionDialog extends foundry.applications.api.HandlebarsAppl
 
     const traits = item.system?.traits?.value || [];
     if (!traits.includes('poison') && !traits.includes('disease') && !traits.includes('curse')) {
-      ui.notifications.warn('Item must have poison, disease, or curse trait');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ITEM_MUST_HAVE_TRAIT_FULL'));
       return;
     }
 
     const afflictionData = AfflictionParser.parseFromItem(item);
     if (shouldSkipAffliction(afflictionData)) {
-      ui.notifications.warn('Affliction has no valid stages or DC, skipping');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_SKIPPED'));
       return;
     }
     if (!afflictionData) {
-      ui.notifications.error('Could not parse affliction from item');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_PARSE'));
       return;
     }
 

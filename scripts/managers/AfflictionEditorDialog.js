@@ -42,7 +42,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     super(options);
 
     if (!game.user.isGM) {
-      ui.notifications.error('Only GMs can edit affliction definitions');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.GM_ONLY_EDITOR'));
       this.close();
       return;
     }
@@ -107,7 +107,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     };
 
     dialog.editedData.stages.push(newStage);
-    ui.notifications.info(`Added Stage ${nextStageNumber}`);
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITOR.ADDED_STAGE', { number: nextStageNumber }));
     await dialog.render({ force: true });
   }
 
@@ -116,7 +116,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     const stageNumber = parseInt(button.dataset.stageNumber);
 
     if (dialog.editedData.stages.length <= 1) {
-      ui.notifications.warn('Cannot remove the last stage. Afflictions must have at least one stage.');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.CANNOT_REMOVE_LAST_STAGE'));
       return;
     }
 
@@ -138,7 +138,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
         stage.number = idx + 1;
       });
 
-      ui.notifications.info(`Removed Stage ${stageNumber}`);
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITOR.REMOVED_STAGE', { number: stageNumber }));
       await dialog.render({ force: true });
     }
   }
@@ -148,13 +148,13 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
     if (dialog.editedData.onset && dialog.editedData.onset.value > 0) {
       dialog.editedData.onset = null;
-      ui.notifications.info('Onset removed');
+      ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.ONSET_REMOVED'));
     } else {
       dialog.editedData.onset = {
         value: 1,
         unit: 'round'
       };
-      ui.notifications.info('Onset added');
+      ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.ONSET_ADDED'));
     }
 
     await dialog.render({ force: true });
@@ -165,13 +165,13 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
     if (dialog.editedData.maxDuration && dialog.editedData.maxDuration.value > 0) {
       dialog.editedData.maxDuration = null;
-      ui.notifications.info('Maximum duration removed (affliction is now indefinite)');
+      ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.MAX_DURATION_REMOVED'));
     } else {
       dialog.editedData.maxDuration = {
         value: 6,
         unit: 'round'
       };
-      ui.notifications.info('Maximum duration added');
+      ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.MAX_DURATION_ADDED'));
     }
 
     await dialog.render({ force: true });
@@ -189,6 +189,8 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     if (formData.saveType) {
       dialog.editedData.saveType = formData.saveType.toLowerCase();
     }
+
+    dialog.editedData.isVirulent = formData.isVirulent === true || formData.isVirulent === 'true';
 
     if (formData['onset.value'] !== undefined || formData.onset) {
       const onsetValue = parseInt(formData['onset.value'] || formData.onset?.value);
@@ -222,14 +224,14 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
     const validation = AfflictionEditorService.validateEditedData(dialog.editedData);
     if (!validation.valid) {
-      ui.notifications.error('Validation failed: ' + validation.errors.join(', '));
+      ui.notifications.error(game.i18n.format('PF2E_AFFLICTIONER.EDITOR.VALIDATION_FAILED', { errors: validation.errors.join(', ') }));
       console.error('AfflictionEditorDialog: Validation errors', validation.errors);
       return;
     }
 
     const key = AfflictionDefinitionStore.generateDefinitionKey(dialog.originalData);
     if (!key) {
-      ui.notifications.error('Could not generate definition key');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.KEY_FAILED'));
       return;
     }
 
@@ -242,7 +244,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
       await dialog.close();
     } catch (error) {
       console.error('AfflictionEditorDialog: Error saving', error);
-      ui.notifications.error('Failed to save changes');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.SAVE_FAILED'));
     }
   }
 
@@ -289,7 +291,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     }
 
     if (updatedCount > 0) {
-      ui.notifications.info(`Updated ${updatedCount} active affliction(s)`);
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITOR.UPDATED_ACTIVE', { count: updatedCount }));
     }
   }
 
@@ -313,17 +315,17 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
 
     const key = AfflictionDefinitionStore.generateDefinitionKey(dialog.originalData);
     if (!key) {
-      ui.notifications.error('Could not generate definition key');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.KEY_FAILED'));
       return;
     }
 
     try {
       await AfflictionDefinitionStore.removeEditedDefinition(key);
-      ui.notifications.info('Affliction reset to default');
+      ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.RESET_DONE'));
       await dialog.close();
     } catch (error) {
       console.error('AfflictionEditorDialog: Error resetting', error);
-      ui.notifications.error('Failed to reset affliction');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.RESET_FAILED'));
     }
   }
 }

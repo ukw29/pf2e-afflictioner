@@ -213,10 +213,10 @@ export class SocketService {
     const degree = this.degreeToString(degreeConstant);
 
     const degreeText = {
-      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'Critical Success',
-      [DEGREE_OF_SUCCESS.SUCCESS]: 'Success',
-      [DEGREE_OF_SUCCESS.FAILURE]: 'Failure',
-      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'Critical Failure'
+      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.CRITICAL_SUCCESS'),
+      [DEGREE_OF_SUCCESS.SUCCESS]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.SUCCESS'),
+      [DEGREE_OF_SUCCESS.FAILURE]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.FAILURE'),
+      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.CRITICAL_FAILURE')
     }[degree];
 
     const degreeColor = {
@@ -226,15 +226,15 @@ export class SocketService {
       [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: '#8b0000'
     }[degree];
 
-    const saveTypeLabel = saveType === 'initial' ? 'Initial Save' : 'Stage Save';
+    const saveTypeLabel = saveType === 'initial' ? game.i18n.localize('PF2E_AFFLICTIONER.SAVE_CONFIRMATION.INITIAL_SAVE') : game.i18n.localize('PF2E_AFFLICTIONER.SAVE_CONFIRMATION.STAGE_SAVE');
 
     const content = `
       <div class="pf2e-afflictioner-save-confirmation" style="border-left: 5px solid ${degreeColor}; padding: 12px; background: rgba(0,0,0,0.1); border-radius: 4px; margin: 8px 0;">
         <h3 style="margin: 0 0 8px 0;"><i class="fas fa-biohazard"></i> ${affliction.name} - ${saveTypeLabel}</h3>
         <p style="margin: 4px 0;"><strong>${token.name}</strong> rolled <strong>${saveTotal}</strong> vs DC ${dc}</p>
         <p style="margin: 4px 0; color: ${degreeColor}; font-weight: bold;">Result: ${degreeText}</p>
-        <p style="margin: 8px 0 4px 0; font-size: 0.9em; font-style: italic; color: #ccc;">Awaiting confirmation to apply consequences...</p>
-        <p style="margin: 4px 0; font-size: 0.85em; color: #999;">If rerolled, click will use latest result</p>
+        <p style="margin: 8px 0 4px 0; font-size: 0.9em; font-style: italic; color: #ccc;">${game.i18n.localize('PF2E_AFFLICTIONER.SAVE_CONFIRMATION.AWAITING')}</p>
+        <p style="margin: 4px 0; font-size: 0.85em; color: #999;">${game.i18n.localize('PF2E_AFFLICTIONER.SAVE_CONFIRMATION.IF_REROLLED')}</p>
         <button class="affliction-confirm-save"
                 data-token-id="${token.id}"
                 data-affliction-id="${affliction.id}"
@@ -242,7 +242,7 @@ export class SocketService {
                 data-dc="${dc}"
                 data-save-type="${saveType}"
                 style="width: 100%; padding: 8px; margin-top: 10px; background: ${degreeColor}; border: 2px solid ${degreeColor}; color: white; border-radius: 6px; cursor: pointer; font-weight: bold;">
-          <i class="fas fa-check"></i> Apply Consequences
+          <i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_CONSEQUENCES')}
         </button>
       </div>
     `;
@@ -335,7 +335,7 @@ export class SocketService {
     const saveTotal = await this.getCurrentRollTotal(rollMessageId);
 
     if (saveTotal === null) {
-      ui.notifications.error('Could not read roll result from message');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_READ_ROLL'));
       console.error('PF2e Afflictioner | Failed to read save result from message ID:', rollMessageId);
 
       const msg = game.messages.get(rollMessageId);
@@ -542,10 +542,10 @@ export class SocketService {
     const degree = this.degreeToString(degreeConstant);
 
     const degreeText = {
-      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: 'Critical Success',
-      [DEGREE_OF_SUCCESS.SUCCESS]: 'Success',
-      [DEGREE_OF_SUCCESS.FAILURE]: 'Failure',
-      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: 'Critical Failure'
+      [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.CRITICAL_SUCCESS'),
+      [DEGREE_OF_SUCCESS.SUCCESS]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.SUCCESS'),
+      [DEGREE_OF_SUCCESS.FAILURE]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.FAILURE'),
+      [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.CRITICAL_FAILURE')
     }[degree];
 
     const degreeColor = {
@@ -555,7 +555,7 @@ export class SocketService {
       [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: '#8b0000'
     }[degree];
 
-    const saveTypeLabel = saveType === 'initial' ? 'Initial Save' : 'Stage Save';
+    const saveTypeLabel = saveType === 'initial' ? game.i18n.localize('PF2E_AFFLICTIONER.SAVE_CONFIRMATION.INITIAL_SAVE') : game.i18n.localize('PF2E_AFFLICTIONER.SAVE_CONFIRMATION.STAGE_SAVE');
     const token = canvas.tokens.get(tokenId);
 
     const newContent = `
@@ -563,8 +563,8 @@ export class SocketService {
         <h3 style="margin: 0 0 8px 0;"><i class="fas fa-biohazard"></i> ${afflictionName} - ${saveTypeLabel}</h3>
         <p style="margin: 4px 0;"><strong>${token?.name || 'Token'}</strong> rolled <strong>${saveTotal}</strong> vs DC ${dc}</p>
         <p style="margin: 4px 0; color: ${degreeColor}; font-weight: bold;">Result: ${degreeText}</p>
-        <p style="margin: 8px 0 4px 0; font-size: 0.9em; font-style: italic; color: #ccc;">Awaiting confirmation to apply consequences...</p>
-        <p style="margin: 4px 0; font-size: 0.85em; color: #ffa500;">Updated from reroll</p>
+        <p style="margin: 8px 0 4px 0; font-size: 0.9em; font-style: italic; color: #ccc;">${game.i18n.localize('PF2E_AFFLICTIONER.SAVE_CONFIRMATION.AWAITING')}</p>
+        <p style="margin: 4px 0; font-size: 0.85em; color: #ffa500;">${game.i18n.localize('PF2E_AFFLICTIONER.SAVE_CONFIRMATION.UPDATED_FROM_REROLL')}</p>
         <button class="affliction-confirm-save"
                 data-token-id="${tokenId}"
                 data-affliction-id="${afflictionId}"
@@ -572,7 +572,7 @@ export class SocketService {
                 data-dc="${dc}"
                 data-save-type="${saveType}"
                 style="width: 100%; padding: 8px; margin-top: 10px; background: ${degreeColor}; border: 2px solid ${degreeColor}; color: white; border-radius: 6px; cursor: pointer; font-weight: bold;">
-          <i class="fas fa-check"></i> Apply Consequences
+          <i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_CONSEQUENCES')}
         </button>
       </div>
     `;
@@ -586,7 +586,7 @@ export class SocketService {
 
   static async handleUnlockSaveButton(messageId, buttonClass) {
     await this.handleSyncButtonState(messageId, buttonClass, false);
-    ui.notifications.info('Save button unlocked');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.SAVE_BUTTON_UNLOCKED'));
   }
 
   static async syncButtonState(messageId, buttonClass, disabled) {
@@ -651,7 +651,7 @@ export class SocketService {
           const unlockBtn = document.createElement('button');
           unlockBtn.className = 'affliction-unlock-save';
           unlockBtn.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; margin: 0; padding: 0; background: linear-gradient(135deg, rgb(180, 145, 0) 0%, rgb(140, 110, 0) 100%); border: 2px dashed #ffd700; color: #ffd700; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 3px 8px rgba(0,0,0,0.4), 0 0 15px rgba(255,215,0,0.5); transition: all 0.2s ease; z-index: 5; display: flex; align-items: center; justify-content: center;';
-          unlockBtn.innerHTML = '<i class="fas fa-unlock-alt"></i> Unlock';
+          unlockBtn.innerHTML = `<i class="fas fa-unlock-alt"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.UNLOCK')}`;
 
           unlockBtn.addEventListener('mouseenter', () => {
             unlockBtn.style.background = 'linear-gradient(135deg, rgb(200, 165, 0) 0%, rgb(160, 130, 0) 100%)';

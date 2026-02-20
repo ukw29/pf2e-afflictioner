@@ -41,7 +41,7 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
     super(options);
 
     if (!game.user.isGM) {
-      ui.notifications.error('Only GMs can access the Edited Afflictions Manager');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.GM_ONLY_EDITED_MANAGER'));
       this.close();
       return;
     }
@@ -82,7 +82,7 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
 
     const editedDef = AfflictionDefinitionStore.getEditedDefinition(key);
     if (!editedDef) {
-      ui.notifications.error('Edited definition not found');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.DEFINITION_NOT_FOUND'));
       return;
     }
 
@@ -118,11 +118,11 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
 
     try {
       await AfflictionDefinitionStore.removeEditedDefinition(key);
-      ui.notifications.info(`Removed edit for ${name}`);
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITED_MANAGER.REMOVED_EDIT', { name }));
       await dialog.render({ force: true });
     } catch (error) {
       console.error('EditedAfflictionsManager: Error deleting definition', error);
-      ui.notifications.error('Failed to delete definition');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.FAILED_DELETE_DEFINITION'));
     }
   }
 
@@ -134,7 +134,7 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
     const allEdits = AfflictionDefinitionStore.getAllEditedDefinitions();
 
     if (Object.keys(allEdits).length === 0) {
-      ui.notifications.warn('No edited afflictions to export');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.EDITED_MANAGER.NO_EXPORTS'));
       return;
     }
 
@@ -155,7 +155,7 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
     a.click();
     URL.revokeObjectURL(url);
 
-    ui.notifications.info(`Exported ${Object.keys(allEdits).length} edited affliction(s)`);
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITED_MANAGER.EXPORTED_COUNT', { count: Object.keys(allEdits).length }));
   }
 
   static async importEdits(event, button) {
@@ -174,7 +174,7 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
         const importData = JSON.parse(text);
 
         if (!importData.edits || typeof importData.edits !== 'object') {
-          ui.notifications.error('Invalid import file format');
+          ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.INVALID_IMPORT_FORMAT'));
           return;
         }
 
@@ -186,9 +186,9 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
 
         if (analysis.conflicts.length === 0) {
           const confirmed = await foundry.applications.api.DialogV2.confirm({
-            title: 'Import Edited Afflictions',
-            content: `<p>Import ${analysis.autoImport.length} affliction(s)?</p>
-                      <p><em>No conflicts detected - all will be imported.</em></p>`,
+            title: game.i18n.localize('PF2E_AFFLICTIONER.EDITED_MANAGER.IMPORT_TITLE'),
+            content: `<p>${game.i18n.format('PF2E_AFFLICTIONER.EDITED_MANAGER.IMPORT_CONTENT', { count: analysis.autoImport.length })}</p>
+                      <p><em>${game.i18n.localize('PF2E_AFFLICTIONER.EDITED_MANAGER.IMPORT_NO_CONFLICTS')}</em></p>`,
             yes: () => true,
             no: () => false,
             defaultYes: true
@@ -205,7 +205,7 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
           }
 
           await game.settings.set('pf2e-afflictioner', 'editedAfflictions', mergedEdits);
-          ui.notifications.info(`Imported ${analysis.autoImport.length} affliction(s)`);
+          ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITED_MANAGER.IMPORTED_COUNT', { count: analysis.autoImport.length }));
           await dialog.render({ force: true });
         } else {
           new ConflictResolutionDialog(analysis).render(true);
@@ -213,7 +213,7 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
 
       } catch (error) {
         console.error('EditedAfflictionsManager: Error importing', error);
-        ui.notifications.error('Failed to import file. Check console for details.');
+        ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.FAILED_IMPORT'));
       }
     };
 
@@ -269,29 +269,29 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
     }
 
     if (data.type !== 'Item') {
-      ui.notifications.warn('Only items can be dropped here');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ONLY_ITEMS_ALLOWED'));
       return;
     }
 
     const item = await fromUuid(data.uuid);
     if (!item) {
-      ui.notifications.error('Could not load item');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_LOAD_ITEM'));
       return;
     }
 
     const traits = item.system?.traits?.value || [];
     if (!traits.includes('poison') && !traits.includes('disease')) {
-      ui.notifications.warn('Item must have poison or disease trait');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ITEM_MUST_HAVE_TRAIT'));
       return;
     }
 
     const afflictionData = AfflictionParser.parseFromItem(item);
     if (shouldSkipAffliction(afflictionData)) {
-      ui.notifications.warn('Affliction has no valid stages or DC, skipping');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_SKIPPED'));
       return;
     }
     if (!afflictionData) {
-      ui.notifications.error('Could not parse affliction from item');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_PARSE'));
       return;
     }
 
@@ -301,10 +301,10 @@ export class EditedAfflictionsManager extends foundry.applications.api.Handlebar
     if (existingEdit) {
       const mergedData = AfflictionEditorService.applyEditedDefinition(afflictionData, existingEdit);
       new AfflictionEditorDialog(mergedData).render(true);
-      ui.notifications.info(`Editing existing customization for ${afflictionData.name}`);
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITED_MANAGER.EDITING_EXISTING', { name: afflictionData.name }));
     } else {
       new AfflictionEditorDialog(afflictionData).render(true);
-      ui.notifications.info(`Creating new customization for ${afflictionData.name}`);
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITED_MANAGER.CREATING_NEW', { name: afflictionData.name }));
     }
   }
 }

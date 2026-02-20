@@ -13,7 +13,7 @@ export async function setAfflictions(token, afflictions) {
 
   if (!game.user.isGM) {
     console.error('AfflictionStore: Non-GM user attempted to set afflictions');
-    ui.notifications.error('Only GMs can manage afflictions');
+    ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.GM_ONLY_MANAGE'));
     return;
   }
 
@@ -42,7 +42,7 @@ export async function updateAffliction(token, afflictionId, updates) {
 export async function removeAffliction(token, afflictionId) {
   if (!game.user.isGM) {
     console.error('AfflictionStore: Non-GM user attempted to remove affliction');
-    ui.notifications.error('Only GMs can manage afflictions');
+    ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.GM_ONLY_MANAGE'));
     return;
   }
 

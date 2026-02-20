@@ -46,7 +46,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     super(options);
 
     if (!game.user.isGM) {
-      ui.notifications.error('Only GMs can access the Affliction Manager');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.GM_ONLY_MANAGER'));
       this.close();
       return;
     }
@@ -122,7 +122,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     try {
       data = JSON.parse(event.dataTransfer.getData('text/plain'));
     } catch {
-      ui.notifications.warn('Invalid drag data');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.INVALID_DRAG_DATA'));
       return;
     }
 
@@ -159,7 +159,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
 
     if (!token) {
-      ui.notifications.warn('Please select a token or drop on a token section');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.SELECT_TOKEN_OR_DROP'));
       return;
     }
 
@@ -181,30 +181,30 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
 
     if (!token) {
-      ui.notifications.warn('Please select a token or drop on a token section');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.SELECT_TOKEN_OR_DROP'));
       return;
     }
 
     const item = await fromUuid(itemUuid);
     if (!item) {
-      ui.notifications.error('Could not load item');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_LOAD_ITEM'));
       return;
     }
 
     const traits = item.system?.traits?.value || [];
     if (!traits.includes('poison') && !traits.includes('disease')) {
-      ui.notifications.warn('Item must have poison or disease trait');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ITEM_MUST_HAVE_TRAIT'));
       return;
     }
 
     const afflictionData = AfflictionParser.parseFromItem(item);
     if (shouldSkipAffliction(afflictionData)) {
-      ui.notifications.warn('Affliction has no valid stages or DC, skipping');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_SKIPPED'));
       return;
     }
 
     if (!afflictionData) {
-      ui.notifications.error('Could not parse affliction from item');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_PARSE'));
       return;
     }
 
@@ -272,7 +272,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
             return {
               ...aff,
               stageDisplay: aff.currentStage === -1
-                ? 'Initial Save'
+                ? game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.INITIAL_SAVE')
                 : aff.inOnset
                   ? game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.ONSET')
                   : `${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.STAGE')} ${aff.currentStage}`,
@@ -302,7 +302,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     const combat = game.combat;
 
     if (affliction.inOnset && affliction.onsetRemaining) {
-      return `Onset: ${AfflictionParser.formatDuration(affliction.onsetRemaining)}`;
+      return game.i18n.format('PF2E_AFFLICTIONER.MANAGER.ONSET_PREFIX', { duration: AfflictionParser.formatDuration(affliction.onsetRemaining) });
     }
 
     const stage = affliction.stages?.[affliction.currentStage - 1];
@@ -325,9 +325,9 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
         const minutes = Math.ceil((remainingSeconds % 3600) / 60);
 
         if (hours > 0) {
-          return `${hours}h ${minutes}m until save`;
+          return game.i18n.format('PF2E_AFFLICTIONER.MANAGER.TIME_HOURS_MIN', { hours, minutes });
         }
-        return `${minutes}m until save`;
+        return game.i18n.format('PF2E_AFFLICTIONER.MANAGER.TIME_MIN', { minutes });
       }
     }
 
@@ -335,7 +335,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       if (affliction.nextSaveTimestamp) {
         const remainingSeconds = Math.max(0, affliction.nextSaveTimestamp - game.time.worldTime);
 
-        if (remainingSeconds <= 0) return 'Save due!';
+        if (remainingSeconds <= 0) return game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.SAVE_DUE');
 
         return `${AfflictionParser.formatDuration(remainingSeconds)} until save`;
       }
@@ -346,13 +346,13 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
         const minutes = Math.ceil((durationSeconds % 3600) / 60);
 
         if (hours > 0) {
-          return `~${hours}h ${minutes}m until save`;
+          return game.i18n.format('PF2E_AFFLICTIONER.MANAGER.TIME_APPROX_HOURS_MIN', { hours, minutes });
         }
-        return `~${minutes}m until save`;
+        return game.i18n.format('PF2E_AFFLICTIONER.MANAGER.TIME_APPROX_MIN', { minutes });
       }
     }
 
-    return 'N/A';
+    return game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.NOT_AVAILABLE');
   }
 
   static durationToSeconds(duration) {
@@ -450,7 +450,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       (this.filterTokenId ? canvas.tokens.get(this.filterTokenId) : null);
 
     if (!token) {
-      ui.notifications.warn('Please select a token first');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.SELECT_TOKEN_FIRST'));
       return;
     }
 
@@ -464,7 +464,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     const token = canvas.tokens.get(tokenId);
 
     if (!token) {
-      ui.notifications.warn('Token not found');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
       return;
     }
 
@@ -488,7 +488,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       await VisualService.removeAfflictionIndicator(token);
     }
 
-    ui.notifications.info(`Removed affliction from ${token.name}`);
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.REMOVED_AFFLICTION', { tokenName: token.name }));
     this.render({ force: true });
   }
 
@@ -498,13 +498,13 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     const token = canvas.tokens.get(tokenId);
 
     if (!token) {
-      ui.notifications.warn('Token not found');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
       return;
     }
 
     const affliction = AfflictionStore.getAffliction(token, afflictionId);
     if (!affliction) {
-      ui.notifications.warn('Affliction not found');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND'));
       return;
     }
 
@@ -559,7 +559,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
         tokens: clearedTokens.join(', ')
       }));
     } else {
-      ui.notifications.info('No afflictions to clear');
+      ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.NO_AFFLICTIONS_TO_CLEAR'));
     }
 
     this.render({ force: true });
@@ -595,7 +595,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
 
       if (affliction.currentStage <= 1) {
-        ui.notifications.info(`${token.name} is already at stage 1 of ${affliction.name}. Use "Remove Affliction" to cure.`);
+        ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.AT_STAGE_ONE', { tokenName: token.name, afflictionName: affliction.name }));
         return;
       }
 
@@ -643,13 +643,13 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     const token = canvas.tokens.get(tokenId);
 
     if (!token) {
-      ui.notifications.warn('Token not found');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
       return;
     }
 
     const affliction = AfflictionStore.getAffliction(token, afflictionId);
     if (!affliction) {
-      ui.notifications.warn('Affliction not found');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND'));
       return;
     }
 

@@ -24,19 +24,19 @@ function registerDamageButtons(root) {
 
       const token = canvas.tokens.get(tokenId);
       if (!token) {
-        ui.notifications.warn('Token not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
         return;
       }
 
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
       if (!affliction) {
-        ui.notifications.warn('Affliction not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND'));
         return;
       }
 
       const currentStageIndex = affliction.currentStage - 1;
       if (currentStageIndex < 0 || !affliction.stages || !affliction.stages[currentStageIndex]) {
-        ui.notifications.warn('No active stage to roll damage for');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.NO_ACTIVE_STAGE'));
         return;
       }
 
@@ -44,7 +44,7 @@ function registerDamageButtons(root) {
       const actor = token.actor;
 
       if (!stage.damage || stage.damage.length === 0) {
-        ui.notifications.info(`${affliction.name} Stage ${affliction.currentStage} has no damage to roll`);
+        ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.NO_DAMAGE_TO_ROLL', { name: affliction.name, stage: affliction.currentStage }));
         return;
       }
 
@@ -70,11 +70,11 @@ function registerDamageButtons(root) {
             flavor: enrichedFlavor
           });
 
-          ui.notifications.info(`Rolled ${damageRoll.total} damage for ${token.name} - Click @Damage button to apply with resistances`);
+          ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.ROLLED_DAMAGE', { total: damageRoll.total, tokenName: token.name }));
         } catch (error) {
           console.error('PF2e Afflictioner | Error rolling damage:', error);
           const displayFormula = typeof damageEntry === 'string' ? damageEntry : damageEntry.formula;
-          ui.notifications.error(`Failed to roll damage: ${displayFormula}`);
+          ui.notifications.error(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.FAILED_ROLL_DAMAGE', { formula: displayFormula }));
         }
       }
 
@@ -92,13 +92,13 @@ function registerTargetButtons(root) {
 
       const token = canvas.tokens.get(tokenId);
       if (!token) {
-        ui.notifications.warn('Token not found on canvas');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
         return;
       }
 
       token.setTarget(true, { user: game.user, releaseOthers: true, groupSelection: false });
 
-      ui.notifications.info(`Targeted ${token.name}`);
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.TARGETED', { tokenName: token.name }));
     });
   });
 }
@@ -172,7 +172,7 @@ async function addApplyAfflictionButton(message, htmlElement) {
   const button = document.createElement('button');
   button.className = 'affliction-apply-to-target';
   button.style.cssText = 'width: 100%; padding: 8px; background: var(--afflictioner-primary, #8b0000); border: 2px solid var(--afflictioner-primary-hover, #a00000); color: white; border-radius: 6px; cursor: pointer; font-weight: bold;';
-  button.innerHTML = '<i class="fas fa-biohazard"></i> Apply Affliction to Target';
+  button.innerHTML = `<i class="fas fa-biohazard"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_TO_TARGET')}`;
   button.dataset.targetToken = target.token;
   button.dataset.itemUuid = item.uuid;
 
@@ -180,25 +180,25 @@ async function addApplyAfflictionButton(message, htmlElement) {
     try {
       const targetTokenDoc = await fromUuid(target.token);
       if (!targetTokenDoc) {
-        ui.notifications.error('Target token not found');
+        ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
         return;
       }
 
       const token = targetTokenDoc.object;
       if (!token) {
-        ui.notifications.error('Token not on canvas');
+        ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
         return;
       }
 
       await AfflictionService.promptInitialSave(token, afflictionData);
 
       button.disabled = true;
-      button.innerHTML = '<i class="fas fa-check-circle"></i> Applied';
+      button.innerHTML = `<i class="fas fa-check-circle"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLIED')}`;
       button.style.opacity = '0.5';
       button.style.cursor = 'default';
     } catch (error) {
       console.error('PF2e Afflictioner | Error applying affliction:', error);
-      ui.notifications.error('Failed to apply affliction');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ERROR_ADDING_AFFLICTION'));
     }
   });
 
@@ -259,7 +259,7 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
   const button = document.createElement('button');
   button.className = 'affliction-apply-to-selected';
   button.style.cssText = 'width: 100%; padding: 8px; background: var(--afflictioner-primary, #8b0000); border: 2px solid var(--afflictioner-primary-hover, #a00000); color: white; border-radius: 6px; cursor: pointer; font-weight: bold;';
-  button.innerHTML = '<i class="fas fa-biohazard"></i> Apply to Target / Selected Token';
+  button.innerHTML = `<i class="fas fa-biohazard"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_TO_SELECTED')}`;
 
   button.addEventListener('click', async () => {
     try {
@@ -268,7 +268,7 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
         tokens = canvas.tokens.controlled;
       }
       if (!tokens.length) {
-        ui.notifications.warn('Please target or select a token first');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.SELECT_TOKEN_FIRST'));
         return;
       }
 
@@ -277,11 +277,11 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
       }
 
       button.disabled = true;
-      button.textContent = `Applied to ${tokens.length} token(s)`;
+      button.textContent = game.i18n.format('PF2E_AFFLICTIONER.BUTTONS.APPLIED_COUNT', { count: tokens.length });
       button.style.opacity = '0.5';
     } catch (error) {
       console.error('PF2e Afflictioner | Error applying affliction:', error);
-      ui.notifications.error('Failed to apply affliction');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ERROR_ADDING_AFFLICTION'));
     }
   });
 
@@ -312,7 +312,7 @@ async function addAfflictionDragSupport(message, htmlElement) {
   if (contentElement && !contentElement.querySelector('.affliction-drag-hint')) {
     const dragHint = document.createElement('div');
     dragHint.className = 'affliction-drag-hint';
-    dragHint.innerHTML = '<i class="fas fa-hand-rock"></i> Drag to Affliction Manager to apply';
+    dragHint.innerHTML = `<i class="fas fa-hand-rock"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.DRAG_HINT')}`;
     contentElement.appendChild(dragHint);
   }
 

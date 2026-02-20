@@ -11,13 +11,13 @@ export function registerTreatmentButtonHandlers(root) {
 
       const token = canvas.tokens.get(tokenId);
       if (!token) {
-        ui.notifications.warn('Token not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
         return;
       }
 
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
       if (!affliction) {
-        ui.notifications.warn('Affliction not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND'));
         return;
       }
 
@@ -25,7 +25,7 @@ export function registerTreatmentButtonHandlers(root) {
       const treatingActor = treater.actor;
 
       if (!treatingActor.skills?.medicine) {
-        ui.notifications.warn('No Medicine skill found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.NO_MEDICINE_SKILL'));
         return;
       }
 
@@ -91,14 +91,14 @@ export async function addTreatmentAfflictionSelection(message, htmlElement) {
 
   const header = document.createElement('div');
   header.style.cssText = 'font-weight: bold; color: #4a7c2a; margin-bottom: 8px;';
-  header.innerHTML = '<i class="fas fa-medkit"></i> Apply Treatment To:';
+  header.innerHTML = `<i class="fas fa-medkit"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_TREATMENT_TO')}`;
   selectionDiv.appendChild(header);
 
   for (const { token, afflictions: matchingAfflictions } of tokensWithAfflictions) {
     for (const affliction of matchingAfflictions) {
       const button = document.createElement('button');
       button.style.cssText = 'width: 100%; padding: 6px; margin: 4px 0; background: #4a7c2a; border: 1px solid #5a8c3a; color: white; border-radius: 4px; cursor: pointer;';
-      const stageDisplay = affliction.currentStage === -1 ? 'Initial Save' : `Stage ${affliction.currentStage}`;
+      const stageDisplay = affliction.currentStage === -1 ? game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.INITIAL_SAVE') : `${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.STAGE')} ${affliction.currentStage}`;
       button.innerHTML = `${token.name}: ${affliction.name} (${stageDisplay})`;
 
       button.addEventListener('click', async () => {
@@ -108,10 +108,10 @@ export async function addTreatmentAfflictionSelection(message, htmlElement) {
 
           button.disabled = true;
           button.style.opacity = '0.5';
-          button.innerHTML = `<i class="fas fa-check"></i> ${token.name}: ${affliction.name} - Treatment Applied`;
+          button.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.format('PF2E_AFFLICTIONER.BUTTONS.TREATMENT_APPLIED', { tokenName: token.name, afflictionName: affliction.name })}`;
         } catch (error) {
           console.error('Error applying treatment:', error);
-          ui.notifications.error('Failed to apply treatment');
+          ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.FAILED_APPLY_TREATMENT'));
         }
       });
 

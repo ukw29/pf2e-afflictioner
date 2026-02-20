@@ -10,7 +10,7 @@ export function getEditedDefinition(key) {
 export async function saveEditedDefinition(key, editedData) {
   if (!game.user.isGM) {
     console.error('AfflictionDefinitionStore: Non-GM user attempted to save definition');
-    ui.notifications.error('Only GMs can edit affliction definitions');
+    ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.GM_ONLY_EDITOR'));
     return;
   }
 
@@ -32,7 +32,7 @@ export async function saveEditedDefinition(key, editedData) {
 export async function removeEditedDefinition(key) {
   if (!game.user.isGM) {
     console.error('AfflictionDefinitionStore: Non-GM user attempted to remove definition');
-    ui.notifications.error('Only GMs can manage affliction definitions');
+    ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.GM_ONLY_DEFINITIONS'));
     return;
   }
 

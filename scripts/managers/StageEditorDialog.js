@@ -8,7 +8,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     classes: ['pf2e-afflictioner', 'stage-editor'],
     tag: 'form',
     window: {
-      title: 'Edit Stage',
+      title: game.i18n.format('PF2E_AFFLICTIONER.EDITOR.STAGE_EDITOR_TITLE'),
       icon: 'fas fa-edit',
       resizable: true
     },
@@ -180,7 +180,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
 
     const text = textarea.value;
     if (!text) {
-      ui.notifications.warn('No effects text to parse');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.NO_EFFECTS_TO_PARSE'));
       return;
     }
 
@@ -393,7 +393,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       }
     }
 
-    ui.notifications.info('Effects text parsed and added to stage details');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.EFFECTS_PARSED'));
     await dialog.render({ force: true });
   }
 
@@ -483,11 +483,11 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       }
 
       new foundry.applications.api.DialogV2({
-        window: { title: 'Effect Preview' },
+        window: { title: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.EFFECT_PREVIEW_TITLE') },
         content: ruleDetails,
         buttons: [{
           action: 'ok',
-          label: 'Close',
+          label: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.CLOSE'),
           default: true
         }],
         modal: true
@@ -501,11 +501,11 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       if (effect && effect.sheet) {
         effect.sheet.render(true);
       } else {
-        ui.notifications.warn('Effect not found or has no sheet');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.EFFECT_NOT_FOUND'));
       }
     } catch (error) {
       console.error('StageEditorDialog: Error opening effect', error);
-      ui.notifications.error('Failed to open effect');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.FAILED_OPEN_EFFECT'));
     }
   }
 
@@ -634,10 +634,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     `;
 
     const result = await foundry.applications.api.DialogV2.prompt({
-      window: { title: 'Add Rule Element' },
+      window: { title: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.ADD_RULE_ELEMENT_TITLE') },
       content: content,
       ok: {
-        label: 'Add',
+        label: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.ADD_RULE_ELEMENT_BTN'),
         callback: (_event, button) => new FormDataExtended(button.form).object
       },
       rejectClose: false
@@ -675,7 +675,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
 
     dialog.stageData.ruleElements.push(ruleElement);
 
-    ui.notifications.info('Rule Element added');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.RULE_ELEMENT_ADDED'));
     await dialog.render({ force: true });
   }
 
@@ -850,10 +850,10 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     `;
 
     const result = await foundry.applications.api.DialogV2.prompt({
-      window: { title: 'Edit Rule Element' },
+      window: { title: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.EDIT_RULE_ELEMENT_TITLE') },
       content: content,
       ok: {
-        label: 'Save',
+        label: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.EDIT_RULE_ELEMENT_BTN'),
         callback: (_event, button) => new FormDataExtended(button.form).object
       },
       rejectClose: false
@@ -889,7 +889,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       dialog.stageData.ruleElements[index].predicate = [finalPredicate];
     }
 
-    ui.notifications.info('Rule Element updated');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.RULE_ELEMENT_UPDATED'));
     await dialog.render({ force: true });
   }
 
@@ -898,8 +898,8 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const index = parseInt(button.dataset.index);
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
-      window: { title: 'Remove Rule Element' },
-      content: '<p>Remove this rule element?</p>',
+      window: { title: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.REMOVE_RULE_ELEMENT_TITLE') },
+      content: `<p>${game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.REMOVE_RULE_ELEMENT_CONTENT')}</p>`,
       yes: () => true,
       no: () => false,
       defaultYes: false
@@ -908,7 +908,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     if (!confirmed) return;
 
     dialog.stageData.ruleElements.splice(index, 1);
-    ui.notifications.info('Rule Element removed');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.RULE_ELEMENT_REMOVED'));
     await dialog.render({ force: true });
   }
 
@@ -916,7 +916,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const dialog = this;
     const index = parseInt(button.dataset.index);
     dialog.stageData.autoEffects.splice(index, 1);
-    ui.notifications.info('Effect removed');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.EFFECT_REMOVED'));
     await dialog.render({ force: true });
   }
 
@@ -924,8 +924,8 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     const dialog = this;
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
-      title: 'Clear All Effects',
-      content: '<p>Remove all auto-applied effects from this stage?</p>',
+      title: game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.CLEAR_ALL_EFFECTS_TITLE'),
+      content: `<p>${game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.CLEAR_ALL_EFFECTS_CONTENT')}</p>`,
       yes: () => true,
       no: () => false,
       defaultYes: false
@@ -934,7 +934,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     if (!confirmed) return;
 
     dialog.stageData.autoEffects = [];
-    ui.notifications.info('All effects cleared');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.EFFECTS_CLEARED'));
     await dialog.render({ force: true });
   }
 
@@ -984,23 +984,23 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
     }
 
     if (data.type !== 'Item') {
-      ui.notifications.warn('Only effect items can be dropped here');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ONLY_EFFECT_ITEMS'));
       return;
     }
 
     const item = await fromUuid(data.uuid);
     if (!item) {
-      ui.notifications.error('Could not load effect');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_LOAD_EFFECT'));
       return;
     }
 
     if (item.type !== 'effect') {
-      ui.notifications.warn('Only effect items can be added');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ONLY_EFFECT_ITEMS_ADD'));
       return;
     }
 
     if (this.stageData.autoEffects.some(e => e.uuid === item.uuid)) {
-      ui.notifications.warn('Effect already added to this stage');
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.EFFECT_ALREADY_ADDED'));
       return;
     }
 
@@ -1010,7 +1010,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       img: item.img
     });
 
-    ui.notifications.info(`Added ${item.name} to stage`);
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITOR.ADDED_EFFECT', { name: item.name }));
     await this.render({ force: true });
   }
 
@@ -1144,7 +1144,7 @@ export class StageEditorDialog extends foundry.applications.api.HandlebarsApplic
       await dialog.onSave(dialog.stageData);
     }
 
-    ui.notifications.info('Stage changes saved');
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.EDITOR.STAGE_CHANGES_SAVED'));
     await dialog.close();
   }
 

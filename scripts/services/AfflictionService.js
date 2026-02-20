@@ -156,7 +156,7 @@ export class AfflictionService {
     } else {
       const initialStage = affliction.stages[startingStage - 1];
       if (!initialStage) {
-        ui.notifications.error(`Stage ${startingStage} not found for ${affliction.name}`);
+        ui.notifications.error(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.STAGE_NOT_FOUND', { stage: startingStage, affliction: affliction.name }));
         return;
       }
 
@@ -271,7 +271,7 @@ export class AfflictionService {
     }
 
     if (!affliction.stages || affliction.stages.length === 0) {
-      ui.notifications.error(`Affliction ${affliction.name} has no stages defined`);
+      ui.notifications.error(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.NO_STAGES_DEFINED', { name: affliction.name }));
       return;
     }
 
@@ -506,7 +506,7 @@ export class AfflictionService {
     );
 
     if (newStage === existingAffliction.currentStage) {
-      ui.notifications.warn(`${token.name} is already at maximum stage of ${existingAffliction.name}`);
+      ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.MAX_STAGE', { tokenName: token.name, afflictionName: existingAffliction.name }));
       return;
     }
 
