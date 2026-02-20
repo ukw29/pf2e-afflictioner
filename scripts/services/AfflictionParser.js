@@ -19,6 +19,12 @@ export class AfflictionParser {
 
     const stages = this.extractStages(description);
 
+    if (!stages || stages.length === 0) {
+      return {
+        skip: true
+      };
+    }
+
     const maxDuration = item.system?.maxDuration ? this.parseDuration(item.system.maxDuration) : this.extractMaxDuration(description);
 
     return {
@@ -36,7 +42,7 @@ export class AfflictionParser {
 
   static parseStructuredAffliction(item) {
     const stageData = item.system?.stage || 1;
-    const dc = item.system?.save?.dc || item.system?.save?.value;
+    const dc = item.system?.save?.dc || item.system?.save?.value || item.system?.dc?.value;
 
     if (!dc) {
       console.warn(`PF2e Afflictioner | No DC found for affliction item "${item.name}" (${item.uuid}).`);
@@ -58,7 +64,7 @@ export class AfflictionParser {
             number: parseInt(stageNum),
             effects: effectsText,
             rawText: `Stage ${stageNum}: ${effectsText}`,
-            duration: stageInfo.duration || { value: 1, unit: 'hour', isDice: false },
+            duration: stageInfo.duration ? this.parseDuration(stageInfo.duration) || { value: 1, unit: 'hour', isDice: false } : { value: 1, unit: 'hour', isDice: false },
             damage: this.extractDamageFromStructured(stageInfo.effects || []),
             conditions: this.extractConditionsFromStructured(stageInfo.effects || []),
             weakness: this.extractWeaknessFromStructured(stageInfo.effects || []),
@@ -67,6 +73,10 @@ export class AfflictionParser {
           });
         }
       }
+    }
+
+    if (!stages || stages.length === 0) {
+      return { skip: true };
     }
 
     const description = item.system?.description?.value || '';
@@ -125,17 +135,18 @@ export class AfflictionParser {
   static extractDC(description, item) {
     if (item.system?.save?.dc) return item.system.save.dc;
     if (item.system?.save?.value) return item.system.save.value;
+    if (item.system?.dc?.value) return item.system.dc.value;
 
     let dcMatch = description.match(/@Check\[[^\]]*\|dc:(\d+)\]/i);
+    if (dcMatch) return parseInt(dcMatch[1]);
+
+    dcMatch = description.match(/data-pf2-dc="(\d+)"/i);
     if (dcMatch) return parseInt(dcMatch[1]);
 
     dcMatch = description.match(/DC\s+(\d+)/i);
     if (dcMatch) return parseInt(dcMatch[1]);
 
     console.warn(`PF2e Afflictioner | No DC found for affliction item "${item.name}" (${item.uuid}).`);
-    ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.NO_DC_FOUND', {
-      itemName: item.name
-    }));
     return null;
   }
 

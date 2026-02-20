@@ -1,12 +1,15 @@
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionParser } from './AfflictionParser.js';
 import { AfflictionChatService } from './AfflictionChatService.js';
+import { shouldSkipAffliction } from '../utils.js';
 
 export class AfflictionTimerService {
   static async updateOnsetTimers(token, combat, AfflictionService) {
     const afflictions = AfflictionStore.getAfflictions(token);
 
     for (const [id, affliction] of Object.entries(afflictions)) {
+      if (shouldSkipAffliction(affliction)) continue;
+
       if (affliction.inOnset && affliction.onsetRemaining > 0) {
         const newRemaining = affliction.onsetRemaining - 6;
 
@@ -136,6 +139,7 @@ export class AfflictionTimerService {
 
     for (const [_id, affliction] of Object.entries(afflictions)) {
       if (affliction.inOnset) continue;
+      if (shouldSkipAffliction(affliction)) continue;
 
       const isOverdue = combat.round > affliction.nextSaveRound;
       const isDueNow = combat.round === affliction.nextSaveRound &&

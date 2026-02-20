@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-02-20
+
+### Fixed
+
+- **Affliction Button Injection**: "Apply Affliction to Target" button now injects after the last roll note instead of the first, placing it correctly below the affliction description
+  - "Apply to Target / Selected Token" button no longer appears on items with no stages (e.g. Dread Ampoule)
+- **Skip No-Stage Afflictions**: Affliction processing loops now skip afflictions with no stages, preventing unnecessary processing of non-affliction items
+- **Septic Malaria DC Parsing**: DC now correctly extracted from rendered note HTML (`data-pf2-dc`) for NPC action-type afflictions where DC is not stored on the item
+- **Structured Affliction Duration**: Stage durations from structured PF2e affliction items now normalize plural unit strings (e.g. `"days"` → `"day"`) to match duration multiplier keys, fixing duration tracking
+
+### Changed
+
+- **Applied Button State**: "Apply Affliction to Target" button now shows a check-circle icon and muted red styling after being clicked
+
 ## [1.0.1] - 2026-02-19
 
 ### Added

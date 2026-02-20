@@ -1,6 +1,7 @@
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
 import { CounteractService } from '../services/CounteractService.js';
+import { shouldSkipAffliction } from '../utils.js';
 
 export function registerCounteractButtonHandlers(root) {
   const applyButtons = root.querySelectorAll('.affliction-apply-counteract');
@@ -273,9 +274,9 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
   const tokensWithAfflictions = targetedWithAfflictions.length > 0
     ? targetedWithAfflictions
     : canvas.tokens.placeables.filter(t => {
-        const afflictions = AfflictionStore.getAfflictions(t);
-        return Object.keys(afflictions).length > 0;
-      });
+      const afflictions = AfflictionStore.getAfflictions(t);
+      return Object.keys(afflictions).length > 0;
+    });
 
   if (tokensWithAfflictions.length === 0) return;
 
@@ -303,6 +304,8 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
     const allAfflictions = Object.values(afflictions);
 
     for (const affliction of allAfflictions) {
+      if (shouldSkipAffliction(affliction)) continue;
+
       if (isBaseCleanse && affliction.currentStage < 2) {
         continue;
       }

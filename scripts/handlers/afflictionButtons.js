@@ -1,6 +1,7 @@
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
+import { shouldSkipAffliction } from '../utils.js';
 
 export function registerAfflictionButtonHandlers(root, message) {
   registerDamageButtons(root);
@@ -154,7 +155,13 @@ async function addApplyAfflictionButton(message, htmlElement) {
   const afflictionData = AfflictionParser.parseFromItem(item);
   if (!afflictionData) return;
 
-  const rollNote = htmlElement.querySelector('.roll-note');
+  if (!afflictionData.dc) {
+    const dcMatch = afflictionNote.text?.match(/data-pf2-dc="(\d+)"/i);
+    if (dcMatch) afflictionData.dc = parseInt(dcMatch[1]);
+  }
+
+  const allRollNotes = htmlElement.querySelectorAll('.roll-note');
+  const rollNote = allRollNotes[allRollNotes.length - 1];
   if (!rollNote) return;
 
   const buttonContainer = document.createElement('div');
@@ -185,7 +192,9 @@ async function addApplyAfflictionButton(message, htmlElement) {
       await AfflictionService.promptInitialSave(token, afflictionData);
 
       button.disabled = true;
-      button.textContent = 'Applied';
+      button.innerHTML = '<i class="fas fa-check-circle"></i> Applied';
+      button.style.opacity = '0.5';
+      button.style.cursor = 'default';
     } catch (error) {
       console.error('PF2e Afflictioner | Error applying affliction:', error);
       ui.notifications.error('Failed to apply affliction');
@@ -228,7 +237,7 @@ async function addApplyAfflictionToSelectedButton(message, htmlElement) {
   }
 
   const afflictionData = AfflictionParser.parseFromItem(item);
-  if (!afflictionData) {
+  if (!afflictionData || shouldSkipAffliction(afflictionData)) {
     return;
   }
 

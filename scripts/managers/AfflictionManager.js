@@ -3,7 +3,7 @@ import { AfflictionService } from '../services/AfflictionService.js';
 import { TreatmentService } from '../services/TreatmentService.js';
 import { CounteractService } from '../services/CounteractService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
-
+import { shouldSkipAffliction } from '../utils.js';
 export class AfflictionManager extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
 ) {
@@ -198,6 +198,11 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
 
     const afflictionData = AfflictionParser.parseFromItem(item);
+    if (shouldSkipAffliction(afflictionData)) {
+      ui.notifications.warn('Affliction has no valid stages or DC, skipping');
+      return;
+    }
+
     if (!afflictionData) {
       ui.notifications.error('Could not parse affliction from item');
       return;
