@@ -29,6 +29,10 @@ export async function onCreateChatMessage(message, options, userId) {
   const afflictionData = AfflictionParser.parseFromItem(item);
   if (!afflictionData) return;
 
+  // Use the DC from the saving throw context — it includes elite/weak adjustments
+  const contextDC = flags.context?.dc?.value;
+  if (contextDC) afflictionData.dc = contextDC;
+
   const actorUuid = flags.actor?.uuid;
   if (!actorUuid) return;
 
