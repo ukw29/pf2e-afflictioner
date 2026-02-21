@@ -20,7 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Full i18n Coverage**: All hard-coded user-visible strings replaced with `game.i18n` calls, making the module fully localizable
-  - Added ~80 new localization keys across two new sections (`CHAT`, `MONITOR`) and additions to `MANAGER`, `BUTTONS`, `ERRORS`, `EDITOR`, `DIALOG`, `CONFLICT`, and `NOTIFICATIONS`
+  - Added ~100 new localization keys across new sections (`CHAT`, `MONITOR`) and additions to `MANAGER`, `BUTTONS`, `ERRORS`, `EDITOR`, `DIALOG`, `CONFLICT`, `NOTIFICATIONS`, and `SETTINGS`
+  - All module settings `name` and `hint` strings now use i18n keys (Foundry localizes them automatically)
   - Chat message templates (save requests, stage changes, death confirmation, re-exposure, max duration) now use `game.i18n.format()`
   - Token HUD tooltip, notification messages, button labels, and dialog content all localized
   - Affliction Monitor Indicator tooltip strings (onset, initial save, save countdown, stage display) localized

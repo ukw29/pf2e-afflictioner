@@ -3,7 +3,27 @@
     "SETTINGS": {
       "EDITED_AFFLICTIONS_MENU": "Edited Afflictions",
       "EDITED_AFFLICTIONS_LABEL": "Manage Edited Afflictions",
-      "EDITED_AFFLICTIONS_HINT": "View and manage all customized affliction definitions"
+      "EDITED_AFFLICTIONS_HINT": "View and manage all customized affliction definitions",
+      "SHOW_INDICATORS_NAME": "Show Visual Indicators",
+      "SHOW_INDICATORS_HINT": "Display biohazard icon on tokens with active afflictions",
+      "AUTO_DETECT_NAME": "Auto-Detect Afflictions",
+      "AUTO_DETECT_HINT": "Automatically detect poison/disease/curse items and prompt for initial saves",
+      "AUTO_PROMPT_SAVES_NAME": "Auto-Prompt Saves (Out of Combat)",
+      "AUTO_PROMPT_SAVES_HINT": "Automatically prompt for saves when game time elapses outside combat",
+      "STORYFRAME_NAME": "Integrate with Storyframe",
+      "STORYFRAME_HINT": "Send save and counteract rolls through Storyframe module",
+      "REQUIRE_CONFIRMATION_NAME": "Require Save Confirmation",
+      "REQUIRE_CONFIRMATION_HINT": "Require GM confirmation before applying save consequences (allows hero point rerolls)",
+      "ANONYMIZE_SAVES_NAME": "Anonymize Save Messages",
+      "ANONYMIZE_SAVES_HINT": "Hide affliction details in player save messages. Players see only \"Fortitude Save Required\" without affliction name, stage, or effects. Works with automatic unidentified effects to keep afflictions mysterious.",
+      "GM_ROLL_MYSTERIOUS_NAME": "GM Rolls Mysterious Initial Saves",
+      "GM_ROLL_MYSTERIOUS_HINT": "GM rolls initial saves for mysterious afflictions (onset or no stage 1 mechanical effects). Players never see the save request, maintaining complete secrecy.",
+      "USE_APP_INITIATIVE_NAME": "Use Application Initiative",
+      "USE_APP_INITIATIVE_HINT": "When enabled, affliction saves trigger on the same initiative step the affliction was first applied, rather than the afflicted token's own initiative. Unofficial rule — not explicitly stated in the PF2e rulebook.",
+      "EDITED_AFFLICTIONS_STORE_NAME": "Edited Afflictions",
+      "EDITED_AFFLICTIONS_STORE_HINT": "Stores GM-edited affliction definitions",
+      "COMMUNITY_DATA_VERSION_NAME": "Community Data Version",
+      "COMMUNITY_DATA_VERSION_HINT": "Version of community afflictions data last imported"
     },
     "MANAGER": {
       "TITLE": "Affliction Manager",

@@ -15,8 +15,8 @@ export const DEGREE_OF_SUCCESS = {
 
 export const DEFAULT_SETTINGS = {
   'showVisualIndicators': {
-    name: 'Show Visual Indicators',
-    hint: 'Display biohazard icon on tokens with active afflictions',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.SHOW_INDICATORS_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.SHOW_INDICATORS_HINT',
     scope: 'world',
     type: Boolean,
     default: true,
@@ -24,8 +24,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'autoDetectAfflictions': {
-    name: 'Auto-Detect Afflictions',
-    hint: 'Automatically detect poison/disease/curse items and prompt for initial saves',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.AUTO_DETECT_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.AUTO_DETECT_HINT',
     scope: 'world',
     type: Boolean,
     default: true,
@@ -33,8 +33,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'autoPromptSaves': {
-    name: 'Auto-Prompt Saves (Out of Combat)',
-    hint: 'Automatically prompt for saves when game time elapses outside combat',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.AUTO_PROMPT_SAVES_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.AUTO_PROMPT_SAVES_HINT',
     scope: 'world',
     type: Boolean,
     default: false,
@@ -42,8 +42,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'integrateWithStoryframe': {
-    name: 'Integrate with Storyframe',
-    hint: 'Send save and counteract rolls through Storyframe module',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.STORYFRAME_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.STORYFRAME_HINT',
     scope: 'world',
     type: Boolean,
     default: false,
@@ -51,8 +51,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'requireSaveConfirmation': {
-    name: 'Require Save Confirmation',
-    hint: 'Require GM confirmation before applying save consequences (allows hero point rerolls)',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.REQUIRE_CONFIRMATION_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.REQUIRE_CONFIRMATION_HINT',
     scope: 'world',
     type: Boolean,
     default: false,
@@ -60,8 +60,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'anonymizeSaveMessages': {
-    name: 'Anonymize Save Messages',
-    hint: 'Hide affliction details in player save messages. Players see only "Fortitude Save Required" without affliction name, stage, or effects. Works with automatic unidentified effects to keep afflictions mysterious.',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.ANONYMIZE_SAVES_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.ANONYMIZE_SAVES_HINT',
     scope: 'world',
     type: Boolean,
     default: false,
@@ -69,8 +69,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'gmRollMysteriousSaves': {
-    name: 'GM Rolls Mysterious Initial Saves',
-    hint: 'GM rolls initial saves for mysterious afflictions (onset or no stage 1 mechanical effects). Players never see the save request, maintaining complete secrecy.',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.GM_ROLL_MYSTERIOUS_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.GM_ROLL_MYSTERIOUS_HINT',
     scope: 'world',
     type: Boolean,
     default: false,
@@ -78,8 +78,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'useApplicationInitiative': {
-    name: 'Use Application Initiative',
-    hint: 'When enabled, affliction saves trigger on the same initiative step the affliction was first applied, rather than the afflicted token\'s own initiative. Unofficial rule — not explicitly stated in the PF2e rulebook.',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.USE_APP_INITIATIVE_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.USE_APP_INITIATIVE_HINT',
     scope: 'world',
     type: Boolean,
     default: false,
@@ -87,8 +87,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'editedAfflictions': {
-    name: 'Edited Afflictions',
-    hint: 'Stores GM-edited affliction definitions',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.EDITED_AFFLICTIONS_STORE_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.EDITED_AFFLICTIONS_STORE_HINT',
     scope: 'world',
     type: Object,
     default: {},
@@ -96,8 +96,8 @@ export const DEFAULT_SETTINGS = {
     restricted: true
   },
   'communityDataVersion': {
-    name: 'Community Data Version',
-    hint: 'Version of community afflictions data last imported',
+    name: 'PF2E_AFFLICTIONER.SETTINGS.COMMUNITY_DATA_VERSION_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.COMMUNITY_DATA_VERSION_HINT',
     scope: 'world',
     type: String,
     default: '',
