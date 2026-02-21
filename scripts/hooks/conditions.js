@@ -36,7 +36,10 @@ export async function onPreUpdateItem(item, changes, options, userId) {
                   const { VisualService } = await import('../services/VisualService.js');
                   await VisualService.removeAfflictionIndicator(token);
 
-                  ui.notifications.info(`${token.name} has recovered from ${affliction.name}`);
+                  ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.RECOVERED', {
+                    tokenName: token.name,
+                    afflictionName: affliction.name
+                  }));
                   return;
                 }
 
@@ -55,10 +58,15 @@ export async function onPreUpdateItem(item, changes, options, userId) {
                   await AfflictionService.applyStageEffects(token, updatedAffliction, newStageData);
                 }
 
-                ui.notifications.info(`Updated ${affliction.name} to stage ${newStage}`);
+                ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.STAGE_UPDATED', {
+                  afflictionName: affliction.name,
+                  stage: newStage
+                }));
               } catch (error) {
                 console.error('PF2e Afflictioner | Error syncing affliction stage:', error);
-                ui.notifications.error(`Failed to update ${affliction.name} stage: ${error.message}`);
+                ui.notifications.error(game.i18n.format('PF2E_AFFLICTIONER.ERRORS.FAILED_UPDATE_STAGE', {
+                  name: affliction.name
+                }));
               }
             }, 0);
 

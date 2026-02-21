@@ -524,7 +524,12 @@ export class AfflictionParser {
       content: `<div class="dice-roll"><div class="dice-result"><h4 class="dice-formula">${formula} ${duration.unit}(s)</h4><div class="dice-total">${total}</div></div></div>`,
       whisper: game.users.filter(u => u.isGM).map(u => u.id)
     });
-    ui.notifications.info(`${stageName}: rolled ${formula} → ${total} ${duration.unit}(s)`);
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.DICE_DURATION_ROLLED', {
+      stageName,
+      formula,
+      total,
+      unit: duration.unit
+    }));
 
     duration.value = total;
 

@@ -113,7 +113,7 @@ export class AfflictionEditorService {
       if (typeof afflictionOrUuid === 'string') {
         const item = await fromUuid(afflictionOrUuid);
         if (!item) {
-          ui.notifications.error('Could not load affliction source item');
+          ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.COULD_NOT_LOAD_ITEM'));
           return null;
         }
 
@@ -131,7 +131,7 @@ export class AfflictionEditorService {
       return afflictionOrUuid;
     } catch (error) {
       console.error('AfflictionEditorService: Error preparing for editing', error);
-      ui.notifications.error('Failed to prepare affliction for editing');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.FAILED_PREPARE_AFFLICTION'));
       return null;
     }
   }

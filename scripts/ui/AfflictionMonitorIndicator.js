@@ -252,28 +252,28 @@ class AfflictionMonitorIndicator {
 
     const formatTime = (a) => {
       if (a.inOnset) {
-        return `Onset: ${AfflictionParser.formatDuration(a.onsetRemaining)}`;
+        return game.i18n.format('PF2E_AFFLICTIONER.MANAGER.ONSET_PREFIX', { duration: AfflictionParser.formatDuration(a.onsetRemaining) });
       }
 
       if (a.currentStage === -1 || a.needsInitialSave) {
-        return 'Initial Save';
+        return game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.INITIAL_SAVE');
       }
 
       const stage = a.stages?.[a.currentStage - 1];
       if (stage?.duration) {
         if (combat && a.nextSaveRound) {
           const remaining = a.nextSaveRound - combat.round;
-          return remaining <= 0 ? 'Save NOW' : `${remaining} rounds until save`;
+          return remaining <= 0 ? game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.SAVE_DUE') : game.i18n.format('PF2E_AFFLICTIONER.MONITOR.ROUNDS_UNTIL_SAVE', { rounds: remaining });
         } else {
           const unit = stage.duration.unit?.toLowerCase() || 'round';
           const multiplier = DURATION_MULTIPLIERS[unit] || DURATION_MULTIPLIERS['round'];
           const totalDuration = stage.duration.value * multiplier;
           const elapsed = a.durationElapsed || 0;
           const remainingSeconds = Math.max(0, totalDuration - elapsed);
-          return remainingSeconds <= 0 ? 'Save DUE' : `${AfflictionParser.formatDuration(remainingSeconds)} until save`;
+          return remainingSeconds <= 0 ? game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.SAVE_DUE') : game.i18n.format('PF2E_AFFLICTIONER.MONITOR.TIME_UNTIL_SAVE', { duration: AfflictionParser.formatDuration(remainingSeconds) });
         }
       }
-      return a.currentStage > 0 ? `Stage ${a.currentStage}` : 'No Stage';
+      return a.currentStage > 0 ? `${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.STAGE')} ${a.currentStage}` : game.i18n.localize('PF2E_AFFLICTIONER.MONITOR.NO_STAGE');
     };
 
     let content = '';
@@ -312,13 +312,13 @@ class AfflictionMonitorIndicator {
 
     this._tooltipEl.innerHTML = `
       <div class="tip-header">
-        <i class="fas fa-biohazard"></i> ${this._data?.count || 0} Active Affliction${this._data?.count !== 1 ? 's' : ''}
+        <i class="fas fa-biohazard"></i> ${this._data?.count || 0} ${(this._data?.count !== 1) ? game.i18n.localize('PF2E_AFFLICTIONER.MONITOR.ACTIVE_AFFLICTIONS_PLURAL') : game.i18n.localize('PF2E_AFFLICTIONER.MONITOR.ACTIVE_AFFLICTIONS_SINGULAR')}
       </div>
       <div class="tip-content">
         ${content}
       </div>
       <div class="tip-footer">
-        <div class="footer-text">Click token name to open manager for that token</div>
+        <div class="footer-text">${game.i18n.localize('PF2E_AFFLICTIONER.MONITOR.CLICK_TOKEN_HINT')}</div>
       </div>
     `;
 

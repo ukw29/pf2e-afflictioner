@@ -75,7 +75,10 @@ export class AfflictionTimerService {
 
         await AfflictionChatService.postMaxDurationExpired(token, affliction);
 
-        ui.notifications.warn(`${affliction.name} on ${token.name} has reached maximum duration. Check chat for removal button.`);
+        ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.MAX_DURATION_EXPIRED', {
+          afflictionName: affliction.name,
+          tokenName: token.name
+        }));
       }
     }
   }
@@ -99,7 +102,10 @@ export class AfflictionTimerService {
 
       await AfflictionChatService.postMaxDurationExpired(token, affliction);
 
-      ui.notifications.warn(`${affliction.name} on ${token.name} has reached maximum duration. Check chat for removal button.`);
+      ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.MAX_DURATION_EXPIRED', {
+        afflictionName: affliction.name,
+        tokenName: token.name
+      }));
 
       return false;
     }

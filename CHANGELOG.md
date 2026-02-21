@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-02-21
+
+### Changed
+
+### Fixed
+
+- **Affliction Manager Crash on Open**: Fixed `TypeError: Cannot read properties of undefined (reading '-2')` when opening the Affliction Manager with afflictions awaiting initial save (`currentStage === -1`) or with missing `stages` data
+  - `currentStage - 1` evaluates to `-2` when awaiting initial save, which crashed when `stages` was `undefined`
+  - Stage index lookup now guards both `stageIndex >= 0` and `aff.stages` being defined before array access
+  - `hasWarning` reuses the already-safe local `currentStage` variable instead of re-indexing
+  - `canProgressStage` uses `aff.stages?.length ?? 0` to avoid crashing on undefined stages
+
+### Changed
+
+- **Full i18n Coverage**: All hard-coded user-visible strings replaced with `game.i18n` calls, making the module fully localizable
+  - Added ~80 new localization keys across two new sections (`CHAT`, `MONITOR`) and additions to `MANAGER`, `BUTTONS`, `ERRORS`, `EDITOR`, `DIALOG`, `CONFLICT`, and `NOTIFICATIONS`
+  - Chat message templates (save requests, stage changes, death confirmation, re-exposure, max duration) now use `game.i18n.format()`
+  - Token HUD tooltip, notification messages, button labels, and dialog content all localized
+  - Affliction Monitor Indicator tooltip strings (onset, initial save, save countdown, stage display) localized
+  - Degree-of-success labels in counteract confirm button now use `DEGREES.*` keys
+  - No behavior changes — purely a localization coverage improvement
+
 ## [1.0.2] - 2026-02-20
 
 ### Fixed

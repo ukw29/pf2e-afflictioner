@@ -43,7 +43,12 @@
       "NO_DAMAGE_TO_ROLL": "{name} Stage {stage} has no damage to roll",
       "ROLLED_DAMAGE": "Rolled {total} damage for {tokenName} - Click the Damage button in the chat card to apply with resistances",
       "FAILED_ROLL_DAMAGE": "Failed to roll damage: {formula}",
-      "TARGETED": "Targeted {tokenName}"
+      "TARGETED": "Targeted {tokenName}",
+      "MANAGE_AFFLICTIONS_TOOLTIP": "Manage Afflictions",
+      "ONSET_COMPLETE": "{tokenName} - {afflictionName} onset complete, now at stage {stage}",
+      "STAGE_UPDATED": "Updated {afflictionName} to stage {stage}",
+      "REMOVED_FROM_TRACKING_EXPIRES": "Removed {afflictionName} from tracking. Effect will expire after {value} {unit}(s).",
+      "REMOVED_FROM_TRACKING_PERSISTS": "Removed {afflictionName} from tracking. Effect and conditions persist on {tokenName} per PF2e rules."
     },
     "DIALOG": {
       "ADD_AFFLICTION_TITLE": "Add Affliction",
@@ -76,7 +81,11 @@
       "MANUAL_DEFAULT_NAME": "Custom Affliction",
       "AFFLICTION_ADDED": "Affliction added. Use the edit button to customize stages and effects.",
       "CLEANSE_TITLE": "Cleanse Affliction",
-      "CLEANSE_APPLY": "Apply Stage Reduction"
+      "CLEANSE_APPLY": "Apply Stage Reduction",
+      "CLEANSE_SPELL_LABEL": "Spell:",
+      "CLEANSE_TARGET_LABEL": "Target:",
+      "CLEANSE_AFFLICTION_LABEL": "Affliction:",
+      "CLEANSE_STAGE_NOTE": "This will reduce the affliction stage by 1. This reduction can only be applied once to this affliction."
     },
     "EDITOR": {
       "TITLE": "Edit Affliction",
@@ -150,7 +159,8 @@
       "ADD_RULE_ELEMENT_BTN": "Add",
       "EDIT_RULE_ELEMENT_TITLE": "Edit Rule Element",
       "EDIT_RULE_ELEMENT_BTN": "Save",
-      "CLOSE": "Close"
+      "CLOSE": "Close",
+      "STAGE_NOT_FOUND": "Stage {number} not found"
     },
     "EDITED_MANAGER": {
       "TITLE": "Edited Afflictions",
@@ -171,6 +181,7 @@
       "IMPORT_CONTENT": "Import {count} affliction(s)?",
       "IMPORT_NO_CONFLICTS": "No conflicts detected - all will be imported.",
       "IMPORTED_COUNT": "Imported {count} affliction(s)",
+      "COMMUNITY_IMPORTED": "Imported {count} community affliction(s)",
       "EDITING_EXISTING": "Editing existing customization for {name}",
       "CREATING_NEW": "Creating new customization for {name}"
     },
@@ -196,6 +207,11 @@
       "STAGE_NOT_FOUND": "Stage {stage} not found for {affliction}",
       "STAGE_REDUCED": "{afflictionName} stage reduced by 1 for {tokenName}",
       "CANNOT_COUNTERACT": "Cannot counteract anything.",
+      "COUNTERACT_FAILED": "Counteract failed: {afflictionName} (Affliction Rank {afflictionRank} vs Counteract Rank {counteractRank}) - Degree of Success: {degree}",
+      "COUNTERACTED": "{afflictionName} counteracted! {tokenName} is cured.",
+      "MAX_DURATION_EXPIRED": "{afflictionName} on {tokenName} has reached maximum duration. Check chat for removal button.",
+      "DICE_DURATION_ROLLED": "{stageName}: rolled {formula} \u2192 {total} {unit}(s)",
+      "STORYFRAME_SAVE_REQUESTED": "Fortitude save requested from {actorName} via Storyframe",
       "CAN_COUNTERACT_RANGE": "Can counteract up to rank {maxRank} — affliction rank {afflictionRank} is within range.",
       "CANNOT_COUNTERACT_RANK": "Can counteract up to rank {maxRank}, but affliction is rank {afflictionRank}.",
       "NO_STAGES_DEFINED": "Affliction {name} has no stages defined"
@@ -239,7 +255,10 @@
       "AFFLICTION_NOT_FOUND": "Affliction not found",
       "ERROR_ADDING_AFFLICTION": "Error adding affliction",
       "NO_SPELLCASTING_OR_SKILL": "No {tradition} spellcasting or {skill} skill found. Select the caster token first.",
-      "NO_SKILL_FOUND": "No {skill} skill found. Select the caster token first."
+      "NO_SKILL_FOUND": "No {skill} skill found. Select the caster token first.",
+      "ACTOR_NOT_FOUND": "Actor not found",
+      "FAILED_PREPARE_AFFLICTION": "Failed to prepare affliction for editing",
+      "FAILED_UPDATE_STAGE": "Failed to update {name} stage"
     },
     "BUTTONS": {
       "APPLY_TO_TARGET": "Apply Affliction to Target",
@@ -256,7 +275,9 @@
       "APPLY_CONSEQUENCES": "Apply Consequences",
       "SAVE_BUTTON_UNLOCKED": "Save button unlocked",
       "APPLIED": "Applied",
-      "COUNTERACT_APPLIED": "{tokenName}: {afflictionName} - Applied"
+      "COUNTERACT_APPLIED": "{tokenName}: {afflictionName} - Applied",
+      "AFFLICTION_REMOVED": "Affliction Removed",
+      "DEATH_CONFIRMED": "Confirmed"
     },
     "SAVE_CONFIRMATION": {
       "INITIAL_SAVE": "Initial Save",
@@ -314,7 +335,71 @@
       "NO_CONFLICTS_TITLE": "No Conflicts Detected",
       "NO_CONFLICTS_MESSAGE": "All {count} incoming afflictions can be imported automatically",
       "IMPORT_ALL": "Import All",
-      "CANCEL": "Cancel"
+      "CANCEL": "Cancel",
+      "CANCEL_IMPORT_CONTENT": "Cancel import? All conflict resolutions will be lost.",
+      "VALIDATION_FAILED_FOR": "Validation failed for {name}: {errors}"
+    },
+    "MONITOR": {
+      "ROUNDS_UNTIL_SAVE": "{rounds} rounds until save",
+      "TIME_UNTIL_SAVE": "{duration} until save",
+      "NO_STAGE": "No Stage",
+      "ACTIVE_AFFLICTIONS_SINGULAR": "Active Affliction",
+      "ACTIVE_AFFLICTIONS_PLURAL": "Active Afflictions",
+      "CLICK_TOKEN_HINT": "Click token name to open manager for that token"
+    },
+    "CHAT": {
+      "GM_SECRET_SAVE_TITLE": "{afflictionName} - GM Secret Initial Save",
+      "HAS_BEEN_EXPOSED_TO": "has been exposed to",
+      "FORTITUDE_SAVE_DC": "DC {dc} Fortitude Save",
+      "GM_MYSTERIOUS_REASON": "This affliction is mysterious - GM rolls in secret (blind roll)",
+      "GM_REASON_PREFIX": "Reason:",
+      "GM_REASON_ONSET": "Has onset period",
+      "GM_REASON_NO_EFFECTS": "Stage 1 has no mechanical effects",
+      "ROLL_BLIND_SAVE": "Roll Blind Save for {actorName}",
+      "GM_INFO": "GM Info",
+      "FORTITUDE_SAVE_REQUIRED": "Fortitude Save Required",
+      "NEEDS_FORTITUDE_SAVE": "needs to make a Fortitude save",
+      "FORTITUDE_DC_PARENS": "(DC {dc})",
+      "ROLL_FORTITUDE_SAVE": "Roll Fortitude Save",
+      "INITIAL_SAVE_HEADING": "{afflictionName} - Initial Save",
+      "MAKE_FORTITUDE_RESIST": "Make a Fortitude save to resist the affliction",
+      "MUST_MAKE_FORTITUDE": "must make a Fortitude save",
+      "CURRENT_STAGE_LABEL": "Current Stage:",
+      "VIRULENT_PARENS": "(Virulent)",
+      "VIRULENT_NOTE": "Virulent: Success has no effect, critical success reduces by only 1 stage",
+      "TREATMENT_BONUS_ACTIVE": "Treatment bonus active",
+      "SAVE_REQUIRED_HEADING": "{afflictionName} Save Required",
+      "DAMAGE_HEADING": "{afflictionName} Damage",
+      "TAKES_DAMAGE": "takes damage from affliction",
+      "DAMAGE_LABEL": "Damage:",
+      "CLICK_DAMAGE_LINK": "Click the damage link above to roll and apply",
+      "TARGET_ACTOR": "Target {actorName}",
+      "CHOOSE_ONE": "Choose one:",
+      "OR": "OR",
+      "MAX_DURATION_HEADING": "{afflictionName} - Maximum Duration Reached",
+      "MAX_DURATION_REACHED_NOTE": "affliction has reached its maximum duration ({duration})",
+      "MAX_DURATION_PERSIST_NOTE": "The affliction should be removed, but any imposed conditions persist per PF2e rules.",
+      "STAGE_WHEN_EXPIRED": "Stage when expired:",
+      "REMOVE_CONDITIONS_PERSIST": "Remove Affliction (Conditions Persist)",
+      "STAGE_INCREASED": "Stage increased",
+      "STAGE_DECREASED": "Stage decreased",
+      "IS_NOW_AT_STAGE": "is now at Stage {stage}",
+      "WAS_STAGE": "(was {stage})",
+      "INITIAL_EXPOSURE": "Initial Exposure",
+      "DAMAGE_PREFIX": "Damage:",
+      "CONDITIONS_PREFIX": "Conditions:",
+      "WEAKNESS_PREFIX": "Weakness:",
+      "PERSISTENT_DAMAGE_LABEL": "{formula} {type} persistent damage",
+      "LETHAL_STAGE_HEADING": "{afflictionName} - Lethal Stage",
+      "REACHED_LETHAL_STAGE": "has reached a lethal stage of {afflictionName} (Stage {stage})",
+      "LETHAL_NOTE": "The affliction description indicates the creature dies at this stage.",
+      "CONFIRM_KILL": "Confirm Kill",
+      "POISON_RE_EXPOSURE_HEADING": "{afflictionName} - Poison Re-Exposure",
+      "EXPOSED_AGAIN": "is exposed to {afflictionName} again",
+      "FAILED_INITIAL_SAVE_STAGE": "Failed initial save: Stage increased by {stageIncrease} (now Stage {newStage})",
+      "MAX_DURATION_UNCHANGED": "Maximum duration unchanged",
+      "MULTIPLE_EXPOSURE_HEADING": "{afflictionName} - Multiple Exposure",
+      "STAGE_INCREASED_BY": "Stage increased by {stageIncrease} (now Stage {newStage})"
     }
   }
 }

@@ -17,13 +17,13 @@ function registerInitialSaveButtons(root) {
 
       const token = canvas.tokens.get(tokenId);
       if (!token) {
-        ui.notifications.warn('Token not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
         return;
       }
 
       let affliction = AfflictionStore.getAffliction(token, afflictionId);
       if (!affliction) {
-        ui.notifications.warn('Affliction not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND'));
         return;
       }
 
@@ -85,7 +85,7 @@ function registerInitialSaveButtons(root) {
         const unlockBtn = document.createElement('button');
         unlockBtn.className = 'affliction-unlock-save';
         unlockBtn.style.cssText = 'display: inline-block; margin-left: 8px; padding: 4px 8px; background: #555; border: 1px solid #777; color: #ffd700; border-radius: 4px; cursor: pointer; font-size: 11px; vertical-align: middle;';
-        unlockBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock';
+        unlockBtn.innerHTML = `<i class="fas fa-unlock"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.UNLOCK')}`;
 
         unlockBtn.addEventListener('click', async (e) => {
           e.preventDefault();
@@ -120,13 +120,13 @@ function registerStageSaveButtons(root) {
 
       const token = canvas.tokens.get(tokenId);
       if (!token) {
-        ui.notifications.warn('Token not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
         return;
       }
 
       let affliction = AfflictionStore.getAffliction(token, afflictionId);
       if (!affliction) {
-        ui.notifications.warn('Affliction not found');
+        ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND'));
         return;
       }
 
@@ -186,7 +186,7 @@ function registerStageSaveButtons(root) {
         const unlockBtn = document.createElement('button');
         unlockBtn.className = 'affliction-unlock-save';
         unlockBtn.style.cssText = 'display: inline-block; margin-left: 8px; padding: 4px 8px; background: #555; border: 1px solid #777; color: #ffd700; border-radius: 4px; cursor: pointer; font-size: 11px; vertical-align: middle;';
-        unlockBtn.innerHTML = '<i class="fas fa-unlock"></i> Unlock';
+        unlockBtn.innerHTML = `<i class="fas fa-unlock"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.UNLOCK')}`;
 
         unlockBtn.addEventListener('click', async (e) => {
           e.preventDefault();
@@ -225,7 +225,7 @@ function registerConfirmationButtons(root) {
       await SocketService.requestApplySaveConsequences(tokenId, afflictionId, rollMessageId, dc, saveType);
 
       btn.disabled = true;
-      btn.textContent = 'Applied';
+      btn.textContent = game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLIED');
       btn.style.opacity = '0.5';
     });
   });
@@ -312,7 +312,7 @@ export async function injectConfirmationButton(message, root) {
     text-transform: uppercase;
     letter-spacing: 0.5px;
   `;
-  button.innerHTML = '<i class="fas fa-check"></i> Apply Consequences';
+  button.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_CONSEQUENCES')}`;
 
   button.addEventListener('mouseenter', () => {
     button.style.transform = 'translateY(-1px)';
@@ -344,7 +344,7 @@ export async function injectConfirmationButton(message, root) {
     );
 
     btn.disabled = true;
-    btn.textContent = 'Applied';
+    btn.textContent = game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLIED');
     btn.style.opacity = '0.5';
   });
 

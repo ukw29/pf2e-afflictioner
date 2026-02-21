@@ -161,7 +161,12 @@ export async function injectCounteractConfirmButton(message, root) {
   const degree = degreeMap[degreeConstant] ?? DEGREE_OF_SUCCESS.CRITICAL_FAILURE;
 
   const degreeColors = { criticalSuccess: '#2d8a2d', success: '#1a5cb8', failure: '#c85a00', criticalFailure: '#b00000' };
-  const degreeLabels = { criticalSuccess: '✨ Critical Success', success: '✅ Success', failure: '❌ Failure', criticalFailure: '💀 Critical Failure' };
+  const degreeLabels = {
+    criticalSuccess: `✨ ${game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.CRITICAL_SUCCESS')}`,
+    success: `✅ ${game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.SUCCESS')}`,
+    failure: `❌ ${game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.FAILURE')}`,
+    criticalFailure: `💀 ${game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.CRITICAL_FAILURE')}`
+  };
 
   const maxRankDiffs = { criticalSuccess: 3, success: 1, failure: -1, criticalFailure: -Infinity };
   const maxRankDiff = maxRankDiffs[degree] ?? -Infinity;
@@ -339,10 +344,10 @@ export async function addCounteractAfflictionSelection(message, htmlElement) {
               window: { title: game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.CLEANSE_TITLE') },
               content: `
                 <div style="padding: 10px; background: rgba(74, 124, 42, 0.1); border-left: 3px solid #4a7c2a; border-radius: 4px;">
-                  <p style="margin: 0; font-size: 0.9em;"><strong>Spell:</strong> ${item.name} (Rank ${spellRank})</p>
-                  <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>Target:</strong> ${token.name}</p>
-                  <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>Affliction:</strong> ${affliction.name} (Stage ${affliction.currentStage})</p>
-                  <p style="margin: 8px 0 0 0; font-size: 0.9em;">This will reduce the affliction stage by 1. This reduction can only be applied once to this affliction.</p>
+                  <p style="margin: 0; font-size: 0.9em;"><strong>${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.CLEANSE_SPELL_LABEL')}</strong> ${item.name} (${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.COUNTERACT_RANK').replace('{rank}', spellRank)})</p>
+                  <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.CLEANSE_TARGET_LABEL')}</strong> ${token.name}</p>
+                  <p style="margin: 4px 0 0 0; font-size: 0.9em;"><strong>${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.CLEANSE_AFFLICTION_LABEL')}</strong> ${affliction.name} (${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.STAGE')} ${affliction.currentStage})</p>
+                  <p style="margin: 8px 0 0 0; font-size: 0.9em;">${game.i18n.localize('PF2E_AFFLICTIONER.DIALOG.CLEANSE_STAGE_NOTE')}</p>
                 </div>
               `,
               yes: { label: game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_STAGE_REDUCTION') },

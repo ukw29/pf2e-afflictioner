@@ -381,7 +381,10 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
     for (const [key, resolution] of Object.entries(dialog.resolutions)) {
       const validation = AfflictionEditorService.validateEditedData(resolution.mergedData);
       if (!validation.valid) {
-        ui.notifications.error(`Validation failed for ${resolution.mergedData.name}: ${validation.errors.join(', ')}`);
+        ui.notifications.error(game.i18n.format('PF2E_AFFLICTIONER.CONFLICT.VALIDATION_FAILED_FOR', {
+          name: resolution.mergedData.name,
+          errors: validation.errors.join(', ')
+        }));
         return;
       }
 
@@ -417,7 +420,7 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
       });
     } catch (error) {
       console.error('ConflictResolutionDialog: Import failed', error);
-      ui.notifications.error('Failed to import afflictions');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.FAILED_IMPORT'));
     }
   }
 
@@ -426,7 +429,7 @@ export class ConflictResolutionDialog extends foundry.applications.api.Handlebar
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       title: game.i18n.localize('PF2E_AFFLICTIONER.CONFLICT.CANCEL_IMPORT'),
-      content: '<p>Cancel import? All conflict resolutions will be lost.</p>',
+      content: `<p>${game.i18n.localize('PF2E_AFFLICTIONER.CONFLICT.CANCEL_IMPORT_CONTENT')}</p>`,
       yes: () => true,
       no: () => false,
       defaultYes: false

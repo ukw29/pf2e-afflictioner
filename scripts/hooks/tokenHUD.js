@@ -28,7 +28,7 @@ export function onRenderTokenHUD(app, html) {
   buttonElement.className = hasAfflictions ? 'control-icon active' : 'control-icon';
   buttonElement.style.display = 'flex';
   buttonElement.setAttribute('data-action', 'pf2e-afflictioner-manage');
-  buttonElement.setAttribute('data-tooltip', 'Manage Afflictions');
+  buttonElement.setAttribute('data-tooltip', game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.MANAGE_AFFLICTIONS_TOOLTIP'));
   buttonElement.innerHTML = '<i class="fas fa-biohazard"></i>';
 
   buttonElement.addEventListener('click', async (event) => {

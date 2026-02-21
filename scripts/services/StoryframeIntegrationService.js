@@ -63,7 +63,7 @@ export class StoryframeIntegrationService {
       await game.storyframe.socketManager.requestAddPendingRoll(request);
       await game.storyframe.socketManager.triggerSkillCheckOnPlayer(user.id, request);
 
-      ui.notifications.info(`Fortitude save requested from ${actor.name} via Storyframe`);
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.STORYFRAME_SAVE_REQUESTED', { actorName: actor.name }));
       return true;
     } catch (error) {
       console.warn(`${MODULE_ID} | Failed to send to storyframe:`, error);

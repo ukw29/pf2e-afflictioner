@@ -266,7 +266,8 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
           name: token.name,
           img: token.document.texture.src,
           afflictions: Object.values(updatedAfflictions).map(aff => {
-            const currentStage = aff.stages[aff.currentStage - 1];
+            const stageIndex = aff.currentStage - 1;
+            const currentStage = (stageIndex >= 0 && aff.stages) ? aff.stages[stageIndex] : undefined;
             const hasDamage = currentStage && currentStage.damage && currentStage.damage.length > 0;
 
             return {
@@ -278,13 +279,13 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
                   : `${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.STAGE')} ${aff.currentStage}`,
               nextSaveDisplay: this.formatNextSave(aff),
               treatmentDisplay: this.formatTreatment(aff),
-              hasWarning: aff.stages[aff.currentStage - 1]?.requiresManualHandling || false,
+              hasWarning: currentStage?.requiresManualHandling || false,
               hasDamage: hasDamage,
               stageTooltip: this.formatStageTooltip(aff),
               isVirulent: aff.isVirulent || false,
               hasMultipleExposure: aff.multipleExposure?.enabled || false,
               multipleExposureIncrease: aff.multipleExposure?.stageIncrease || 0,
-              canProgressStage: aff.currentStage < aff.stages.length,
+              canProgressStage: aff.currentStage < (aff.stages?.length ?? 0),
               canRegressStage: aff.currentStage > 1
             };
           })

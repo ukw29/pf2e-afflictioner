@@ -53,7 +53,11 @@ export async function onWorldTimeUpdate(worldTime, delta) {
             await AfflictionService.promptDamage(token, updatedAffliction);
           }
 
-          ui.notifications.info(`${token.name} - ${affliction.name} onset complete, now at stage ${targetStage}`);
+          ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.ONSET_COMPLETE', {
+            tokenName: token.name,
+            afflictionName: affliction.name,
+            stage: targetStage
+          }));
         } else {
           await AfflictionStore.updateAffliction(token, id, {
             onsetRemaining: newRemaining

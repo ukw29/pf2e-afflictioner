@@ -199,7 +199,12 @@ export class CounteractService {
 
     if (!succeeds) {
       if (game.user.isGM) {
-        ui.notifications.warn(`Counteract failed: ${affliction.name} (Affliction Rank ${afflictionRank} vs Counteract Rank ${counteractRank}) - Degree of Success: ${degree}`);
+        ui.notifications.warn(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.COUNTERACT_FAILED', {
+          afflictionName: affliction.name,
+          afflictionRank,
+          counteractRank,
+          degree
+        }));
       }
       return false;
     }
@@ -217,7 +222,10 @@ export class CounteractService {
       await VisualService.removeAfflictionIndicator(token);
     }
 
-    ui.notifications.info(`${affliction.name} counteracted! ${token.name} is cured.`);
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.NOTIFICATIONS.COUNTERACTED', {
+      afflictionName: affliction.name,
+      tokenName: token.name
+    }));
     return true;
   }
 

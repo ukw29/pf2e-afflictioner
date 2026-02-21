@@ -74,7 +74,7 @@ export class AfflictionEditorDialog extends foundry.applications.api.HandlebarsA
     const stage = dialog.editedData.stages.find(s => s.number === stageNumber);
 
     if (!stage) {
-      ui.notifications.error(`Stage ${stageNumber} not found`);
+      ui.notifications.error(game.i18n.format('PF2E_AFFLICTIONER.EDITOR.STAGE_NOT_FOUND', { number: stageNumber }));
       return;
     }
 

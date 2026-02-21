@@ -33,14 +33,14 @@ function registerMaxDurationRemovalHandler(root) {
 
     const token = canvas.tokens.get(tokenId);
     if (!token) {
-      ui.notifications.error('Token not found');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
       return;
     }
 
     const AfflictionStore = await import('../stores/AfflictionStore.js');
     const affliction = AfflictionStore.getAffliction(token, afflictionId);
     if (!affliction) {
-      ui.notifications.error('Affliction not found');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.AFFLICTION_NOT_FOUND'));
       return;
     }
 
@@ -69,13 +69,21 @@ function registerMaxDurationRemovalHandler(root) {
     const { VisualService } = await import('../services/VisualService.js');
     await VisualService.removeAfflictionIndicator(token);
 
-    const expiryNote = resolved?.value > 0
-      ? `Effect will expire after ${resolved.value} ${resolved.unit}(s).`
-      : `Effect and conditions persist on ${token.name} per PF2e rules.`;
-    ui.notifications.info(`Removed ${affliction.name} from tracking. ${expiryNote}`);
+    if (resolved?.value > 0) {
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.REMOVED_FROM_TRACKING_EXPIRES', {
+        afflictionName: affliction.name,
+        value: resolved.value,
+        unit: resolved.unit
+      }));
+    } else {
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.REMOVED_FROM_TRACKING_PERSISTS', {
+        afflictionName: affliction.name,
+        tokenName: token.name
+      }));
+    }
 
     button.disabled = true;
-    button.textContent = '✓ Affliction Removed';
+    button.textContent = `✓ ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.AFFLICTION_REMOVED')}`;
   });
 }
 
@@ -90,13 +98,13 @@ function registerDeathConfirmationHandler(root) {
 
     const token = canvas.tokens.get(tokenId);
     if (!token) {
-      ui.notifications.error('Token not found');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.TOKEN_NOT_FOUND'));
       return;
     }
 
     const actor = token.actor;
     if (!actor) {
-      ui.notifications.error('Actor not found');
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.ERRORS.ACTOR_NOT_FOUND'));
       return;
     }
 
@@ -117,6 +125,6 @@ function registerDeathConfirmationHandler(root) {
     }));
 
     button.disabled = true;
-    button.innerHTML = '<i class="fas fa-skull"></i> Confirmed';
+    button.innerHTML = `<i class="fas fa-skull"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.DEATH_CONFIRMED')}`;
   });
 }

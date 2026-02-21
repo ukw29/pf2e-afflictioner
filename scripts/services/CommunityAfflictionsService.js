@@ -46,7 +46,7 @@ export class CommunityAfflictionsService {
 
       const count = analysis.autoImport.filter(i => !i.isIdentical).length;
       console.log(`PF2e Afflictioner | Community data v${communityData.version} imported (${count} entries)`);
-      ui.notifications.info(`PF2e Afflictioner: Imported ${count} community affliction(s)`);
+      ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.EDITED_MANAGER.COMMUNITY_IMPORTED', { count }));
       return;
     }
 
