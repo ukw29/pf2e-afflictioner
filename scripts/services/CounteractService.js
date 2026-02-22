@@ -163,17 +163,10 @@ export class CounteractService {
         </div>
       `;
 
-      const playerWhisper = casterActor?.hasPlayerOwner
-        ? game.users.filter(u => !u.isGM && casterActor.testUserPermission(u, 'OWNER')).map(u => u.id)
-        : [];
-
-      if (playerWhisper.length > 0 || !casterActor) {
-        await ChatMessage.create({
-          content: playerContent,
-          speaker: ChatMessage.getSpeaker({ token }),
-          whisper: playerWhisper.length > 0 ? playerWhisper : game.users.filter(u => u.isGM).map(u => u.id)
-        });
-      }
+      await ChatMessage.create({
+        content: playerContent,
+        speaker: ChatMessage.getSpeaker({ token })
+      });
     }
   }
 

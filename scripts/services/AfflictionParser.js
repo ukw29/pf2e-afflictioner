@@ -365,6 +365,17 @@ export class AfflictionParser {
       }
     }
 
+    // Legacy inline roll format: [[/r 1d6[poison]]] or [[/br 1d6[poison]]]
+    const legacyInlineMatches = text.matchAll(/\[\[\/(?:br?\s+)([\dd\w+-]+)\[(\w+)\]\]\]/gi);
+    for (const match of legacyInlineMatches) {
+      const formula = match[1].trim();
+      const type = match[2].trim().toLowerCase();
+      if (!seenFormulas.has(formula)) {
+        damageEntries.push({ formula, type });
+        seenFormulas.add(formula);
+      }
+    }
+
     const typedDamageMatches = text.matchAll(/@Damage\[([\d\w+-]+)\[([^\]]+)\]\]/gi);
     for (const match of typedDamageMatches) {
       const formula = match[1].trim();
@@ -435,9 +446,13 @@ export class AfflictionParser {
     const conditions = [];
     const foundConditions = new Set();
 
+    // Map pre-remaster condition display names to their current equivalents
+    const legacyConditionAliases = { 'flat-footed': 'off-guard' };
+
     const uuidMatches = text.matchAll(/@UUID\[[^\]]+\]\{([^}]+)\}/gi);
     for (const match of uuidMatches) {
-      const conditionText = match[1].trim();
+      const raw = match[1].trim();
+      const conditionText = legacyConditionAliases[raw.toLowerCase()] ?? raw;
 
       for (const condition of PF2E_CONDITIONS) {
         const escapedCondition = condition.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

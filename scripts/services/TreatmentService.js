@@ -25,8 +25,7 @@ export class TreatmentService {
 
     await ChatMessage.create({
       content: content,
-      speaker: ChatMessage.getSpeaker({ token: token }),
-      whisper: actor.hasPlayerOwner ? game.users.filter(u => actor.testUserPermission(u, 'OWNER')).map(u => u.id) : []
+      speaker: ChatMessage.getSpeaker({ token: token })
     });
   }
 

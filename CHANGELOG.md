@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2026-02-22
+
+### Fixed
+
+- **Treatment and counteract prompts are now public**: The "Roll Medicine" and counteract roll buttons are no longer whispered — they post as public chat messages so any player can see and use them to perform the check on behalf of the afflicted character.
+
+- **Legacy (pre-remaster) affliction parsing**: Older content that uses `[[/r 1d6[poison]]]` inline roll syntax (e.g. Kingmaker module) now correctly parses damage, matching the behaviour of remastered `@Damage[1d6[poison]]` format.
+- **`Flat-Footed` condition alias**: The pre-remaster condition name `Flat-Footed` (same UUID as `Off-Guard`) is now mapped to `off-guard` during parsing, so it is correctly applied as a stage condition.
+
 ## [1.1.5] - 2026-02-22
 
 ### Fixed
