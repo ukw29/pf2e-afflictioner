@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-02-22
+
+### Added
+
+- **Weapon Coating**: Injury poisons can now be applied to weapons directly from the Affliction Manager
+  - New **Weapon Coatings** tab in the Affliction Manager (tab-based navigation)
+  - Shows all piercing/slashing weapons for the selected token; each row has an inline poison selector
+  - Coating data persisted as actor flags (`pf2e-afflictioner.weaponCoatings`)
+  - **"Coat Weapon" button** injected on injury-poison item cards in chat (GM only)
+  - On first Strike with a coated weapon the module auto-detects the outcome:
+    - **Hit (piercing/slashing)**: poison spent, GM receives a whisper with "Apply Affliction" button
+    - **Miss**: poison remains on weapon, GM notified
+    - **Critical miss or non-piercing/slashing hit**: poison spent with no effect
+  - Hover tooltip on active coating shows DC, onset, max duration, and per-stage effects
+  - Info button (ⓘ) next to poison name opens the item sheet
+  - All user-facing strings fully i18n-localised under `PF2E_AFFLICTIONER.WEAPON_COATING`
+
 ## [1.0.3] - 2026-02-21
 
 ### Changed

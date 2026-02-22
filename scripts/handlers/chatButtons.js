@@ -20,6 +20,66 @@ export function onRenderChatMessage(message, html) {
 
   registerMaxDurationRemovalHandler(root);
   registerDeathConfirmationHandler(root);
+  registerApplyWeaponPoisonHandler(root);
+
+  injectCoatWeaponButton(message, root);
+}
+
+function registerApplyWeaponPoisonHandler(root) {
+  const btn = root.querySelector('.pf2e-afflictioner-apply-weapon-poison');
+  if (!btn) return;
+
+  btn.addEventListener('click', async () => {
+    const targetTokenId = btn.dataset.targetTokenId;
+    const afflictionData = JSON.parse(decodeURIComponent(btn.dataset.afflictionData));
+
+    const target = canvas.tokens.get(targetTokenId);
+    if (!target) {
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.TARGET_NOT_FOUND'));
+      return;
+    }
+
+    const { AfflictionService } = await import('../services/AfflictionService.js');
+    await AfflictionService.promptInitialSave(target, afflictionData);
+
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.SAVE_PROMPTED')}`;
+  });
+}
+
+async function injectCoatWeaponButton(message, root) {
+  if (!game.user.isGM) return;
+
+  const itemUuid = message.flags?.pf2e?.origin?.uuid;
+  if (!itemUuid) return;
+
+  let item;
+  try {
+    item = await fromUuid(itemUuid);
+  } catch {
+    return;
+  }
+  if (!item) return;
+
+  const traits = item.system?.traits?.value || [];
+  if (!traits.includes('injury')) return;
+
+  const footer = root.querySelector('.card-footer, .chat-card footer, .item-card footer');
+  const container = footer || root.querySelector('.chat-card, .item-card') || root;
+
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'pf2e-afflictioner-coat-weapon-btn';
+  btn.innerHTML = `<i class="fas fa-flask"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.COAT_WEAPON_BTN')}`;
+  btn.dataset.itemUuid = itemUuid;
+
+
+  btn.addEventListener('click', async () => {
+    const { WeaponCoatingService } = await import('../services/WeaponCoatingService.js');
+    await WeaponCoatingService.openCoatDialog(itemUuid);
+  });
+
+  container.appendChild(btn);
 }
 
 function registerMaxDurationRemovalHandler(root) {

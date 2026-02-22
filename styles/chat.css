@@ -163,6 +163,141 @@
   margin-right: 6px;
 }
 
+/* Weapon-select dialog (coat weapon with poison) */
+.wcs-label {
+  font-size: 0.9em;
+  margin: 0 0 10px;
+  color: #ccc;
+  line-height: 1.4;
+}
+
+.wcs-label strong { color: #e8ffcc; }
+
+.wcs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-bottom: 4px;
+}
+
+.wcs-grid::-webkit-scrollbar { width: 5px; }
+.wcs-grid::-webkit-scrollbar-thumb { background: rgba(139,0,0,0.4); border-radius: 3px; }
+
+.wcs-card {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid transparent;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.35);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  user-select: none;
+}
+
+.wcs-card:hover {
+  background: rgba(255,255,255,0.06);
+  border-left-color: rgba(74,124,42,0.5);
+}
+
+.wcs-card.wcs-selected {
+  background: rgba(74,124,42,0.18);
+  border-left-color: #5aaa36;
+}
+
+.wcs-card img {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  object-fit: contain;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.5);
+  flex-shrink: 0;
+}
+
+.wcs-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wcs-card-name {
+  font-weight: 600;
+  font-size: 0.9em;
+  color: #e0e0e0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wcs-card-damage {
+  font-size: 0.75em;
+  color: #7dbf4a;
+  text-transform: capitalize;
+}
+
+.wcs-hint {
+  font-size: 0.78em;
+  color: #666;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* Hide confirm button — card click submits directly */
+.application:has(.wcs-grid) .form-footer,
+.application:has(.wcs-grid) .dialog-buttons {
+  display: none !important;
+}
+
+/* Coat Weapon button on injury item chat cards */
+.pf2e-afflictioner-coat-weapon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 14px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, #3a6e1a 0%, #4a8c28 100%);
+  border: 1px solid #2e5814;
+  border-bottom: 2px solid #1e3d0a;
+  color: #d8f0c0;
+  font-weight: 600;
+  font-size: 0.9em;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.pf2e-afflictioner-coat-weapon-btn:hover {
+  background: linear-gradient(135deg, #4a8c28 0%, #5aaa36 100%);
+  border-color: #3a7020;
+  color: #e8ffcc;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 12px rgba(58, 110, 26, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.pf2e-afflictioner-coat-weapon-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.pf2e-afflictioner-coat-weapon-btn i {
+  font-size: 0.95em;
+  filter: drop-shadow(0 0 3px rgba(160, 255, 80, 0.3));
+}
+
 /* Counteract request styling in chat */
 .pf2e-afflictioner-counteract-request {
   background: linear-gradient(135deg, rgba(74, 124, 42, 0.15) 0%, rgba(74, 124, 42, 0.05) 100%);

@@ -1,7 +1,8 @@
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
-import { DEGREE_OF_SUCCESS } from '../constants.js';
+import * as WeaponCoatingStore from '../stores/WeaponCoatingStore.js';
+import { DEGREE_OF_SUCCESS, MODULE_ID } from '../constants.js';
 
 export async function onCreateChatMessage(message, options, userId) {
   if (!game.user.isGM) return;
@@ -9,7 +10,14 @@ export async function onCreateChatMessage(message, options, userId) {
   if (!game.settings.get('pf2e-afflictioner', 'autoDetectAfflictions')) return;
 
   const flags = message.flags?.pf2e;
-  if (!flags?.context?.type || flags.context.type !== 'saving-throw') return;
+  if (!flags?.context?.type) return;
+
+  if (flags.context.type === 'attack-roll') {
+    await handleAttackRoll(message, flags);
+    return;
+  }
+
+  if (flags.context.type !== 'saving-throw') return;
 
   const origin = flags.origin;
   if (!origin?.uuid) return;
@@ -113,4 +121,98 @@ export async function onCreateChatMessage(message, options, userId) {
     tokenName: token.name,
     afflictionName: afflictionData.name
   }));
+}
+
+async function handleAttackRoll(_message, flags) {
+  const originUuid = flags.origin?.uuid;
+  if (!originUuid) return;
+
+  let weapon;
+  try {
+    weapon = await fromUuid(originUuid);
+  } catch {
+    return;
+  }
+  if (!weapon) return;
+
+  const actor = weapon.parent;
+  if (!actor) return;
+
+  const coating = WeaponCoatingStore.getCoating(actor, weapon.id);
+  if (!coating) return;
+
+  const outcome = flags.context?.outcome;
+  if (!outcome) return;
+
+  const weaponName = weapon.name;
+  const actorName = actor.name;
+  const poisonName = coating.poisonName;
+
+  const gmWhisper = game.users.filter(u => u.isGM).map(u => u.id);
+
+  if (outcome === DEGREE_OF_SUCCESS.SUCCESS || outcome === DEGREE_OF_SUCCESS.CRITICAL_SUCCESS) {
+    const damageType = weapon.system?.damage?.damageType;
+    const hasPiercingOrSlashing = damageType === 'piercing' || damageType === 'slashing';
+
+    if (hasPiercingOrSlashing) {
+      await WeaponCoatingStore.removeCoating(actor, weapon.id);
+
+      const { AfflictionManager } = await import('../managers/AfflictionManager.js');
+      if (AfflictionManager.currentInstance) AfflictionManager.currentInstance.render({ force: true });
+
+      const i = game.i18n;
+      const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
+      const targets = Array.from(game.user.targets);
+      if (targets.length) {
+        for (const target of targets) {
+          await ChatMessage.create({
+            content: `
+              <div class="pf2e-afflictioner-save-request">
+                <h3><i class="fas fa-flask"></i> ${i.format(`${K}.HIT_TITLE`, { poisonName })}</h3>
+                <p><strong>${actorName}</strong> hit <strong>${target.name}</strong> with <strong>${weaponName}</strong>.</p>
+                <button class="pf2e-afflictioner-apply-weapon-poison"
+                        data-target-token-id="${target.id}"
+                        data-affliction-data="${encodeURIComponent(JSON.stringify(coating.afflictionData))}">
+                  <i class="fas fa-biohazard"></i> ${i.format(`${K}.HIT_APPLY_BTN`, { targetName: target.name })}
+                </button>
+              </div>`,
+            whisper: gmWhisper
+          });
+        }
+      } else {
+        await ChatMessage.create({
+          content: `
+            <div class="pf2e-afflictioner-save-request">
+              <h3><i class="fas fa-flask"></i> ${i.format(`${K}.HIT_TITLE`, { poisonName })}</h3>
+              <p>${i.format(`${K}.HIT_NO_TARGET`, { actorName, weaponName })}</p>
+              <p><em>${i.localize(`${K}.HIT_NO_TARGET_HINT`)}</em></p>
+            </div>`,
+          whisper: gmWhisper
+        });
+      }
+    } else {
+      await WeaponCoatingStore.removeCoating(actor, weapon.id);
+      const i = game.i18n;
+      const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
+      await ChatMessage.create({
+        content: `<div class="pf2e-afflictioner-save-request"><p>${i.format(`${K}.HIT_WRONG_DAMAGE`, { weaponName, poisonName })}</p></div>`,
+        whisper: gmWhisper
+      });
+    }
+  } else if (outcome === DEGREE_OF_SUCCESS.FAILURE) {
+    const i = game.i18n;
+    const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
+    await ChatMessage.create({
+      content: `<div class="pf2e-afflictioner-save-request"><p>${i.format(`${K}.MISS`, { actorName, weaponName, poisonName })}</p></div>`,
+      whisper: gmWhisper
+    });
+  } else if (outcome === DEGREE_OF_SUCCESS.CRITICAL_FAILURE) {
+    await WeaponCoatingStore.removeCoating(actor, weapon.id);
+    const i = game.i18n;
+    const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
+    await ChatMessage.create({
+      content: `<div class="pf2e-afflictioner-save-request"><p>${i.format(`${K}.CRIT_MISS`, { actorName, weaponName, poisonName })}</p></div>`,
+      whisper: gmWhisper
+    });
+  }
 }

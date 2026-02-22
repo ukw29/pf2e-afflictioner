@@ -1,4 +1,5 @@
 import * as AfflictionStore from '../stores/AfflictionStore.js';
+import * as WeaponCoatingStore from '../stores/WeaponCoatingStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
 import { TreatmentService } from '../services/TreatmentService.js';
 import { CounteractService } from '../services/CounteractService.js';
@@ -32,7 +33,10 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       rollSave: AfflictionManager.rollSave,
       rollDamage: AfflictionManager.rollDamage,
       treatAffliction: AfflictionManager.treatAffliction,
-      counteractAffliction: AfflictionManager.counteractAffliction
+      counteractAffliction: AfflictionManager.counteractAffliction,
+      removeCoating: AfflictionManager.removeCoating,
+      addCoating: AfflictionManager.addCoating,
+      openPoisonItem: AfflictionManager.openPoisonItem
     }
   };
 
@@ -52,6 +56,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
     }
 
     this.filterTokenId = options.filterTokenId || null;
+    this._activeTab = 'afflictions';
     AfflictionManager.currentInstance = this;
     this._setupAutoRefresh();
   }
@@ -75,6 +80,24 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
 
     const element = this.element;
     if (!element) return;
+
+    // Tab switching (runs every render to reflect active tab)
+    const tabBtns = element.querySelectorAll('.affliction-manager-tab-btn');
+    const tabPanels = element.querySelectorAll('.affliction-manager-tab-panel');
+
+    const applyTab = (tabName) => {
+      this._activeTab = tabName;
+      tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
+      tabPanels.forEach(p => {
+        p.style.display = p.dataset.tab === tabName ? '' : 'none';
+      });
+    };
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => applyTab(btn.dataset.tab));
+    });
+
+    applyTab(this._activeTab);
 
     if (this._dropHandlersInitialized) return;
     this._dropHandlersInitialized = true;
@@ -293,9 +316,59 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       }
     }
 
+    // Build weapons list for the currently controlled/filtered token only
+    const actorsWithWeapons = [];
+    const controlledToken = this.filterTokenId
+      ? canvas.tokens.get(this.filterTokenId)
+      : canvas.tokens.controlled[0];
+
+    if (controlledToken?.actor) {
+      const actor = controlledToken.actor;
+      const weapons = (actor.itemTypes?.weapon || []).filter(w => {
+        const dt = w.system?.damage?.damageType;
+        return dt === 'piercing' || dt === 'slashing';
+      });
+      if (weapons.length) {
+        const entry = { actorId: actor.id, actorName: actor.name, weapons: [] };
+        for (const weapon of weapons) {
+          const coating = WeaponCoatingStore.getCoating(actor, weapon.id);
+          entry.weapons.push({
+            actorId: actor.id,
+            weaponId: weapon.id,
+            weaponName: weapon.name,
+            damageType: weapon.system?.damage?.damageType || 'unknown',
+            isCoated: !!coating,
+            poisonName: coating?.poisonName || null,
+            poisonItemUuid: coating?.poisonItemUuid || null,
+            coatingTooltip: coating ? this.constructor._formatCoatingTooltip(coating.afflictionData) : null
+          });
+        }
+        actorsWithWeapons.push(entry);
+      }
+    }
+
+    // Collect injury-trait items from the controlled token's inventory only
+    const injuryItems = [];
+    const hasInjuryTrait = (item) => (item.system?.traits?.value || []).includes('injury');
+
+    if (controlledToken?.actor) {
+      for (const item of controlledToken.actor.items) {
+        if (hasInjuryTrait(item)) {
+          injuryItems.push({ uuid: item.uuid, name: item.name, ownerName: null });
+        }
+      }
+    }
+
+    const hasAnyCoating = actorsWithWeapons.some(a => a.weapons.some(w => w.isCoated));
+
     return {
       tokens: tokensWithAfflictions,
-      hasAfflictions: tokensWithAfflictions.length > 0
+      hasAfflictions: tokensWithAfflictions.length > 0,
+      actorsWithWeapons,
+      hasWeapons: actorsWithWeapons.length > 0,
+      hasAnyCoating,
+      injuryItems,
+      hasInjuryItems: injuryItems.length > 0
     };
   }
 
@@ -367,6 +440,23 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       return `${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.TREATMENT')}: ${bonus > 0 ? '+' : ''}${bonus}`;
     }
     return game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.NOT_TREATED');
+  }
+
+  static _formatCoatingTooltip(aff) {
+    if (!aff) return '';
+    const i = game.i18n;
+    const lines = [];
+    lines.push(i.format('PF2E_AFFLICTIONER.WEAPON_COATING.TOOLTIP_DC', { dc: aff.dc }));
+    if (aff.isVirulent) lines.push(i.localize('PF2E_AFFLICTIONER.WEAPON_COATING.TOOLTIP_VIRULENT'));
+    if (aff.onset) lines.push(i.format('PF2E_AFFLICTIONER.WEAPON_COATING.TOOLTIP_ONSET', { value: aff.onset.value, unit: aff.onset.unit }));
+    if (aff.maxDuration) lines.push(i.format('PF2E_AFFLICTIONER.WEAPON_COATING.TOOLTIP_MAX_DURATION', { value: aff.maxDuration.value, unit: aff.maxDuration.unit }));
+    if (aff.stages?.length) {
+      for (const stage of aff.stages) {
+        const effects = this.cleanTooltipText(stage.effects) || i.localize('PF2E_AFFLICTIONER.WEAPON_COATING.TOOLTIP_NO_EFFECTS');
+        lines.push(i.format('PF2E_AFFLICTIONER.WEAPON_COATING.TOOLTIP_STAGE', { number: stage.number, effects }));
+      }
+    }
+    return lines.join('<br>');
   }
 
   static cleanTooltipText(text) {
@@ -636,6 +726,68 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
       await TreatmentService.promptTreatment(token, affliction);
     }
+  }
+
+  static async openPoisonItem(_event, button) {
+    const uuid = button.dataset.uuid;
+    if (!uuid) return;
+    const item = await fromUuid(uuid);
+    item?.sheet?.render(true);
+  }
+
+  static async removeCoating(_event, button) {
+    const actorId = button.dataset.actorId;
+    const weaponId = button.dataset.weaponId;
+    const actor = game.actors.get(actorId);
+    if (!actor) {
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.ACTOR_NOT_FOUND'));
+      return;
+    }
+    await WeaponCoatingStore.removeCoating(actor, weaponId);
+    ui.notifications.info(game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.REMOVE_SUCCESS'));
+    this.render({ force: true });
+  }
+
+  static async addCoating(_event, button) {
+    const actorId = button.dataset.actorId;
+    const weaponId = button.dataset.weaponId;
+    const row = button.closest('.weapon-row');
+    const select = row?.querySelector('.coating-poison-select');
+    const itemUuid = select?.value;
+
+    if (!itemUuid) {
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.SELECT_FIRST'));
+      return;
+    }
+
+    const actor = game.actors.get(actorId);
+    if (!actor) {
+      ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.ACTOR_NOT_FOUND'));
+      return;
+    }
+
+    const weapon = actor.items.get(weaponId);
+    const item = await fromUuid(itemUuid);
+    if (!item) {
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.ITEM_LOAD_ERROR'));
+      return;
+    }
+
+    const afflictionData = AfflictionParser.parseFromItem(item);
+    if (!afflictionData) {
+      ui.notifications.error(game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.PARSE_ERROR'));
+      return;
+    }
+
+    await WeaponCoatingStore.addCoating(actor, weaponId, {
+      poisonItemUuid: itemUuid,
+      poisonName: afflictionData.name,
+      weaponName: weapon?.name ?? weaponId,
+      afflictionData
+    });
+
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.WEAPON_COATING.COATED', { weaponName: weapon?.name ?? weaponId, poisonName: afflictionData.name }));
+    this.render({ force: true });
   }
 
   static async counteractAffliction(_event, button) {

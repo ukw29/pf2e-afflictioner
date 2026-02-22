@@ -1,99 +1,169 @@
 <div class="affliction-manager-content">
-  {{#if hasAfflictions}}
-    {{#each tokens}}
-      <div class="token-section">
-        <div class="token-header">
-          <img src="{{img}}" alt="{{name}}" />
-          <h3>{{name}}</h3>
-        </div>
+  <div class="affliction-manager-tabs">
+    <button type="button" class="affliction-manager-tab-btn active" data-tab="afflictions">
+      <i class="fas fa-biohazard"></i> {{localize "PF2E_AFFLICTIONER.WEAPON_COATING.TAB_AFFLICTIONS"}}
+    </button>
+    <button type="button" class="affliction-manager-tab-btn" data-tab="coatings">
+      <i class="fas fa-flask"></i> {{localize "PF2E_AFFLICTIONER.WEAPON_COATING.TAB_LABEL"}}
+      {{#if hasAnyCoating}}<span class="coating-badge">{{#each actorsWithWeapons}}{{#each weapons}}{{#if isCoated}}1{{/if}}{{/each}}{{/each}}</span>{{/if}}
+    </button>
+  </div>
 
-        {{#each afflictions}}
-          <div class="affliction-row">
-            <div class="affliction-info">
-              <h4>
-                {{name}} ({{type}})
-                {{#if isVirulent}}
-                  <span style="color: #c45500; font-size: 0.85em; font-weight: normal;" data-tooltip="Requires two consecutive successes to reduce stage by 1. Critical success reduces by 1 instead of 2.">[Virulent]</span>
+  <div class="affliction-manager-tab-panel" data-tab="afflictions">
+    {{#if hasAfflictions}}
+      {{#each tokens}}
+        <div class="token-section">
+          <div class="token-header">
+            <img src="{{img}}" alt="{{name}}" />
+            <h3>{{name}}</h3>
+          </div>
+
+          {{#each afflictions}}
+            <div class="affliction-row">
+              <div class="affliction-info">
+                <h4>
+                  {{name}} ({{type}})
+                  {{#if isVirulent}}
+                    <span style="color: #c45500; font-size: 0.85em; font-weight: normal;" data-tooltip="Requires two consecutive successes to reduce stage by 1. Critical success reduces by 1 instead of 2.">[Virulent]</span>
+                  {{/if}}
+                  {{#if hasMultipleExposure}}
+                    <span style="color: #0066cc; font-size: 0.85em; font-weight: normal;" data-tooltip="Re-exposure increases stage by {{multipleExposureIncrease}}">[Multiple Exposure +{{multipleExposureIncrease}}]</span>
+                  {{/if}}
+                  {{#if hasWarning}}
+                    <i class="fas fa-exclamation-triangle" style="color: #ff6b00;" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.MANUAL_HANDLING_REQUIRED'}}"></i>
+                  {{/if}}
+                </h4>
+                <div class="affliction-details">
+                  <span class="stage">
+                    {{stageDisplay}}
+                    <i class="fas fa-info-circle stage-info" data-tooltip="{{stageTooltip}}"></i>
+                  </span>
+                  <span class="next-save">{{localize 'PF2E_AFFLICTIONER.MANAGER.NEXT_SAVE'}}: {{nextSaveDisplay}}</span>
+                  <span class="treatment">{{treatmentDisplay}}</span>
+                </div>
+              </div>
+
+              <div class="affliction-actions">
+                <button type="button" data-action="editAffliction"
+                        data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                        data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.EDIT_AFFLICTION'}}">
+                  <i class="fas fa-pencil-alt"></i>
+                </button>
+                <button type="button" data-action="rollSave"
+                        data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                        data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_SAVE'}}">
+                  <i class="fas fa-dice-d20"></i>
+                </button>
+                {{#if hasDamage}}
+                <button type="button" data-action="rollDamage"
+                        data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                        data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_DAMAGE'}}">
+                  <i class="fas fa-heart-broken"></i>
+                </button>
                 {{/if}}
-                {{#if hasMultipleExposure}}
-                  <span style="color: #0066cc; font-size: 0.85em; font-weight: normal;" data-tooltip="Re-exposure increases stage by {{multipleExposureIncrease}}">[Multiple Exposure +{{multipleExposureIncrease}}]</span>
-                {{/if}}
-                {{#if hasWarning}}
-                  <i class="fas fa-exclamation-triangle" style="color: #ff6b00;" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.MANUAL_HANDLING_REQUIRED'}}"></i>
-                {{/if}}
-              </h4>
-              <div class="affliction-details">
-                <span class="stage">
-                  {{stageDisplay}}
-                  <i class="fas fa-info-circle stage-info" data-tooltip="{{stageTooltip}}"></i>
-                </span>
-                <span class="next-save">{{localize 'PF2E_AFFLICTIONER.MANAGER.NEXT_SAVE'}}: {{nextSaveDisplay}}</span>
-                <span class="treatment">{{treatmentDisplay}}</span>
+                <button type="button" data-action="treatAffliction"
+                        data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                        data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.TREAT'}}">
+                  <i class="fas fa-medkit"></i>
+                </button>
+                <button type="button" data-action="counteractAffliction"
+                        data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                        data-tooltip="Counteract affliction (e.g., Cleanse Affliction spell)">
+                  <i class="fas fa-shield-alt"></i>
+                </button>
+                <button type="button" data-action="progressStage"
+                        data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                        data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.PROGRESS_STAGE'}}"
+                        {{#unless canProgressStage}}disabled{{/unless}}>
+                  <i class="fas fa-arrow-up"></i>
+                </button>
+                <button type="button" data-action="regressStage"
+                        data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                        data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.REGRESS_STAGE'}}"
+                        {{#unless canRegressStage}}disabled{{/unless}}>
+                  <i class="fas fa-arrow-down"></i>
+                </button>
+                <button type="button" data-action="removeAffliction"
+                        data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
+                        data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.REMOVE_AFFLICTION'}}">
+                  <i class="fas fa-times"></i>
+                </button>
               </div>
             </div>
+          {{/each}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p class="no-afflictions">{{localize 'PF2E_AFFLICTIONER.MANAGER.NO_AFFLICTIONS'}}</p>
+    {{/if}}
 
-            <div class="affliction-actions">
-              <button type="button" data-action="editAffliction"
-                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.EDITOR.EDIT_AFFLICTION'}}">
-                <i class="fas fa-pencil-alt"></i>
-              </button>
-              <button type="button" data-action="rollSave"
-                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_SAVE'}}">
-                <i class="fas fa-dice-d20"></i>
-              </button>
-              {{#if hasDamage}}
-              <button type="button" data-action="rollDamage"
-                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ROLL_DAMAGE'}}">
-                <i class="fas fa-heart-broken"></i>
-              </button>
-              {{/if}}
-              <button type="button" data-action="treatAffliction"
-                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.TREAT'}}">
-                <i class="fas fa-medkit"></i>
-              </button>
-              <button type="button" data-action="counteractAffliction"
-                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="Counteract affliction (e.g., Cleanse Affliction spell)">
-                <i class="fas fa-shield-alt"></i>
-              </button>
-              <button type="button" data-action="progressStage"
-                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.PROGRESS_STAGE'}}"
-                      {{#unless canProgressStage}}disabled{{/unless}}>
-                <i class="fas fa-arrow-up"></i>
-              </button>
-              <button type="button" data-action="regressStage"
-                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.REGRESS_STAGE'}}"
-                      {{#unless canRegressStage}}disabled{{/unless}}>
-                <i class="fas fa-arrow-down"></i>
-              </button>
-              <button type="button" data-action="removeAffliction"
-                      data-affliction-id="{{id}}" data-token-id="{{../tokenId}}"
-                      data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.REMOVE_AFFLICTION'}}">
-                <i class="fas fa-times"></i>
-              </button>
+    <div class="manager-footer">
+      <button type="button" data-action="addAffliction" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ADD_AFFLICTION'}}">
+        <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.MANAGER.ADD_AFFLICTION'}}
+      </button>
+      {{#if hasAfflictions}}
+      <button type="button" data-action="clearAllAfflictions" class="clear-all-button" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL'}}">
+        <i class="fas fa-trash-alt"></i> {{localize 'PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL'}}
+      </button>
+      {{/if}}
+    </div>
+  </div>
+
+  <div class="affliction-manager-tab-panel" data-tab="coatings" style="display:none">
+    {{#if hasWeapons}}
+      {{#unless hasInjuryItems}}
+        <p class="coating-hint"><i class="fas fa-info-circle"></i> {{localize "PF2E_AFFLICTIONER.WEAPON_COATING.NO_POISONS_HINT"}}</p>
+      {{/unless}}
+
+      {{#each actorsWithWeapons}}
+        <div class="coating-actor-section">
+          {{#each weapons}}
+            <div class="weapon-row {{#if isCoated}}is-coated{{/if}}">
+              <div class="weapon-info">
+                <span class="weapon-name"><i class="fas fa-sword"></i> {{weaponName}}</span>
+                <span class="weapon-damage-type">({{damageType}})</span>
+                {{#if isCoated}}
+                  <span class="weapon-poison-label" data-tooltip="{{coatingTooltip}}"><i class="fas fa-flask"></i> {{poisonName}}</span>
+                  {{#if poisonItemUuid}}
+                  <button type="button" class="coating-info-btn" data-action="openPoisonItem"
+                          data-uuid="{{poisonItemUuid}}"
+                          data-tooltip="Open item sheet">
+                    <i class="fas fa-circle-info"></i>
+                  </button>
+                  {{/if}}
+                {{/if}}
+              </div>
+              <div class="weapon-coating-controls">
+                {{#if isCoated}}
+                  <button type="button" class="coating-remove-btn" data-action="removeCoating"
+                          data-actor-id="{{actorId}}" data-weapon-id="{{weaponId}}"
+                          data-tooltip="{{localize 'PF2E_AFFLICTIONER.WEAPON_COATING.REMOVE_COATING'}}">
+                    <i class="fas fa-times"></i> {{localize "PF2E_AFFLICTIONER.WEAPON_COATING.REMOVE_COATING"}}
+                  </button>
+                {{else}}
+                  {{#if ../../hasInjuryItems}}
+                    <select class="coating-poison-select">
+                      <option value="">{{localize "PF2E_AFFLICTIONER.WEAPON_COATING.SELECT_POISON"}}</option>
+                      {{#each ../../injuryItems}}
+                        <option value="{{uuid}}">{{name}}{{#if ownerName}} ({{ownerName}}){{/if}}</option>
+                      {{/each}}
+                    </select>
+                    <button type="button" class="coating-apply-btn" data-action="addCoating"
+                            data-actor-id="{{actorId}}" data-weapon-id="{{weaponId}}"
+                            data-tooltip="{{localize 'PF2E_AFFLICTIONER.WEAPON_COATING.APPLY_COATING_TOOLTIP'}}">
+                      <i class="fas fa-flask"></i> {{localize "PF2E_AFFLICTIONER.WEAPON_COATING.COAT_WEAPON_BTN"}}
+                    </button>
+                  {{else}}
+                    <span class="no-poisons-hint">{{localize "PF2E_AFFLICTIONER.WEAPON_COATING.NO_POISONS_AVAILABLE"}}</span>
+                  {{/if}}
+                {{/if}}
+              </div>
             </div>
-          </div>
-        {{/each}}
-      </div>
-    {{/each}}
-  {{else}}
-    <p class="no-afflictions">{{localize 'PF2E_AFFLICTIONER.MANAGER.NO_AFFLICTIONS'}}</p>
-  {{/if}}
-
-  <div class="manager-footer">
-    <button type="button" data-action="addAffliction" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.ADD_AFFLICTION'}}">
-      <i class="fas fa-plus"></i> {{localize 'PF2E_AFFLICTIONER.MANAGER.ADD_AFFLICTION'}}
-    </button>
-    {{#if hasAfflictions}}
-    <button type="button" data-action="clearAllAfflictions" class="clear-all-button" data-tooltip="{{localize 'PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL'}}">
-      <i class="fas fa-trash-alt"></i> {{localize 'PF2E_AFFLICTIONER.MANAGER.CLEAR_ALL'}}
-    </button>
+          {{/each}}
+        </div>
+      {{/each}}
+    {{else}}
+      <p class="no-afflictions">{{localize "PF2E_AFFLICTIONER.WEAPON_COATING.NO_WEAPONS"}}</p>
     {{/if}}
   </div>
 </div>
