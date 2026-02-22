@@ -9,7 +9,8 @@
 
 Automated affliction (poison/disease/curse) manager for Pathfinder 2e in FoundryVTT implementing official PF2e rules.
 
-[![Documentation]]((https://github.com/roi007leaf/pf2e-afflictioner/wiki))
+## Documentation
+https://github.com/roi007leaf/pf2e-afflictioner/wiki
 
 ## Dependencies
 
