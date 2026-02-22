@@ -155,11 +155,6 @@ async function handleAttackRoll(_message, flags) {
     const hasPiercingOrSlashing = damageType === 'piercing' || damageType === 'slashing';
 
     if (hasPiercingOrSlashing) {
-      await WeaponCoatingStore.removeCoating(actor, weapon.id);
-
-      const { AfflictionManager } = await import('../managers/AfflictionManager.js');
-      if (AfflictionManager.currentInstance) AfflictionManager.currentInstance.render({ force: true });
-
       const i = game.i18n;
       const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
       const targets = Array.from(game.user.targets);
@@ -172,6 +167,8 @@ async function handleAttackRoll(_message, flags) {
                 <p><strong>${actorName}</strong> hit <strong>${target.name}</strong> with <strong>${weaponName}</strong>.</p>
                 <button class="pf2e-afflictioner-apply-weapon-poison"
                         data-target-token-id="${target.id}"
+                        data-actor-id="${actor.id}"
+                        data-weapon-id="${weapon.id}"
                         data-affliction-data="${encodeURIComponent(JSON.stringify(coating.afflictionData))}">
                   <i class="fas fa-biohazard"></i> ${i.format(`${K}.HIT_APPLY_BTN`, { targetName: target.name })}
                 </button>

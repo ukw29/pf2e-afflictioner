@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-02-22
+
+### Fixed
+
+- **Coating deferred until GM confirms**: Injury poison coating is no longer spent on hit detection — it is now removed only when the GM clicks the "Apply Affliction" button in the whisper message, allowing the GM to decline without losing the coating
+
 ## [1.1.0] - 2026-02-22
 
 ### Added

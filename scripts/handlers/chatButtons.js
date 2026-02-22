@@ -31,12 +31,24 @@ function registerApplyWeaponPoisonHandler(root) {
 
   btn.addEventListener('click', async () => {
     const targetTokenId = btn.dataset.targetTokenId;
+    const actorId = btn.dataset.actorId;
+    const weaponId = btn.dataset.weaponId;
     const afflictionData = JSON.parse(decodeURIComponent(btn.dataset.afflictionData));
 
     const target = canvas.tokens.get(targetTokenId);
     if (!target) {
       ui.notifications.warn(game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.TARGET_NOT_FOUND'));
       return;
+    }
+
+    if (actorId && weaponId) {
+      const actor = game.actors.get(actorId);
+      if (actor) {
+        const { removeCoating } = await import('../stores/WeaponCoatingStore.js');
+        await removeCoating(actor, weaponId);
+        const { AfflictionManager } = await import('../managers/AfflictionManager.js');
+        if (AfflictionManager.currentInstance) AfflictionManager.currentInstance.render({ force: true });
+      }
     }
 
     const { AfflictionService } = await import('../services/AfflictionService.js');
