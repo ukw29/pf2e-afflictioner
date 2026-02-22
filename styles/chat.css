@@ -173,6 +173,19 @@
 
 .wcs-label strong { color: #e8ffcc; }
 
+.wcs-section { margin-bottom: 8px; }
+
+.wcs-section-title {
+  font-size: 0.8em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #aaa;
+  margin: 6px 0 4px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
 .wcs-grid {
   display: flex;
   flex-direction: column;

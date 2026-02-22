@@ -4,7 +4,7 @@ import * as WeaponCoatingStore from '../stores/WeaponCoatingStore.js';
 const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
 
 export class WeaponCoatingService {
-  static async openCoatDialog(itemUuid, speakerActorId, speakerTokenId) {
+  static async openCoatDialog(itemUuid, speakerActorId, speakerTokenId, targetTokenIds = []) {
     const i = game.i18n;
     const item = await fromUuid(itemUuid);
     if (!item) {
@@ -18,7 +18,7 @@ export class WeaponCoatingService {
       return;
     }
 
-    const allWeapons = this._collectWeapons(speakerActorId, speakerTokenId);
+    const allWeapons = this._collectWeapons(speakerActorId, speakerTokenId, targetTokenIds);
     const weapons = allWeapons.filter(w => w.damageType === 'piercing' || w.damageType === 'slashing');
 
     if (!weapons.length) {
@@ -26,19 +26,37 @@ export class WeaponCoatingService {
       return;
     }
 
-    const cards = weapons.map((w, idx) => `
-      <div class="wcs-card" data-index="${idx}">
-        <img src="${w.img}" alt="${w.weaponName}" />
-        <div class="wcs-card-info">
-          <span class="wcs-card-name">${w.weaponName}</span>
-          <span class="wcs-card-damage">${w.damageType}</span>
+    // Group weapons by actor, preserving insertion order (speaker first, then targets)
+    const groups = [];
+    const groupIndex = new Map();
+    weapons.forEach((w, idx) => {
+      if (!groupIndex.has(w.actorId)) {
+        groupIndex.set(w.actorId, groups.length);
+        groups.push({ actorName: w.actorName, weapons: [] });
+      }
+      groups[groupIndex.get(w.actorId)].weapons.push({ ...w, idx });
+    });
+
+    const sections = groups.map(g => `
+      <div class="wcs-section">
+        <h3 class="wcs-section-title">${g.actorName}</h3>
+        <div class="wcs-grid">
+          ${g.weapons.map(w => `
+            <div class="wcs-card" data-index="${w.idx}">
+              <img src="${w.img}" alt="${w.weaponName}" />
+              <div class="wcs-card-info">
+                <span class="wcs-card-name">${w.weaponName}</span>
+                <span class="wcs-card-damage">${w.damageType}</span>
+              </div>
+            </div>
+          `).join('')}
         </div>
       </div>
     `).join('');
 
     const content = `
       <p class="wcs-label">${i.format(`${K}.DIALOG_SELECT_LABEL`, { poisonName: `<strong>${afflictionData.name}</strong>` })}</p>
-      <div class="wcs-grid">${cards}</div>
+      ${sections}
       <p class="wcs-hint">${i.localize(`${K}.DIALOG_HINT`)}</p>
     `;
 
@@ -107,13 +125,15 @@ export class WeaponCoatingService {
     }
   }
 
-  static _collectWeapons(speakerActorId, speakerTokenId) {
+  static _collectWeapons(speakerActorId, speakerTokenId, targetTokenIds = []) {
     const weapons = [];
-    for (const token of canvas.tokens.placeables) {
-      if (speakerTokenId && token.id !== speakerTokenId) continue;
+    const seen = new Set();
+
+    const addWeaponsForToken = (token) => {
+      if (!token || seen.has(token.id)) return;
+      seen.add(token.id);
       const actor = token.actor;
-      if (!actor) continue;
-      if (!speakerTokenId && speakerActorId && actor.id !== speakerActorId) continue;
+      if (!actor) return;
       for (const weapon of (actor.itemTypes?.weapon || [])) {
         weapons.push({
           actorId: actor.id,
@@ -124,7 +144,22 @@ export class WeaponCoatingService {
           img: weapon.img || 'icons/svg/sword.svg'
         });
       }
+    };
+
+    // Speaker's token first
+    if (speakerTokenId) {
+      addWeaponsForToken(canvas.tokens.get(speakerTokenId));
+    } else if (speakerActorId) {
+      for (const token of canvas.tokens.placeables) {
+        if (token.actor?.id === speakerActorId) { addWeaponsForToken(token); break; }
+      }
     }
+
+    // Targeted tokens
+    for (const tokenId of targetTokenIds) {
+      addWeaponsForToken(canvas.tokens.get(tokenId));
+    }
+
     return weapons;
   }
 }
