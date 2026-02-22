@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-02-22
+
+### Fixed
+
+- **Coat Weapon dialog now only shows the speaker's weapons**: The weapon selection dialog triggered by the "Coat Weapon" chat button no longer lists weapons from all canvas tokens — it filters to only the actor/token that sent the item card.
+
 ## [1.1.2] - 2026-02-22
 
 ### Fixed

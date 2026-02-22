@@ -4,7 +4,7 @@ import * as WeaponCoatingStore from '../stores/WeaponCoatingStore.js';
 const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
 
 export class WeaponCoatingService {
-  static async openCoatDialog(itemUuid) {
+  static async openCoatDialog(itemUuid, speakerActorId, speakerTokenId) {
     const i = game.i18n;
     const item = await fromUuid(itemUuid);
     if (!item) {
@@ -18,7 +18,7 @@ export class WeaponCoatingService {
       return;
     }
 
-    const allWeapons = this._collectWeapons();
+    const allWeapons = this._collectWeapons(speakerActorId, speakerTokenId);
     const weapons = allWeapons.filter(w => w.damageType === 'piercing' || w.damageType === 'slashing');
 
     if (!weapons.length) {
@@ -107,11 +107,13 @@ export class WeaponCoatingService {
     }
   }
 
-  static _collectWeapons() {
+  static _collectWeapons(speakerActorId, speakerTokenId) {
     const weapons = [];
     for (const token of canvas.tokens.placeables) {
+      if (speakerTokenId && token.id !== speakerTokenId) continue;
       const actor = token.actor;
       if (!actor) continue;
+      if (!speakerTokenId && speakerActorId && actor.id !== speakerActorId) continue;
       for (const weapon of (actor.itemTypes?.weapon || [])) {
         weapons.push({
           actorId: actor.id,

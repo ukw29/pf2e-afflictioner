@@ -86,9 +86,12 @@ async function injectCoatWeaponButton(message, root) {
   btn.dataset.itemUuid = itemUuid;
 
 
+  const speakerActorId = message.speaker?.actor;
+  const speakerTokenId = message.speaker?.token;
+
   btn.addEventListener('click', async () => {
     const { WeaponCoatingService } = await import('../services/WeaponCoatingService.js');
-    await WeaponCoatingService.openCoatDialog(itemUuid);
+    await WeaponCoatingService.openCoatDialog(itemUuid, speakerActorId, speakerTokenId);
   });
 
   container.appendChild(btn);
