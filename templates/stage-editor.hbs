@@ -147,32 +147,42 @@
     <div class="condition-list">
       {{#each stage.conditions}}
         <div class="condition-entry {{#if (eq name 'persistent damage')}}has-persistent-damage{{/if}}{{#if isValueless}} no-value-condition{{/if}}" data-index="{{@index}}">
-          <select name="condition.{{@index}}.name" class="condition-name" onchange="const vl=['blinded','confused','controlled','dazzled','deafened','fascinated','fatigued','fleeing','grabbed','hidden','immobilized','invisible','observed','off-guard','paralyzed','petrified','prone','quickened','restrained','unconscious','undetected'];this.closest('.condition-entry').classList.toggle('has-persistent-damage', this.value === 'persistent damage');this.closest('.condition-entry').classList.toggle('no-value-condition', vl.includes(this.value))">
+          <select name="condition.{{@index}}.name" class="condition-name" onchange="const vl=['blinded','concealed','confused','controlled','dazzled','deafened','encumbered','fascinated','fatigued','fleeing','grabbed','hidden','immobilized','invisible','observed','off-guard','paralyzed','petrified','prone','quickened','restrained','unconscious','undetected'];this.closest('.condition-entry').classList.toggle('has-persistent-damage', this.value === 'persistent damage');this.closest('.condition-entry').classList.toggle('no-value-condition', vl.includes(this.value))">
             <option value="">Select condition...</option>
             <option value="blinded" {{#if (eq name "blinded")}}selected{{/if}}>Blinded</option>
             <option value="clumsy" {{#if (eq name "clumsy")}}selected{{/if}}>Clumsy</option>
+            <option value="concealed" {{#if (eq name "concealed")}}selected{{/if}}>Concealed</option>
             <option value="confused" {{#if (eq name "confused")}}selected{{/if}}>Confused</option>
+            <option value="controlled" {{#if (eq name "controlled")}}selected{{/if}}>Controlled</option>
             <option value="dazzled" {{#if (eq name "dazzled")}}selected{{/if}}>Dazzled</option>
             <option value="deafened" {{#if (eq name "deafened")}}selected{{/if}}>Deafened</option>
             <option value="doomed" {{#if (eq name "doomed")}}selected{{/if}}>Doomed</option>
             <option value="drained" {{#if (eq name "drained")}}selected{{/if}}>Drained</option>
             <option value="dying" {{#if (eq name "dying")}}selected{{/if}}>Dying</option>
+            <option value="encumbered" {{#if (eq name "encumbered")}}selected{{/if}}>Encumbered</option>
             <option value="enfeebled" {{#if (eq name "enfeebled")}}selected{{/if}}>Enfeebled</option>
             <option value="fascinated" {{#if (eq name "fascinated")}}selected{{/if}}>Fascinated</option>
             <option value="fatigued" {{#if (eq name "fatigued")}}selected{{/if}}>Fatigued</option>
             <option value="fleeing" {{#if (eq name "fleeing")}}selected{{/if}}>Fleeing</option>
             <option value="frightened" {{#if (eq name "frightened")}}selected{{/if}}>Frightened</option>
             <option value="grabbed" {{#if (eq name "grabbed")}}selected{{/if}}>Grabbed</option>
+            <option value="hidden" {{#if (eq name "hidden")}}selected{{/if}}>Hidden</option>
             <option value="immobilized" {{#if (eq name "immobilized")}}selected{{/if}}>Immobilized</option>
+            <option value="invisible" {{#if (eq name "invisible")}}selected{{/if}}>Invisible</option>
+            <option value="observed" {{#if (eq name "observed")}}selected{{/if}}>Observed</option>
+            <option value="off-guard" {{#if (eq name "off-guard")}}selected{{/if}}>Off-Guard</option>
             <option value="paralyzed" {{#if (eq name "paralyzed")}}selected{{/if}}>Paralyzed</option>
             <option value="persistent damage" {{#if (eq name "persistent damage")}}selected{{/if}}>Persistent Damage</option>
+            <option value="petrified" {{#if (eq name "petrified")}}selected{{/if}}>Petrified</option>
             <option value="prone" {{#if (eq name "prone")}}selected{{/if}}>Prone</option>
+            <option value="quickened" {{#if (eq name "quickened")}}selected{{/if}}>Quickened</option>
             <option value="restrained" {{#if (eq name "restrained")}}selected{{/if}}>Restrained</option>
             <option value="sickened" {{#if (eq name "sickened")}}selected{{/if}}>Sickened</option>
             <option value="slowed" {{#if (eq name "slowed")}}selected{{/if}}>Slowed</option>
             <option value="stunned" {{#if (eq name "stunned")}}selected{{/if}}>Stunned</option>
             <option value="stupefied" {{#if (eq name "stupefied")}}selected{{/if}}>Stupefied</option>
             <option value="unconscious" {{#if (eq name "unconscious")}}selected{{/if}}>Unconscious</option>
+            <option value="undetected" {{#if (eq name "undetected")}}selected{{/if}}>Undetected</option>
             <option value="wounded" {{#if (eq name "wounded")}}selected{{/if}}>Wounded</option>
           </select>
           <input type="text" name="condition.{{@index}}.persistentFormula" value="{{persistentFormula}}" placeholder="1d6" class="persistent-formula" />

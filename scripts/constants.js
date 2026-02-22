@@ -109,10 +109,10 @@ export const DEFAULT_SETTINGS = {
 export const PERSISTENT_CONDITIONS = ['frightened', 'drained', 'stunned', 'doomed', 'wounded'];
 
 export const VALUELESS_CONDITIONS = [
-  'blinded', 'confused', 'controlled', 'dazzled', 'deafened', 'fascinated',
-  'fatigued', 'fleeing', 'grabbed', 'hidden', 'immobilized', 'invisible',
-  'observed', 'off-guard', 'paralyzed', 'petrified', 'prone', 'quickened',
-  'restrained', 'unconscious', 'undetected'
+  'blinded', 'concealed', 'confused', 'controlled', 'dazzled', 'deafened',
+  'encumbered', 'fascinated', 'fatigued', 'fleeing', 'grabbed', 'hidden',
+  'immobilized', 'invisible', 'observed', 'off-guard', 'paralyzed', 'petrified',
+  'prone', 'quickened', 'restrained', 'unconscious', 'undetected'
 ];
 
 export const PF2E_CONDITIONS = [
