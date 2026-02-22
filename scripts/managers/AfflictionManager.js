@@ -579,7 +579,6 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       await VisualService.removeAfflictionIndicator(token);
     }
 
-    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.MANAGER.REMOVED_AFFLICTION', { tokenName: token.name }));
     this.render({ force: true });
   }
 
