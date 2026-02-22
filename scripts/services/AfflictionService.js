@@ -160,17 +160,18 @@ export class AfflictionService {
         return;
       }
 
+      const initialDurationCopy = initialStage.duration ? { ...initialStage.duration } : null;
       if (combat) {
-        const durationSeconds = await AfflictionParser.resolveStageDuration(initialStage.duration, `${affliction.name} Stage ${startingStage}`);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(initialDurationCopy, `${affliction.name} Stage ${startingStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
         updates.nextSaveInitiative = this.getSaveInitiative(affliction, token, combat);
       } else {
-        const durationSeconds = await AfflictionParser.resolveStageDuration(initialStage.duration, `${affliction.name} Stage ${startingStage}`);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(initialDurationCopy, `${affliction.name} Stage ${startingStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
       }
-      if (initialStage.duration?.value > 0) {
-        updates.currentStageResolvedDuration = { value: initialStage.duration.value, unit: initialStage.duration.unit };
+      if (initialDurationCopy?.value > 0) {
+        updates.currentStageResolvedDuration = { value: initialDurationCopy.value, unit: initialDurationCopy.unit };
       }
 
       await AfflictionStore.updateAffliction(token, affliction.id, updates);
@@ -301,18 +302,19 @@ export class AfflictionService {
     }
 
     if (newStageData) {
+      const stageDurationCopy = newStageData.duration ? { ...newStageData.duration } : null;
       if (combat) {
-        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${affliction.name} Stage ${finalStage}`);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(stageDurationCopy, `${affliction.name} Stage ${finalStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
         updates.nextSaveInitiative = this.getSaveInitiative(affliction, token, combat);
         updates.stageStartRound = combat.round;
       } else {
-        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${affliction.name} Stage ${finalStage}`);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(stageDurationCopy, `${affliction.name} Stage ${finalStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
       }
-      if (newStageData.duration?.value > 0) {
-        updates.currentStageResolvedDuration = { value: newStageData.duration.value, unit: newStageData.duration.unit };
+      if (stageDurationCopy?.value > 0) {
+        updates.currentStageResolvedDuration = { value: stageDurationCopy.value, unit: stageDurationCopy.unit };
       }
     }
 
@@ -406,6 +408,7 @@ export class AfflictionService {
       });
     }
 
+    await AfflictionEffectBuilder.applyPersistentConditions(actor, affliction, stage);
     await AfflictionEffectBuilder.applyPersistentDamage(actor, affliction, stage);
   }
 
@@ -579,17 +582,18 @@ export class AfflictionService {
     };
 
     if (newStageData) {
+      const stageDurationCopy = newStageData.duration ? { ...newStageData.duration } : null;
       if (combat) {
-        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${existingAffliction.name} Stage ${newStage}`);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(stageDurationCopy, `${existingAffliction.name} Stage ${newStage}`);
         const durationRounds = Math.ceil(durationSeconds / 6);
         updates.nextSaveRound = combat.round + durationRounds;
         updates.nextSaveInitiative = this.getSaveInitiative(existingAffliction, token, combat);
       } else {
-        const durationSeconds = await AfflictionParser.resolveStageDuration(newStageData.duration, `${existingAffliction.name} Stage ${newStage}`);
+        const durationSeconds = await AfflictionParser.resolveStageDuration(stageDurationCopy, `${existingAffliction.name} Stage ${newStage}`);
         updates.nextSaveTimestamp = game.time.worldTime + durationSeconds;
       }
-      if (newStageData.duration?.value > 0) {
-        updates.currentStageResolvedDuration = { value: newStageData.duration.value, unit: newStageData.duration.unit };
+      if (stageDurationCopy?.value > 0) {
+        updates.currentStageResolvedDuration = { value: stageDurationCopy.value, unit: stageDurationCopy.unit };
       }
     }
 

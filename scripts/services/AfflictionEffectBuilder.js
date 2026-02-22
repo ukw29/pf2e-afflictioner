@@ -1,4 +1,5 @@
 import * as AfflictionStore from '../stores/AfflictionStore.js';
+import { PERSISTENT_CONDITIONS } from '../constants.js';
 
 export class AfflictionEffectBuilder {
   static async createOrUpdateEffect(token, actor, affliction, stage) {
@@ -198,6 +199,7 @@ export class AfflictionEffectBuilder {
     if (stage.conditions && stage.conditions.length > 0) {
       for (const condition of stage.conditions) {
         if (condition.name === 'persistent damage' || condition.name === 'persistent-damage') continue;
+        if (PERSISTENT_CONDITIONS.includes(condition.name)) continue;
 
         const conditionUuid = await this.getConditionUuid(condition.name);
         if (conditionUuid) {
@@ -325,6 +327,40 @@ export class AfflictionEffectBuilder {
 
     for (const condition of persistentConditions) {
       await condition.delete();
+    }
+  }
+
+  static async applyPersistentConditions(actor, affliction, stage) {
+    if (!stage.conditions) return;
+
+    for (const condition of stage.conditions) {
+      if (!PERSISTENT_CONDITIONS.includes(condition.name)) continue;
+
+      const slug = condition.name.toLowerCase();
+      const conditionUuid = await this.getConditionUuid(slug);
+      if (!conditionUuid) continue;
+
+      const existing = actor.itemTypes.condition.find(c => c.slug === slug);
+
+      if (existing) {
+        if (condition.value && existing.value < condition.value) {
+          await existing.update({ 'system.value.value': condition.value });
+        }
+        continue;
+      }
+
+      const conditionItem = await fromUuid(conditionUuid);
+      if (!conditionItem) continue;
+
+      const source = conditionItem.toObject();
+      source.flags = source.flags || {};
+      source.flags['pf2e-afflictioner'] = { afflictionId: affliction.id, persistentCondition: true };
+
+      if (condition.value) {
+        foundry.utils.setProperty(source, 'system.value.value', condition.value);
+      }
+
+      await actor.createEmbeddedDocuments('Item', [source]);
     }
   }
 

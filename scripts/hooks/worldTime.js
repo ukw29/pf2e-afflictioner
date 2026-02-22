@@ -32,9 +32,10 @@ export async function onWorldTimeUpdate(worldTime, delta) {
             continue;
           }
 
-          const stageDurationSeconds = await AfflictionParser.resolveStageDuration(stageData.duration, `${affliction.name} Stage ${targetStage}`);
-          const resolvedDuration = stageData.duration?.value > 0
-            ? { value: stageData.duration.value, unit: stageData.duration.unit }
+          const durationCopy = stageData.duration ? { ...stageData.duration } : null;
+          const stageDurationSeconds = await AfflictionParser.resolveStageDuration(durationCopy, `${affliction.name} Stage ${targetStage}`);
+          const resolvedDuration = durationCopy?.value > 0
+            ? { value: durationCopy.value, unit: durationCopy.unit }
             : undefined;
 
           await AfflictionStore.updateAffliction(token, id, {

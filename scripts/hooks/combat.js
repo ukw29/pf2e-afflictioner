@@ -1,6 +1,7 @@
 import { AfflictionService } from '../services/AfflictionService.js';
 
 export async function onCombatUpdate(combat, changed, options, userId) {
+  if (!game.user.isGM) return;
   if (!changed.turn && !changed.round) return;
 
   if (changed.round) {
@@ -15,6 +16,7 @@ export async function onCombatUpdate(combat, changed, options, userId) {
 }
 
 export async function onPf2eStartTurn(_combatant, _encounter, _userId) {
+  if (!game.user.isGM) return;
   const combat = game.combat;
   if (!combat) return;
 

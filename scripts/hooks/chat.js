@@ -101,11 +101,12 @@ export async function onCreateChatMessage(message, options, userId) {
     affliction.currentStage = 1;
     affliction.inOnset = false;
     if (combat && firstStage?.duration) {
-      const durationSeconds = await AfflictionParser.resolveStageDuration(firstStage.duration, `${afflictionData.name} Stage 1`);
+      const durationCopy = { ...firstStage.duration };
+      const durationSeconds = await AfflictionParser.resolveStageDuration(durationCopy, `${afflictionData.name} Stage 1`);
       const durationRounds = Math.ceil(durationSeconds / 6);
       affliction.nextSaveRound = combat.round + durationRounds;
-      if (firstStage.duration?.value > 0) {
-        affliction.currentStageResolvedDuration = { value: firstStage.duration.value, unit: firstStage.duration.unit };
+      if (durationCopy.value > 0) {
+        affliction.currentStageResolvedDuration = { value: durationCopy.value, unit: durationCopy.unit };
       }
     }
 

@@ -22,11 +22,12 @@ export class AfflictionTimerService {
             return;
           }
 
-          const durationSeconds = await AfflictionParser.resolveStageDuration(stageData.duration, `${affliction.name} Stage ${targetStage}`);
+          const durationCopy = stageData.duration ? { ...stageData.duration } : null;
+          const durationSeconds = await AfflictionParser.resolveStageDuration(durationCopy, `${affliction.name} Stage ${targetStage}`);
           const durationRounds = Math.ceil(durationSeconds / 6);
           const tokenCombatant = combat.combatants.find(c => c.tokenId === token.id);
-          const resolvedDuration = stageData.duration?.value > 0
-            ? { value: stageData.duration.value, unit: stageData.duration.unit }
+          const resolvedDuration = durationCopy?.value > 0
+            ? { value: durationCopy.value, unit: durationCopy.unit }
             : undefined;
           await AfflictionStore.updateAffliction(token, id, {
             inOnset: false,
@@ -152,6 +153,7 @@ export class AfflictionTimerService {
         affliction.nextSaveInitiative === combat.combatant.initiative;
 
       if (isOverdue || isDueNow) {
+        await AfflictionStore.updateAffliction(token, affliction.id, { nextSaveRound: null });
         await AfflictionService.promptSave(token, affliction);
       }
     }

@@ -106,6 +106,8 @@ export const DEFAULT_SETTINGS = {
   }
 };
 
+export const PERSISTENT_CONDITIONS = ['frightened', 'drained', 'stunned', 'doomed', 'wounded'];
+
 export const VALUELESS_CONDITIONS = [
   'blinded', 'confused', 'controlled', 'dazzled', 'deafened', 'fascinated',
   'fatigued', 'fleeing', 'grabbed', 'hidden', 'immobilized', 'invisible',

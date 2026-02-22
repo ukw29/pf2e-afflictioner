@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-02-22
+
+### Fixed
+
+- **Persistent conditions now survive stage changes and affliction end**: Conditions with natural duration or self-modifying behavior (`frightened`, `drained`, `stunned`, `doomed`, `wounded`) are now applied as real condition items instead of being tied to the affliction effect — they persist after stage transitions and after the affliction ends, as per PF2e rules. Stage-tied conditions (`clumsy`, `paralyzed`, etc.) continue to be removed when the stage changes.
+
 ## [1.1.1] - 2026-02-22
 
 ### Fixed
@@ -29,8 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - All user-facing strings fully i18n-localised under `PF2E_AFFLICTIONER.WEAPON_COATING`
 
 ## [1.0.3] - 2026-02-21
-
-### Changed
 
 ### Fixed
 
