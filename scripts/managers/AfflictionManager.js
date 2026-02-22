@@ -786,6 +786,14 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       afflictionData
     });
 
+    // Consume one dose of the poison item
+    const quantity = item.system?.quantity ?? 1;
+    if (quantity <= 1) {
+      await item.delete();
+    } else {
+      await item.update({ 'system.quantity': quantity - 1 });
+    }
+
     ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.WEAPON_COATING.COATED', { weaponName: weapon?.name ?? weaponId, poisonName: afflictionData.name }));
     this.render({ force: true });
   }

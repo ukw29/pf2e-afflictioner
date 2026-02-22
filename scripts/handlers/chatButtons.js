@@ -92,7 +92,11 @@ async function injectCoatWeaponButton(message, root) {
   btn.addEventListener('click', async () => {
     const targetTokenIds = [...game.user.targets].map(t => t.id);
     const { WeaponCoatingService } = await import('../services/WeaponCoatingService.js');
-    await WeaponCoatingService.openCoatDialog(itemUuid, speakerActorId, speakerTokenId, targetTokenIds);
+    const coated = await WeaponCoatingService.openCoatDialog(itemUuid, speakerActorId, speakerTokenId, targetTokenIds);
+    if (coated) {
+      btn.disabled = true;
+      btn.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.COAT_WEAPON_DONE')}`;
+    }
   });
 
   container.appendChild(btn);

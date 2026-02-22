@@ -117,12 +117,22 @@ export class WeaponCoatingService {
       afflictionData
     });
 
+    // Consume one dose of the poison item
+    const quantity = item.system?.quantity ?? 1;
+    if (quantity <= 1) {
+      await item.delete();
+    } else {
+      await item.update({ 'system.quantity': quantity - 1 });
+    }
+
     ui.notifications.info(i.format(`${K}.COATED`, { weaponName: selected.weaponName, poisonName: afflictionData.name }));
 
     const { AfflictionManager } = await import('../managers/AfflictionManager.js');
     if (AfflictionManager.currentInstance) {
       AfflictionManager.currentInstance.render({ force: true });
     }
+
+    return true;
   }
 
   static _collectWeapons(speakerActorId, speakerTokenId, targetTokenIds = []) {

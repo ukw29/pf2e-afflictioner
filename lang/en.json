@@ -342,7 +342,8 @@
       "TOOLTIP_ONSET": "Onset: {value} {unit}(s)",
       "TOOLTIP_MAX_DURATION": "Max Duration: {value} {unit}(s)",
       "TOOLTIP_STAGE": "Stage {number}: {effects}",
-      "TOOLTIP_NO_EFFECTS": "No effects"
+      "TOOLTIP_NO_EFFECTS": "No effects",
+      "COAT_WEAPON_DONE": "Weapon Coated"
     },
     "CONFLICT": {
       "TITLE": "Import Conflicts",

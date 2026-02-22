@@ -311,6 +311,20 @@
   filter: drop-shadow(0 0 3px rgba(160, 255, 80, 0.3));
 }
 
+.pf2e-afflictioner-coat-weapon-btn:disabled {
+  background: linear-gradient(135deg, #2a3d1e 0%, #314823 100%);
+  border-color: #2a3820;
+  color: #6a8f55;
+  cursor: default;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+.pf2e-afflictioner-coat-weapon-btn:disabled i {
+  filter: none;
+}
+
 /* Counteract request styling in chat */
 .pf2e-afflictioner-counteract-request {
   background: linear-gradient(135deg, rgba(74, 124, 42, 0.15) 0%, rgba(74, 124, 42, 0.05) 100%);
