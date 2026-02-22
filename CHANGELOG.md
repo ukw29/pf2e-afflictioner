@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2026-02-22
+
+### Added
+
+- **Coat Weapon dialog includes targeted tokens' weapons**: Weapons from currently targeted tokens are now shown alongside the speaker's weapons, grouped by actor with a section header for each. Allows coating a friendly's weapon by targeting them before clicking the button.
+
 ## [1.1.3] - 2026-02-22
 
 ### Fixed
