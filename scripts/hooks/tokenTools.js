@@ -1,6 +1,7 @@
 import { MODULE_ID } from '../constants.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 
+
 export function onGetSceneControlButtons(controls) {
   if (!game.user.isGM) return;
   if (!game.settings.get(MODULE_ID, 'useTokenToolsButton')) return;
@@ -14,7 +15,6 @@ export function onGetSceneControlButtons(controls) {
     title: game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.MANAGE_AFFLICTIONS_TOOLTIP'),
     icon: 'fas fa-biohazard',
     button: true,
-    active: false,
     onChange: async () => {
       try {
         const controlled = canvas?.tokens?.controlled ?? [];
@@ -51,6 +51,16 @@ export function onRenderSceneControls() {
   const afflictions = AfflictionStore.getAfflictions(selected[0]);
   const hasAfflictions = Object.keys(afflictions).length > 0;
   toolEl.classList.toggle('active', hasAfflictions);
+}
+
+export function onUpdateToken(tokenDocument, changes) {
+  if (!game.settings.get(MODULE_ID, 'useTokenToolsButton')) return;
+  if (!foundry.utils.hasProperty(changes, `flags.${MODULE_ID}`)) return;
+
+  const controlled = canvas?.tokens?.controlled ?? [];
+  if (!controlled.some(t => t.document.id === tokenDocument.id)) return;
+
+  ui.controls?.render();
 }
 
 export function onControlToken() {

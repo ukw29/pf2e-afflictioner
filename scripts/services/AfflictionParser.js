@@ -173,7 +173,9 @@ export class AfflictionParser {
     const stages = [];
     const matchedStageNums = new Set();
 
-    const htmlInlineRe = new RegExp(`<strong>${sl}\\s+(\\d+)<\\/strong>\\s+(.+?)\\(([^)]+)\\)([^<]*)`, 'gi');
+    // \s* — space between label and number is optional (some CN translations omit it)
+    // [（(] / [)）] — accept both ASCII and full-width parentheses (used in CN)
+    const htmlInlineRe = new RegExp(`<strong>${sl}\\s*(\\d+)<\\/strong>\\s+(.+?)[（(]([^)）]+)[)）]([^<]*)`, 'gi');
     for (const match of description.matchAll(htmlInlineRe)) {
       const stageNum = parseInt(match[1]);
       const effectsBefore = match[2].trim();
@@ -196,7 +198,7 @@ export class AfflictionParser {
       matchedStageNums.add(stageNum);
     }
 
-    const htmlParaRe = new RegExp(`<strong>${sl}\\s+(\\d+)<\\/strong>\\s*([\\s\\S]*?)<\\/p>`, 'gi');
+    const htmlParaRe = new RegExp(`<strong>${sl}\\s*(\\d+)<\\/strong>\\s*([\\s\\S]*?)<\\/p>`, 'gi');
     for (const match of description.matchAll(htmlParaRe)) {
       const stageNum = parseInt(match[1]);
       if (matchedStageNums.has(stageNum)) continue;
@@ -210,8 +212,14 @@ export class AfflictionParser {
       if (inlineRollMatch) {
         duration = this.parseDuration(`${inlineRollMatch[1]} ${inlineRollMatch[2]}`);
       } else {
-        const forMatch = plainText.match(locale.forDurationPattern);
-        duration = forMatch ? this.parseDuration(forMatch[1]) : null;
+        // Parenthetical duration — accepts both ASCII () and full-width （） brackets.
+        const parenMatch = rawContent.match(/[（(]([^)）]+)[)）]/);
+        if (parenMatch) {
+          duration = this.parseDuration(parenMatch[1].trim());
+        } else {
+          const forMatch = plainText.match(locale.forDurationPattern);
+          duration = forMatch ? this.parseDuration(forMatch[1]) : null;
+        }
       }
 
       stages.push({
@@ -231,7 +239,7 @@ export class AfflictionParser {
     stages.sort((a, b) => a.number - b.number);
 
     if (stages.length === 0) {
-      const plainRe = new RegExp(`${sl}\\s+(\\d+)\\s+(.+?)\\(([^)]+)\\)([^]*)`, 'gi');
+      const plainRe = new RegExp(`${sl}\\s*(\\d+)\\s+(.+?)[（(]([^)）]+)[)）]([^]*)`, 'gi');
       for (const match of description.matchAll(plainRe)) {
         const stageNum = parseInt(match[1]);
         const effectsBefore = match[2].trim();
