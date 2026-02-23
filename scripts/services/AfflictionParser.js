@@ -1,4 +1,5 @@
 import { PF2E_CONDITIONS, DURATION_MULTIPLIERS } from '../constants.js';
+import { getParserLocale } from '../locales/parser-locales.js';
 
 export class AfflictionParser {
   static parseFromItem(item) {
@@ -137,13 +138,15 @@ export class AfflictionParser {
     if (item.system?.save?.value) return item.system.save.value;
     if (item.system?.dc?.value) return item.system.dc.value;
 
+    // Engine-level enricher attributes — always ASCII regardless of locale.
     let dcMatch = description.match(/@Check\[[^\]]*\|dc:(\d+)\]/i);
     if (dcMatch) return parseInt(dcMatch[1]);
 
     dcMatch = description.match(/data-pf2-dc="(\d+)"/i);
     if (dcMatch) return parseInt(dcMatch[1]);
 
-    dcMatch = description.match(/DC\s+(\d+)/i);
+    // Locale-specific plain-text fallback (e.g. "DC 18").
+    dcMatch = description.match(getParserLocale().dcPattern);
     if (dcMatch) return parseInt(dcMatch[1]);
 
     console.warn(`PF2e Afflictioner | No DC found for affliction item "${item.name}" (${item.uuid}).`);
@@ -151,38 +154,33 @@ export class AfflictionParser {
   }
 
   static extractOnset(description) {
-    let onsetMatch = description.match(/<strong>Onset<\/strong>\s+([^<]+)/i);
+    const { onsetLabel } = getParserLocale();
+    const escaped = onsetLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+    let onsetMatch = description.match(new RegExp(`<strong>${escaped}<\\/strong>\\s+([^<]+)`, 'i'));
     if (!onsetMatch) {
-      onsetMatch = description.match(/Onset\s+([^;.<]+)/i);
+      onsetMatch = description.match(new RegExp(`${escaped}\\s+([^;.<]+)`, 'i'));
     }
+    if (!onsetMatch) return null;
 
-    if (!onsetMatch) {
-      return null;
-    }
-
-    const text = onsetMatch[1].trim();
-
-    const duration = this.parseDuration(text);
-
-    return duration;
+    return this.parseDuration(onsetMatch[1].trim());
   }
 
   static extractStages(description) {
+    const locale = getParserLocale();
+    const sl = locale.stageLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
     const stages = [];
     const matchedStageNums = new Set();
 
-    const htmlMatches = description.matchAll(/<strong>Stage\s+(\d+)<\/strong>\s+(.+?)\(([^)]+)\)([^<]*)/gi);
-
-    for (const match of htmlMatches) {
+    const htmlInlineRe = new RegExp(`<strong>${sl}\\s+(\\d+)<\\/strong>\\s+(.+?)\\(([^)]+)\\)([^<]*)`, 'gi');
+    for (const match of description.matchAll(htmlInlineRe)) {
       const stageNum = parseInt(match[1]);
       const effectsBefore = match[2].trim();
       const durationText = match[3];
       const effectsAfter = match[4].trim();
       const effects = [effectsBefore, effectsAfter].filter(e => e).join(' ');
       const duration = this.parseDuration(durationText);
-
-      const requiresManualHandling = this.detectManualHandling(effects);
 
       stages.push({
         number: stageNum,
@@ -192,30 +190,29 @@ export class AfflictionParser {
         damage: this.extractDamage(effects),
         conditions: this.extractConditions(effects),
         weakness: this.extractWeakness(effects),
-        requiresManualHandling: requiresManualHandling,
+        requiresManualHandling: this.detectManualHandling(effects),
         isDead: this.detectDeath(effects)
       });
       matchedStageNums.add(stageNum);
     }
 
-    const htmlParaMatches = description.matchAll(/<strong>Stage\s+(\d+)<\/strong>\s*([\s\S]*?)<\/p>/gi);
-    for (const match of htmlParaMatches) {
+    const htmlParaRe = new RegExp(`<strong>${sl}\\s+(\\d+)<\\/strong>\\s*([\\s\\S]*?)<\\/p>`, 'gi');
+    for (const match of description.matchAll(htmlParaRe)) {
       const stageNum = parseInt(match[1]);
       if (matchedStageNums.has(stageNum)) continue;
 
       const rawContent = match[2];
       const plainText = this.stripEnrichment(rawContent);
 
+      // Inline roll duration: [[/br 2d6 #rounds]] — FoundryVTT syntax, locale-independent.
       const inlineRollMatch = rawContent.match(/\[\[(?:\/br\s+)?(\d+d\d+(?:[+-]\d+)?)\s+#(\w+)\]\]/i);
       let duration;
       if (inlineRollMatch) {
         duration = this.parseDuration(`${inlineRollMatch[1]} ${inlineRollMatch[2]}`);
       } else {
-        const forMatch = plainText.match(/\bfor\s+(\d+d\d+\s+\w+|\d+\s+\w+)\s*$/i);
+        const forMatch = plainText.match(locale.forDurationPattern);
         duration = forMatch ? this.parseDuration(forMatch[1]) : null;
       }
-
-      const requiresManualHandling = this.detectManualHandling(plainText);
 
       stages.push({
         number: stageNum,
@@ -225,7 +222,7 @@ export class AfflictionParser {
         damage: this.extractDamage(rawContent),
         conditions: this.extractConditions(rawContent),
         weakness: this.extractWeakness(rawContent),
-        requiresManualHandling: requiresManualHandling,
+        requiresManualHandling: this.detectManualHandling(plainText),
         isDead: this.detectDeath(rawContent)
       });
       matchedStageNums.add(stageNum);
@@ -234,17 +231,14 @@ export class AfflictionParser {
     stages.sort((a, b) => a.number - b.number);
 
     if (stages.length === 0) {
-      const plainMatches = description.matchAll(/Stage\s+(\d+)\s+(.+?)\(([^)]+)\)([^]*)/gi);
-
-      for (const match of plainMatches) {
+      const plainRe = new RegExp(`${sl}\\s+(\\d+)\\s+(.+?)\\(([^)]+)\\)([^]*)`, 'gi');
+      for (const match of description.matchAll(plainRe)) {
         const stageNum = parseInt(match[1]);
         const effectsBefore = match[2].trim();
         const durationText = match[3];
         const effectsAfter = match[4].trim();
         const effects = [effectsBefore, effectsAfter].filter(e => e).join(' ');
         const duration = this.parseDuration(durationText);
-
-        const requiresManualHandling = this.detectManualHandling(effects);
 
         stages.push({
           number: stageNum,
@@ -254,7 +248,7 @@ export class AfflictionParser {
           damage: this.extractDamage(effects),
           conditions: this.extractConditions(effects),
           weakness: this.extractWeakness(effects),
-          requiresManualHandling: requiresManualHandling,
+          requiresManualHandling: this.detectManualHandling(effects),
           isDead: this.detectDeath(effects)
         });
       }
@@ -275,25 +269,20 @@ export class AfflictionParser {
   }
 
   static detectManualHandling(effectsText) {
-    const manualKeywords = [
-      'secret', 'gm', 'special', 'ability', 'save again',
-      'choose', 'option', 'or', 'either', 'instead',
-      'permanent'
-    ];
-
     const lowerText = effectsText.toLowerCase();
-    return manualKeywords.some(keyword => lowerText.includes(keyword));
+    return getParserLocale().manualKeywords.some(keyword => lowerText.includes(keyword));
   }
 
   static detectDeath(effectsText) {
     const stripped = this.stripEnrichment(effectsText).toLowerCase();
-    return /\bdead\b|\bdies\b|\binstant\s+death\b/.test(stripped);
+    return getParserLocale().deathPattern.test(stripped);
   }
 
   static resolveStageReferences(stages) {
+    const { asStagePattern } = getParserLocale();
     for (const stage of stages) {
       const stripped = this.stripEnrichment(stage.effects || stage.rawText || '').toLowerCase();
-      const match = stripped.match(/\bas\s+stage\s+(\d+)\b/i);
+      const match = stripped.match(asStagePattern);
       if (!match) continue;
 
       const refNum = parseInt(match[1]);
@@ -309,65 +298,50 @@ export class AfflictionParser {
   }
 
   static parseDuration(text) {
+    const locale = getParserLocale();
+
     if (text !== null && typeof text === 'object') {
       if (!text.value || text.unit === 'unlimited') return null;
-      return {
-        value: text.value,
-        unit: text.unit.toLowerCase().replace(/s$/, ''),
-        isDice: false
-      };
+      const unit = locale.durationUnitMap[text.unit.toLowerCase()] ?? text.unit.toLowerCase().replace(/s$/, '');
+      return { value: text.value, unit, isDice: false };
     }
 
-    const diceMatch = text.match(/(\d+d\d+)\s+(\w+)/i);
+    const diceMatch = text.match(locale.durationDiceRegex);
     if (diceMatch) {
       const formula = diceMatch[1];
-      const unit = diceMatch[2].toLowerCase().replace(/s$/, '');
-
-      return {
-        formula: formula,
-        value: null,
-        unit: unit,
-        isDice: true
-      };
+      const rawUnit = diceMatch[2];
+      const unit = locale.durationUnitMap[rawUnit.toLowerCase()] ?? rawUnit.toLowerCase().replace(/s$/, '');
+      return { formula, value: null, unit, isDice: true };
     }
 
-    const fixedMatch = text.match(/(\d+)\s+(\w+)/i);
+    const fixedMatch = text.match(locale.durationFixedRegex);
     if (fixedMatch) {
-      return {
-        value: parseInt(fixedMatch[1]),
-        unit: fixedMatch[2].toLowerCase().replace(/s$/, ''),
-        isDice: false
-      };
+      const rawUnit = fixedMatch[2];
+      const unit = locale.durationUnitMap[rawUnit.toLowerCase()] ?? rawUnit.toLowerCase().replace(/s$/, '');
+      return { value: parseInt(fixedMatch[1]), unit, isDice: false };
     }
 
     return { value: 1, unit: 'round', isDice: false };
   }
 
   static extractDamage(text) {
+    const locale = getParserLocale();
     const damageEntries = [];
     const seenFormulas = new Set();
 
-    const orDamagePattern = /(\d+d\d+(?:\s*[+-]\s*\d+)?)\s+(\w+)\s+or\s+(\w+)\s+damage/gi;
-    const orMatches = text.matchAll(orDamagePattern);
-    for (const match of orMatches) {
+    for (const match of text.matchAll(locale.orDamagePattern)) {
       const formula = match[1].trim();
       const type1 = match[2].trim().toLowerCase();
       const type2 = match[3].trim().toLowerCase();
-
       if (!seenFormulas.has(formula)) {
-        damageEntries.push({
-          formula,
-          type: type1,
-          isChoice: true,
-          alternativeType: type2
-        });
+        damageEntries.push({ formula, type: type1, isChoice: true, alternativeType: type2 });
         seenFormulas.add(formula);
       }
     }
 
-    // Legacy inline roll format: [[/r 1d6[poison]]] or [[/br 1d6[poison]]]
-    const legacyInlineMatches = text.matchAll(/\[\[\/(?:br?\s+)([\dd\w+-]+)\[(\w+)\]\]\]/gi);
-    for (const match of legacyInlineMatches) {
+    // Inline roll format: [[/r 1d6[poison]]] or [[/br 1d6[poison]]]
+    // FoundryVTT engine syntax — locale-independent.
+    for (const match of text.matchAll(/\[\[\/(?:br?\s+)([\dd\w+-]+)\[(\w+)\]\]\]/gi)) {
       const formula = match[1].trim();
       const type = match[2].trim().toLowerCase();
       if (!seenFormulas.has(formula)) {
@@ -376,35 +350,30 @@ export class AfflictionParser {
       }
     }
 
-    const typedDamageMatches = text.matchAll(/@Damage\[([\d\w+-]+)\[([^\]]+)\]\]/gi);
-    for (const match of typedDamageMatches) {
+    // @Damage enricher — FoundryVTT engine syntax, locale-independent.
+    for (const match of text.matchAll(/@Damage\[([\d\w+-]+)\[([^\]]+)\]\]/gi)) {
       const formula = match[1].trim();
       const type = match[2].trim().toLowerCase();
-
       if (!seenFormulas.has(formula)) {
         damageEntries.push({ formula, type });
         seenFormulas.add(formula);
       }
     }
 
-    const untypedDamageMatches = text.matchAll(/@Damage\[([\d\w+-]+)\](?!\])/gi);
-    for (const match of untypedDamageMatches) {
+    for (const match of text.matchAll(/@Damage\[([\d\w+-]+)\](?!\])/gi)) {
       const formula = match[1].trim();
-
       if (!seenFormulas.has(formula)) {
-        damageEntries.push({
-          formula: formula,
-          type: 'untyped'
-        });
+        damageEntries.push({ formula, type: 'untyped' });
         seenFormulas.add(formula);
       }
     }
 
-    const plainDamageMatches = text.matchAll(/(\d+d\d+(?:\s*[+-]\s*\d+)?)\s+(acid|bludgeoning|cold|electricity|fire|force|mental|piercing|poison|slashing|sonic|bleed|persistent)(?!\s+or)/gi);
-    for (const match of plainDamageMatches) {
+    // Plain-text fallback: "1d6 fire" — uses locale damage type list.
+    const typePattern = locale.damageTypes.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+    const plainRe = new RegExp(`(\\d+d\\d+(?:\\s*[+-]\\s*\\d+)?)\\s+(${typePattern})(?!\\s+or)`, 'gi');
+    for (const match of text.matchAll(plainRe)) {
       const formula = match[1].trim();
       const type = match[2].trim().toLowerCase();
-
       if (!seenFormulas.has(formula)) {
         damageEntries.push({ formula, type });
         seenFormulas.add(formula);
@@ -418,25 +387,14 @@ export class AfflictionParser {
     const weaknesses = [];
     const seenTypes = new Set();
 
-    const pattern1Matches = text.matchAll(/weakness\s+to\s+(\w+)\s+(\d+)/gi);
-    for (const match of pattern1Matches) {
-      const type = match[1].trim().toLowerCase();
-      const value = parseInt(match[2]);
-
-      if (!seenTypes.has(type)) {
-        weaknesses.push({ type, value });
-        seenTypes.add(type);
-      }
-    }
-
-    const pattern2Matches = text.matchAll(/weakness\s+(\d+)\s+to\s+(\w+)/gi);
-    for (const match of pattern2Matches) {
-      const value = parseInt(match[1]);
-      const type = match[2].trim().toLowerCase();
-
-      if (!seenTypes.has(type)) {
-        weaknesses.push({ type, value });
-        seenTypes.add(type);
+    for (const { regex, typeGroup, valueGroup } of getParserLocale().weaknessPatterns) {
+      for (const match of text.matchAll(regex)) {
+        const type = match[typeGroup].trim().toLowerCase();
+        const value = parseInt(match[valueGroup]);
+        if (!seenTypes.has(type)) {
+          weaknesses.push({ type, value });
+          seenTypes.add(type);
+        }
       }
     }
     return weaknesses;
@@ -445,49 +403,39 @@ export class AfflictionParser {
   static extractConditions(text) {
     const conditions = [];
     const foundConditions = new Set();
+    const locale = getParserLocale();
 
-    // Map pre-remaster condition display names to their current equivalents
-    const legacyConditionAliases = { 'flat-footed': 'off-guard' };
-
-    const uuidMatches = text.matchAll(/@UUID\[[^\]]+\]\{([^}]+)\}/gi);
-    for (const match of uuidMatches) {
+    // ── UUID enricher matches: @UUID[...]{Display Name} ────────────────────
+    for (const match of text.matchAll(/@UUID\[[^\]]+\]\{([^}]+)\}/gi)) {
       const raw = match[1].trim();
-      const conditionText = legacyConditionAliases[raw.toLowerCase()] ?? raw;
+      for (const [displayName, conditionKey] of locale.conditionDisplayMap) {
+        const escaped = displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (!new RegExp(`^${escaped}\\s*(\\d+)?$`, 'i').test(raw)) continue;
 
-      for (const condition of PF2E_CONDITIONS) {
-        const escapedCondition = condition.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const conditionRegex = new RegExp(`^${escapedCondition}\\s*(\\d+)?$`, 'gi');
-        const condMatch = conditionText.match(conditionRegex);
-        if (condMatch) {
-          const valueMatch = conditionText.match(/\d+/);
-          const condKey = condition.toLowerCase();
-          if (!foundConditions.has(condKey)) {
-            conditions.push({
-              name: condition,
-              value: valueMatch ? parseInt(valueMatch[0]) : null
-            });
-            foundConditions.add(condKey);
-          }
-          break;
+        const condKey = conditionKey.toLowerCase();
+        if (!foundConditions.has(condKey)) {
+          const valueMatch = raw.match(/\d+/);
+          conditions.push({ name: conditionKey, value: valueMatch ? parseInt(valueMatch[0]) : null });
+          foundConditions.add(condKey);
         }
+        break;
       }
     }
 
+    // ── Plain-text fallback ─────────────────────────────────────────────────
     const plainText = text.replace(/<[^>]+>/g, ' ').replace(/@UUID\[[^\]]+\]\{[^}]+\}/g, ' ');
+    const b = locale.useWordBoundaries ? '\\b' : '';
 
-    for (const condition of PF2E_CONDITIONS) {
-      const condKey = condition.toLowerCase();
+    for (const [displayName, conditionKey] of locale.conditionDisplayMap) {
+      const condKey = conditionKey.toLowerCase();
       if (foundConditions.has(condKey)) continue;
 
-      const escapedCondition = condition.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const regex = new RegExp(`\\b${escapedCondition}\\s*(\\d+)?\\b`, 'gi');
+      const escaped = displayName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`${b}${escaped}\\s*(\\d+)?${b}`, 'gi');
       const match = plainText.match(regex);
       if (match) {
         const valueMatch = match[0].match(/\d+/);
-        conditions.push({
-          name: condition,
-          value: valueMatch ? parseInt(valueMatch[0]) : null
-        });
+        conditions.push({ name: conditionKey, value: valueMatch ? parseInt(valueMatch[0]) : null });
         foundConditions.add(condKey);
       }
     }
@@ -496,10 +444,10 @@ export class AfflictionParser {
   }
 
   static extractMaxDuration(description) {
-    const maxMatch = description.match(/Maximum Duration(?:<\/[^>]+>)?\s+([^;.<]+)/i);
-    if (maxMatch) {
-      return this.parseDuration(maxMatch[1].trim());
-    }
+    const { maxDurationLabel } = getParserLocale();
+    const escaped = maxDurationLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const maxMatch = description.match(new RegExp(`${escaped}(?:<\\/[^>]+>)?\\s+([^;.<]+)`, 'i'));
+    if (maxMatch) return this.parseDuration(maxMatch[1].trim());
     return null;
   }
 
@@ -568,37 +516,19 @@ export class AfflictionParser {
 
   static extractMultipleExposure(description) {
     if (!description) return null;
-
     const plainText = description.replace(/<[^>]+>/g, ' ');
 
-    const pattern1 = /(?:each\s+(?:time\s+you(?:'re|are)\s+exposed|additional\s+exposure)).*?(?:increase|advance).*?(?:stage|stages)\s*(?:by\s*)?(\d+)/i;
-    const match1 = plainText.match(pattern1);
+    for (const { main, minStage } of getParserLocale().multipleExposurePatterns) {
+      const match = plainText.match(main);
+      if (!match) continue;
 
-    if (match1) {
-      const stageIncrease = parseInt(match1[1]) || 1;
-
-      const minStageMatch = plainText.match(/(?:while|at|when)\s+(?:already\s+)?(?:at\s+)?stage\s+(\d+)/i);
-      const minStage = minStageMatch ? parseInt(minStageMatch[1]) : null;
-
+      const stageIncrease = parseInt(match[1]) || 1;
+      const minStageMatch = minStage ? plainText.match(minStage) : null;
       return {
         enabled: true,
-        stageIncrease: stageIncrease,
-        minStage: minStage,
-        rawText: match1[0]
-      };
-    }
-
-    const pattern2 = /multiple\s+exposures.*?(?:increase|advance).*?(?:stage|stages)\s*(?:by\s*)?(\d+)/i;
-    const match2 = plainText.match(pattern2);
-
-    if (match2) {
-      const stageIncrease = parseInt(match2[1]) || 1;
-
-      return {
-        enabled: true,
-        stageIncrease: stageIncrease,
-        minStage: null,
-        rawText: match2[0]
+        stageIncrease,
+        minStage: minStageMatch ? parseInt(minStageMatch[1]) : null,
+        rawText: match[0]
       };
     }
 
