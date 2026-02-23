@@ -5,7 +5,7 @@ import { onWorldTimeUpdate } from './worldTime.js';
 import { onRenderTokenHUD } from './tokenHUD.js';
 import { onRenderChatMessage } from '../handlers/chatButtons.js';
 import { onPreUpdateItem } from './conditions.js';
-import { onGetSceneControlButtons, onRenderSceneControls, onControlToken } from './tokenTools.js';
+import { onGetSceneControlButtons, onRenderSceneControls, onUpdateToken, onControlToken } from './tokenTools.js';
 
 export function registerAfflictionHooks() {
   Hooks.on('pf2e.rollDamage', onDamageRoll);
@@ -18,6 +18,7 @@ export function registerAfflictionHooks() {
   Hooks.on('preUpdateItem', onPreUpdateItem);
   Hooks.on('getSceneControlButtons', onGetSceneControlButtons);
   Hooks.on('renderSceneControls', onRenderSceneControls);
+  Hooks.on('updateToken', onUpdateToken);
   Hooks.on('controlToken', onControlToken);
 
   console.log('PF2e Afflictioner | Hooks registered');
