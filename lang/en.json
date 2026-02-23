@@ -20,6 +20,8 @@
       "GM_ROLL_MYSTERIOUS_HINT": "GM rolls initial saves for mysterious afflictions (onset or no stage 1 mechanical effects). Players never see the save request, maintaining complete secrecy.",
       "USE_APP_INITIATIVE_NAME": "Use Application Initiative",
       "USE_APP_INITIATIVE_HINT": "When enabled, affliction saves trigger on the same initiative step the affliction was first applied, rather than the afflicted token's own initiative. Unofficial rule — not explicitly stated in the PF2e rulebook.",
+      "USE_TOKEN_TOOLS_BUTTON_NAME": "Use Token Tools Button",
+      "USE_TOKEN_TOOLS_BUTTON_HINT": "Move the Affliction Manager button from the Token HUD to the Token Tools sidebar. The button appears only when a token is selected and glows red when the selected token has active afflictions.",
       "EDITED_AFFLICTIONS_STORE_NAME": "Edited Afflictions",
       "EDITED_AFFLICTIONS_STORE_HINT": "Stores GM-edited affliction definitions",
       "COMMUNITY_DATA_VERSION_NAME": "Community Data Version",

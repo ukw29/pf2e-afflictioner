@@ -1,7 +1,9 @@
 import * as AfflictionStore from '../stores/AfflictionStore.js';
+import { MODULE_ID } from '../constants.js';
 
 export function onRenderTokenHUD(app, html) {
   if (!game.user.isGM) return;
+  if (game.settings.get(MODULE_ID, 'useTokenToolsButton')) return;
 
   const token = app.object;
   if (!token) return;

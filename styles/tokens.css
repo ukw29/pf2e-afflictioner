@@ -62,6 +62,23 @@
   }
 }
 
+/* Scene Control token tools button */
+li[data-tool="pf2e-afflictioner-manage"] i.fa-biohazard {
+  color: #888888;
+  transition: all 0.2s ease;
+}
+
+li[data-tool="pf2e-afflictioner-manage"]:hover i.fa-biohazard {
+  color: #a00000;
+  filter: drop-shadow(0 0 4px rgba(139, 0, 0, 0.8));
+}
+
+li[data-tool="pf2e-afflictioner-manage"].active i.fa-biohazard {
+  color: #ff0000;
+  filter: drop-shadow(0 0 6px rgba(255, 0, 0, 0.9));
+  animation: pulse-biohazard 1.5s ease-in-out infinite;
+}
+
 /* Add Affliction Dialog */
 .add-affliction-dialog {
   background: linear-gradient(135deg, rgba(20, 20, 20, 0.95) 0%, rgba(40, 20, 20, 0.95) 100%);

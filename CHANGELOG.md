@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2026-02-23
+
+### Added
+
+- **Token Tools button mode**: New setting "Use Token Tools Button" that moves the Affliction Manager button from the Token HUD to the Scene Controls token tools sidebar. When enabled, the biohazard button appears only when a token is selected and glows red when the selected token has active afflictions.
+
 ## [1.1.7] - 2026-02-22
 
 ### Fixed

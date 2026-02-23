@@ -86,6 +86,16 @@ export const DEFAULT_SETTINGS = {
     config: true,
     restricted: true
   },
+  'useTokenToolsButton': {
+    name: 'PF2E_AFFLICTIONER.SETTINGS.USE_TOKEN_TOOLS_BUTTON_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.USE_TOKEN_TOOLS_BUTTON_HINT',
+    scope: 'world',
+    type: Boolean,
+    default: false,
+    config: true,
+    restricted: true,
+    requiresReload: true
+  },
   'editedAfflictions': {
     name: 'PF2E_AFFLICTIONER.SETTINGS.EDITED_AFFLICTIONS_STORE_NAME',
     hint: 'PF2E_AFFLICTIONER.SETTINGS.EDITED_AFFLICTIONS_STORE_HINT',
