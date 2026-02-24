@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Chinese speed penalty parsing**: Added locale-aware speed penalty pattern (`速度-N尺状态减值`) to the Chinese parser locale, and refactored `AfflictionEffectBuilder` to use locale-driven `speedPenaltyPatterns` instead of a hardcoded English regex.
+
 - **Apply Consequences button crash**: Fixed `Cannot read properties of undefined (reading 'get')` error on `canvas.tokens` when the button is rendered before the canvas is fully initialised.
 
 ## [1.2.0] - 2026-02-24
