@@ -1,6 +1,7 @@
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
+import * as WeaponCoatingStore from '../stores/WeaponCoatingStore.js';
 
 export async function onWorldTimeUpdate(worldTime, delta) {
   if (!game.user.isGM) return;
@@ -71,5 +72,60 @@ export async function onWorldTimeUpdate(worldTime, delta) {
         await AfflictionService.checkWorldTimeSave(token, affliction, delta);
       }
     }
+  }
+
+  // Check coating expiration for time-based modes
+  await checkWorldTimeCoatingExpiration(worldTime);
+}
+
+function getCoatingDurationSeconds(expirationMode) {
+  if (expirationMode?.startsWith('custom:')) {
+    const [, val, unit] = expirationMode.split(':');
+    const n = parseInt(val) || 1;
+    const multipliers = { rounds: 6, minutes: 60, hours: 3600 };
+    return n * (multipliers[unit] || 60);
+  }
+  switch (expirationMode) {
+    case '1-minute': return 60;
+    case '10-minutes': return 600;
+    case '1-hour': return 3600;
+    default: return null; // unlimited or turn-based
+  }
+}
+
+async function checkWorldTimeCoatingExpiration(currentWorldTime) {
+  const allCoatings = WeaponCoatingStore.getAllCoatingsOnCanvas();
+  for (const coating of allCoatings) {
+    if (!coating.appliedTimestamp) continue;
+    let shouldExpire = false;
+
+    const durationSec = getCoatingDurationSeconds(coating.expirationMode);
+
+    if (durationSec != null) {
+      // Time-based modes (1-minute, 10-minutes, 1-hour, custom)
+      if (currentWorldTime - coating.appliedTimestamp >= durationSec) {
+        shouldExpire = true;
+      }
+    } else if (
+      (coating.expirationMode === 'start-next-turn' || coating.expirationMode === 'end-next-turn') &&
+      coating.appliedCombatantId == null &&
+      !(game.combat && game.combat.started)
+    ) {
+      // Turn-based coating applied outside combat: fall back to 10-min expiry
+      if (currentWorldTime - coating.appliedTimestamp >= 600) {
+        shouldExpire = true;
+      }
+    }
+
+    if (!shouldExpire) continue;
+
+    const actor = game.actors.get(coating.actorId);
+    if (!actor) continue;
+
+    await WeaponCoatingStore.removeCoating(actor, coating.weaponId);
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.WEAPON_COATING.EXPIRED', {
+      poisonName: coating.poisonName,
+      weaponName: coating.weaponName
+    }));
   }
 }

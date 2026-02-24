@@ -14,7 +14,23 @@ export async function addCoating(actor, weaponId, coatingData) {
   await actor.setFlag(MODULE_ID, 'weaponCoatings', coatings);
 }
 
+export async function updateCoating(actor, weaponId, updates) {
+  const coatings = getCoatings(actor);
+  if (!coatings[weaponId]) return;
+  Object.assign(coatings[weaponId], updates);
+  await actor.setFlag(MODULE_ID, 'weaponCoatings', coatings);
+}
+
 export async function removeCoating(actor, weaponId) {
+  const coating = getCoating(actor, weaponId);
+  if (coating?.coatingEffectUuid) {
+    try {
+      const effect = await fromUuid(coating.coatingEffectUuid);
+      if (effect) await effect.delete();
+    } catch (e) {
+      console.warn('PF2e Afflictioner | Could not remove coating effect:', e);
+    }
+  }
   await actor.unsetFlag(MODULE_ID, `weaponCoatings.${weaponId}`);
 }
 

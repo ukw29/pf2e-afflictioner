@@ -33,9 +33,27 @@ export class SocketService {
     this.socket.register('gmApplySaveConsequences', this.gmApplySaveConsequences.bind(this));
     this.socket.register('unlockSaveButton', this.handleUnlockSaveButton.bind(this));
     this.socket.register('syncButtonState', this.handleSyncButtonState.bind(this));
+    this.socket.register('gmPromptCoatingDuration', this.gmPromptCoatingDuration.bind(this));
 
     const preRerollHookId = Hooks.on('pf2e.preReroll', this.onPf2ePreReroll.bind(this));
     const rerollHookId = Hooks.on('pf2e.reroll', this.onPf2eReroll.bind(this));
+  }
+
+  static async gmPromptCoatingDuration() {
+    if (!game.user.isGM) return null;
+    const { WeaponCoatingService } = await import('./WeaponCoatingService.js');
+    return WeaponCoatingService._promptCoatingDuration();
+  }
+
+  static async requestPromptCoatingDuration() {
+    if (!this.socket) return null;
+
+    try {
+      return await this.socket.executeAsGM('gmPromptCoatingDuration');
+    } catch (error) {
+      console.error('PF2e Afflictioner | Error requesting coating duration prompt:', error);
+      return null;
+    }
   }
 
   static async requestHandleSave(tokenId, afflictionId, rollMessageId, dc) {

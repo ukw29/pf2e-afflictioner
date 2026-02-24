@@ -25,7 +25,15 @@
       "EDITED_AFFLICTIONS_STORE_NAME": "Edited Afflictions",
       "EDITED_AFFLICTIONS_STORE_HINT": "Stores GM-edited affliction definitions",
       "COMMUNITY_DATA_VERSION_NAME": "Community Data Version",
-      "COMMUNITY_DATA_VERSION_HINT": "Version of community afflictions data last imported"
+      "COMMUNITY_DATA_VERSION_HINT": "Version of community afflictions data last imported",
+      "PROMPT_COATING_DURATION_NAME": "Prompt Coating Duration",
+      "PROMPT_COATING_DURATION_HINT": "When enabled, the GM is prompted to choose how long each weapon coating lasts. When disabled, all coatings last indefinitely until consumed.",
+      "COATING_DURATION_UNLIMITED": "Unlimited",
+      "COATING_DURATION_START_NEXT_TURN": "Start of next turn",
+      "COATING_DURATION_END_NEXT_TURN": "End of next turn",
+      "COATING_DURATION_1_MIN": "1 minute",
+      "COATING_DURATION_10_MIN": "10 minutes",
+      "COATING_DURATION_1_HOUR": "1 hour"
     },
     "MANAGER": {
       "TITLE": "Affliction Manager",
@@ -351,7 +359,20 @@
       "TOOLTIP_MAX_DURATION": "Max Duration: {value} {unit}(s)",
       "TOOLTIP_STAGE": "Stage {number}: {effects}",
       "TOOLTIP_NO_EFFECTS": "No effects",
-      "COAT_WEAPON_DONE": "Weapon Coated"
+      "COAT_WEAPON_DONE": "Weapon Coated",
+      "DURATION_TITLE": "Coating Duration",
+      "DURATION_PROMPT": "How long should this coating last?",
+      "DURATION_HINT_STRICT": "Quick Alchemy (strict)",
+      "DURATION_HINT_MODERATE": "Quick Alchemy (lenient)",
+      "DURATION_HINT_UNLIMITED": "Purchased poison",
+      "DURATION_CUSTOM_LABEL": "Custom duration:",
+      "DURATION_UNIT_ROUNDS": "rounds",
+      "DURATION_UNIT_MINUTES": "minutes",
+      "DURATION_UNIT_HOURS": "hours",
+      "EXPIRED": "{poisonName} coating on {weaponName} has expired",
+      "EFFECT_NAME": "{poisonName} ({weaponName})",
+      "EFFECT_DESCRIPTION": "{weaponName} is coated with {poisonName}",
+      "TOXICOLOGIST_APPLIED": "Toxicologist: Poison damage can be dealt as acid damage"
     },
     "VISHKANYA": {
       "DEBILITATION_TITLE": "Choose Debilitation",

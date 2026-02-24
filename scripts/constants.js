@@ -96,6 +96,15 @@ export const DEFAULT_SETTINGS = {
     restricted: true,
     requiresReload: true
   },
+  'promptCoatingDuration': {
+    name: 'PF2E_AFFLICTIONER.SETTINGS.PROMPT_COATING_DURATION_NAME',
+    hint: 'PF2E_AFFLICTIONER.SETTINGS.PROMPT_COATING_DURATION_HINT',
+    scope: 'world',
+    type: Boolean,
+    default: true,
+    config: true,
+    restricted: true
+  },
   'editedAfflictions': {
     name: 'PF2E_AFFLICTIONER.SETTINGS.EDITED_AFFLICTIONS_STORE_NAME',
     hint: 'PF2E_AFFLICTIONER.SETTINGS.EDITED_AFFLICTIONS_STORE_HINT',

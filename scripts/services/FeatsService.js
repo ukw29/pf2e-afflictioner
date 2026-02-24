@@ -22,6 +22,14 @@ export class FeatsService {
     return this.hasFeat(actor, 'blowgun-poisoner');
   }
 
+  /** Toxicologist — Alchemist research field that allows poison → acid damage swap */
+  static hasToxicologistFieldVenom(actor) {
+    if (!actor?.items) return false;
+    return actor.items.some(item =>
+      item.type === 'feat' && item.system?.slug?.includes('toxicologist')
+    );
+  }
+
   /**
    * Returns the stage change for a degree of success when Fast Recovery applies.
    * Returns null for FAILURE and CRITICAL_FAILURE (unchanged from normal rules).

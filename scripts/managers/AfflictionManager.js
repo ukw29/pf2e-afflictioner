@@ -4,6 +4,7 @@ import { AfflictionService } from '../services/AfflictionService.js';
 import { TreatmentService } from '../services/TreatmentService.js';
 import { CounteractService } from '../services/CounteractService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
+import { WeaponCoatingService } from '../services/WeaponCoatingService.js';
 import { shouldSkipAffliction } from '../utils.js';
 export class AfflictionManager extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2
@@ -778,12 +779,39 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       return;
     }
 
+    // Remove existing coating (cleans up old effect) before replacing
+    const existing = WeaponCoatingStore.getCoating(actor, weaponId);
+    if (existing) {
+      await WeaponCoatingStore.removeCoating(actor, weaponId);
+    }
+
+    // Prompt for coating duration (always shows on GM client)
+    const expirationMode = await WeaponCoatingService.promptCoatingDuration();
+    if (expirationMode === null) return;
+
+    // Apply Toxicologist acid swap if applicable
+    const finalAfflictionData = WeaponCoatingService._applyToxicologistSwap(actor, afflictionData);
+
+    const weaponName = weapon?.name ?? weaponId;
+    const combat = game.combat;
+    const poisonImg = item.img || null;
+
     await WeaponCoatingStore.addCoating(actor, weaponId, {
       poisonItemUuid: itemUuid,
-      poisonName: afflictionData.name,
-      weaponName: weapon?.name ?? weaponId,
-      afflictionData
+      poisonName: finalAfflictionData.name,
+      weaponName,
+      afflictionData: finalAfflictionData,
+      appliedRound: combat?.started ? combat.round : null,
+      appliedTimestamp: game.time.worldTime,
+      appliedCombatantId: WeaponCoatingService._findCombatantId(actor),
+      expirationMode
     });
+
+    // Create visual coating effect on token
+    const coatingEffectUuid = await WeaponCoatingService.createCoatingEffect(actor, weaponName, finalAfflictionData.name, expirationMode, poisonImg);
+    if (coatingEffectUuid) {
+      await WeaponCoatingStore.updateCoating(actor, weaponId, { coatingEffectUuid });
+    }
 
     // Consume one dose of the poison item
     const quantity = item.system?.quantity ?? 1;
@@ -793,7 +821,7 @@ export class AfflictionManager extends foundry.applications.api.HandlebarsApplic
       await item.update({ 'system.quantity': quantity - 1 });
     }
 
-    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.WEAPON_COATING.COATED', { weaponName: weapon?.name ?? weaponId, poisonName: afflictionData.name }));
+    ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.WEAPON_COATING.COATED', { weaponName, poisonName: finalAfflictionData.name }));
     this.render({ force: true });
   }
 

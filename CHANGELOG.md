@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-02-24
+
+### Added
+
+- **Coating duration timer**: When coating a weapon, the GM is prompted to choose how long the coating lasts. Options include start of next turn, end of next turn, 1 minute, 10 minutes, 1 hour, unlimited, or a custom duration. Coatings auto-expire via combat turn hooks or world time progression. The duration is set per-coating at application time.
+
+- **Coating visual effect on token**: Coated weapons now create a PF2e effect item on the actor, showing the poison icon on the token. The effect syncs bidirectionally — removing the coating deletes the effect, and deleting the effect removes the coating data. Effect duration matches the selected coating duration.
+
+- **Toxicologist acid damage swap**: When a character with the Toxicologist feat coats a weapon, poison damage entries are automatically marked as a choice between poison and acid, using the existing damage choice UI. The feat is auto-detected from the actor's feats.
+
+- **Prompt Coating Duration setting**: New world setting (default: on) that controls whether the GM sees the duration picker when coating. When disabled, all coatings default to unlimited duration — useful for GMs who don't want to manage coating timers.
+
+- **GM-routed duration dialog**: The coating duration prompt always appears on the GM's client, even when a player initiates the coating. Uses socketlib to route the dialog to the GM and return the selection.
+
 ## [1.2.2] - 2026-02-24
 
 ### Added

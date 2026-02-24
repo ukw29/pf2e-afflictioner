@@ -270,6 +270,128 @@
   display: none !important;
 }
 
+/* Coating Duration picker dialog */
+.cd-prompt {
+  font-size: 0.9em;
+  color: #ccc;
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.cd-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.cd-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  background: rgba(0,0,0,0.35);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  user-select: none;
+  text-align: center;
+}
+
+.cd-card:hover {
+  background: rgba(74,124,42,0.15);
+  border-color: rgba(74,124,42,0.5);
+  transform: translateY(-1px);
+}
+
+.cd-card:active {
+  transform: translateY(0);
+  background: rgba(74,124,42,0.25);
+}
+
+.cd-card-icon {
+  font-size: 1.2em;
+  color: #7dbf4a;
+  margin-bottom: 2px;
+}
+
+.cd-card-label {
+  font-weight: 600;
+  font-size: 0.82em;
+  color: #e0e0e0;
+  line-height: 1.2;
+}
+
+.cd-card-hint {
+  font-size: 0.7em;
+  color: #888;
+  font-style: italic;
+}
+
+.cd-custom {
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.cd-custom-label {
+  font-size: 0.78em;
+  color: #aaa;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.cd-custom-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.cd-custom-value {
+  width: 60px;
+  padding: 4px 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  background: rgba(0,0,0,0.4);
+  color: #e0e0e0;
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.cd-custom-unit {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  background: rgba(0,0,0,0.4);
+  color: #e0e0e0;
+  font-size: 0.85em;
+}
+
+.cd-custom-apply {
+  padding: 4px 10px;
+  border: 1px solid #3a7c2a;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #3a6e1a 0%, #4a8c28 100%);
+  color: #d8f0c0;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: 0.85em;
+}
+
+.cd-custom-apply:hover {
+  background: linear-gradient(135deg, #4a8c28 0%, #5aaa36 100%);
+  border-color: #4a9c30;
+}
+
+/* Hide default buttons in duration dialog — cards handle selection */
+.application:has(.cd-grid) .form-footer,
+.application:has(.cd-grid) .dialog-buttons {
+  display: none !important;
+}
+
 /* Coat Weapon button on injury item chat cards */
 .pf2e-afflictioner-coat-weapon-btn {
   display: flex;

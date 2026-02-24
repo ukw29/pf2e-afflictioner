@@ -1,6 +1,8 @@
+import { MODULE_ID } from '../constants.js';
 import { AfflictionParser } from './AfflictionParser.js';
 import * as WeaponCoatingStore from '../stores/WeaponCoatingStore.js';
 import { VishkanyaService } from './VishkanyaService.js';
+import { FeatsService } from './FeatsService.js';
 
 const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
 
@@ -101,6 +103,7 @@ export class WeaponCoatingService {
       return;
     }
 
+    // Remove existing coating (cleans up old effect) before replacing
     const existing = WeaponCoatingStore.getCoating(actor, selected.weaponId);
     if (existing) {
       const confirmed = await foundry.applications.api.DialogV2.confirm({
@@ -109,14 +112,35 @@ export class WeaponCoatingService {
         defaultYes: false
       });
       if (!confirmed) return;
+      await WeaponCoatingStore.removeCoating(actor, selected.weaponId);
     }
+
+    // Prompt for coating duration (always shows on GM client)
+    const expirationMode = await this.promptCoatingDuration();
+    if (expirationMode === null) return;
+
+    // Apply Toxicologist acid swap if applicable
+    const finalAfflictionData = this._applyToxicologistSwap(actor, afflictionData);
+
+    const combat = game.combat;
+    const poisonImg = item.img || null;
 
     await WeaponCoatingStore.addCoating(actor, selected.weaponId, {
       poisonItemUuid: itemUuid,
-      poisonName: afflictionData.name,
+      poisonName: finalAfflictionData.name,
       weaponName: selected.weaponName,
-      afflictionData
+      afflictionData: finalAfflictionData,
+      appliedRound: combat?.started ? combat.round : null,
+      appliedTimestamp: game.time.worldTime,
+      appliedCombatantId: this._findCombatantId(actor),
+      expirationMode
     });
+
+    // Create visual coating effect on token
+    const coatingEffectUuid = await this.createCoatingEffect(actor, selected.weaponName, finalAfflictionData.name, expirationMode, poisonImg);
+    if (coatingEffectUuid) {
+      await WeaponCoatingStore.updateCoating(actor, selected.weaponId, { coatingEffectUuid });
+    }
 
     // Consume one dose of the poison item
     const quantity = item.system?.quantity ?? 1;
@@ -126,7 +150,7 @@ export class WeaponCoatingService {
       await item.update({ 'system.quantity': quantity - 1 });
     }
 
-    ui.notifications.info(i.format(`${K}.COATED`, { weaponName: selected.weaponName, poisonName: afflictionData.name }));
+    ui.notifications.info(i.format(`${K}.COATED`, { weaponName: selected.weaponName, poisonName: finalAfflictionData.name }));
 
     const { AfflictionManager } = await import('../managers/AfflictionManager.js');
     if (AfflictionManager.currentInstance) {
@@ -240,6 +264,7 @@ export class WeaponCoatingService {
       return;
     }
 
+    // Remove existing coating (cleans up old effect) before replacing
     const existing = WeaponCoatingStore.getCoating(actor, selected.weaponId);
     if (existing) {
       const confirmed = await foundry.applications.api.DialogV2.confirm({
@@ -248,14 +273,34 @@ export class WeaponCoatingService {
         defaultYes: false
       });
       if (!confirmed) return;
+      await WeaponCoatingStore.removeCoating(actor, selected.weaponId);
     }
+
+    // Prompt for coating duration (always shows on GM client)
+    const expirationMode = await this.promptCoatingDuration();
+    if (expirationMode === null) return;
+
+    // Apply Toxicologist acid swap if applicable
+    finalAfflictionData = this._applyToxicologistSwap(actor, finalAfflictionData);
+
+    const combat = game.combat;
 
     await WeaponCoatingStore.addCoating(actor, selected.weaponId, {
       poisonItemUuid: null,
       poisonName: finalAfflictionData.name,
       weaponName: selected.weaponName,
-      afflictionData: finalAfflictionData
+      afflictionData: finalAfflictionData,
+      appliedRound: combat?.started ? combat.round : null,
+      appliedTimestamp: game.time.worldTime,
+      appliedCombatantId: this._findCombatantId(actor),
+      expirationMode
     });
+
+    // Create visual coating effect on token
+    const coatingEffectUuid = await this.createCoatingEffect(actor, selected.weaponName, finalAfflictionData.name, expirationMode);
+    if (coatingEffectUuid) {
+      await WeaponCoatingStore.updateCoating(actor, selected.weaponId, { coatingEffectUuid });
+    }
 
     ui.notifications.info(i.format(`${K}.COATED`, { weaponName: selected.weaponName, poisonName: finalAfflictionData.name }));
 
@@ -265,6 +310,217 @@ export class WeaponCoatingService {
     }
 
     return true;
+  }
+
+  /**
+   * Routes the coating duration prompt to the GM client via socket.
+   * If the current user is GM (or socketlib is unavailable), calls directly.
+   * @returns {Promise<string|null>} The chosen mode, or null if cancelled
+   */
+  static async promptCoatingDuration() {
+    if (!game.settings.get(MODULE_ID, 'promptCoatingDuration')) {
+      return 'unlimited';
+    }
+    const { SocketService } = await import('./SocketService.js');
+    if (game.user.isGM || !SocketService.socket) {
+      return this._promptCoatingDuration();
+    }
+    return SocketService.requestPromptCoatingDuration();
+  }
+
+  /**
+   * Prompts the user to choose a coating duration for this specific coating.
+   * Uses a card-based UI for preset durations with a custom option.
+   * @returns {Promise<string|null>} The chosen mode, or null if cancelled
+   */
+  static async _promptCoatingDuration() {
+    const i = game.i18n;
+    const S = 'PF2E_AFFLICTIONER.SETTINGS';
+
+    const options = [
+      { value: 'start-next-turn', label: i.localize(`${S}.COATING_DURATION_START_NEXT_TURN`), icon: 'fas fa-hourglass-start', hint: i.localize(`${K}.DURATION_HINT_STRICT`) },
+      { value: 'end-next-turn',   label: i.localize(`${S}.COATING_DURATION_END_NEXT_TURN`),   icon: 'fas fa-hourglass-end',   hint: i.localize(`${K}.DURATION_HINT_MODERATE`) },
+      { value: '1-minute',        label: i.localize(`${S}.COATING_DURATION_1_MIN`),            icon: 'fas fa-stopwatch',       hint: '10 rounds' },
+      { value: '10-minutes',      label: i.localize(`${S}.COATING_DURATION_10_MIN`),           icon: 'fas fa-clock',           hint: '100 rounds' },
+      { value: '1-hour',          label: i.localize(`${S}.COATING_DURATION_1_HOUR`),           icon: 'fas fa-history',         hint: '600 rounds' },
+      { value: 'unlimited',       label: i.localize(`${S}.COATING_DURATION_UNLIMITED`),        icon: 'fas fa-infinity',        hint: i.localize(`${K}.DURATION_HINT_UNLIMITED`) },
+    ];
+
+    const cards = options.map(o => `
+      <div class="cd-card" data-value="${o.value}">
+        <i class="${o.icon} cd-card-icon"></i>
+        <span class="cd-card-label">${o.label}</span>
+        <span class="cd-card-hint">${o.hint}</span>
+      </div>
+    `).join('');
+
+    const content = `
+      <p class="cd-prompt">${i.localize(`${K}.DURATION_PROMPT`)}</p>
+      <div class="cd-grid">${cards}</div>
+      <div class="cd-custom">
+        <label class="cd-custom-label">${i.localize(`${K}.DURATION_CUSTOM_LABEL`)}</label>
+        <div class="cd-custom-row">
+          <input type="number" class="cd-custom-value" min="1" value="5" />
+          <select class="cd-custom-unit">
+            <option value="rounds">${i.localize(`${K}.DURATION_UNIT_ROUNDS`)}</option>
+            <option value="minutes" selected>${i.localize(`${K}.DURATION_UNIT_MINUTES`)}</option>
+            <option value="hours">${i.localize(`${K}.DURATION_UNIT_HOURS`)}</option>
+          </select>
+          <button type="button" class="cd-custom-apply"><i class="fas fa-check"></i></button>
+        </div>
+      </div>
+    `;
+
+    const result = await new Promise((resolve) => {
+      let hookId;
+
+      hookId = Hooks.on('renderDialogV2', (_app, element) => {
+        if (!element.querySelector('.cd-grid')) return;
+        Hooks.off('renderDialogV2', hookId);
+
+        element.querySelectorAll('.cd-card').forEach((card) => {
+          card.addEventListener('click', async () => {
+            resolve(card.dataset.value);
+            await _app.close();
+          });
+        });
+
+        const applyBtn = element.querySelector('.cd-custom-apply');
+        if (applyBtn) {
+          applyBtn.addEventListener('click', async () => {
+            const val = parseInt(element.querySelector('.cd-custom-value')?.value) || 1;
+            const unit = element.querySelector('.cd-custom-unit')?.value || 'minutes';
+            resolve(`custom:${val}:${unit}`);
+            await _app.close();
+          });
+        }
+      });
+
+      foundry.applications.api.DialogV2.wait({
+        window: { title: i.localize(`${K}.DURATION_TITLE`) },
+        content,
+        buttons: [{ action: 'cancel', label: i.localize('PF2E_AFFLICTIONER.DIALOG.CANCEL'), icon: 'fas fa-times' }],
+        rejectClose: false
+      }).then(() => {
+        Hooks.off('renderDialogV2', hookId);
+        resolve(null);
+      }).catch(() => {
+        Hooks.off('renderDialogV2', hookId);
+        resolve(null);
+      });
+    });
+
+    return result ?? null;
+  }
+
+  /**
+   * Creates a PF2e effect on the actor to visually indicate a coated weapon.
+   * @param {Actor} actor
+   * @param {string} weaponName
+   * @param {string} poisonName
+   * @param {string} expirationMode
+   * @param {string|null} [poisonImg] - Image from the poison item
+   * @returns {Promise<string|null>} Effect UUID or null
+   */
+  static async createCoatingEffect(actor, weaponName, poisonName, expirationMode, poisonImg = null) {
+    const i = game.i18n;
+    const durationConfig = this._getEffectDuration(expirationMode);
+    const effectName = i.format(`${K}.EFFECT_NAME`, { poisonName, weaponName });
+    const effectDesc = i.format(`${K}.EFFECT_DESCRIPTION`, { poisonName, weaponName });
+
+    const effectData = {
+      type: 'effect',
+      name: effectName,
+      img: poisonImg || 'icons/svg/poison.svg',
+      system: {
+        description: { value: `<p>${effectDesc}</p>` },
+        tokenIcon: { show: true },
+        duration: durationConfig,
+        badge: null,
+        rules: [],
+        slug: `coating-${poisonName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+        unidentified: false
+      },
+      flags: {
+        [MODULE_ID]: {
+          isCoatingEffect: true,
+          weaponName,
+          poisonName
+        }
+      }
+    };
+
+    try {
+      const [created] = await actor.createEmbeddedDocuments('Item', [effectData]);
+      return created?.uuid ?? null;
+    } catch (error) {
+      console.error('PF2e Afflictioner | Error creating coating effect:', error);
+      return null;
+    }
+  }
+
+  static _getEffectDuration(mode) {
+    if (mode?.startsWith('custom:')) {
+      const [, val, unit] = mode.split(':');
+      return { value: parseInt(val) || 1, unit: unit || 'minutes', expiry: null, sustained: false };
+    }
+
+    switch (mode) {
+      case 'start-next-turn':
+        return { value: 1, unit: 'rounds', expiry: 'turn-start', sustained: false };
+      case 'end-next-turn':
+        return { value: 1, unit: 'rounds', expiry: 'turn-end', sustained: false };
+      case '1-minute':
+        return { value: 1, unit: 'minutes', expiry: null, sustained: false };
+      case '10-minutes':
+        return { value: 10, unit: 'minutes', expiry: null, sustained: false };
+      case '1-hour':
+        return { value: 1, unit: 'hours', expiry: null, sustained: false };
+      default: // unlimited
+        return { value: -1, unit: 'unlimited', expiry: null, sustained: false };
+    }
+  }
+
+  /**
+   * Finds the combatant ID for the given actor in the current combat.
+   * @param {Actor} actor
+   * @returns {string|null}
+   */
+  static _findCombatantId(actor) {
+    if (!game.combat?.started) return null;
+    const combatant = game.combat.combatants.find(c => c.actorId === actor.id);
+    return combatant?.id ?? null;
+  }
+
+  /**
+   * If the actor has the Toxicologist feat, marks poison damage entries as choices
+   * between poison and acid damage types.
+   * @param {Actor} actor
+   * @param {object} afflictionData
+   * @returns {object} Modified affliction data (deep-copied if changed)
+   */
+  static _applyToxicologistSwap(actor, afflictionData) {
+    if (!FeatsService.hasToxicologistFieldVenom(actor)) return afflictionData;
+
+    const modified = JSON.parse(JSON.stringify(afflictionData));
+    let applied = false;
+
+    for (const stage of modified.stages) {
+      if (!stage.damage) continue;
+      stage.damage = stage.damage.map(d => {
+        if (d.type === 'poison' && !d.isChoice) {
+          applied = true;
+          return { ...d, isChoice: true, alternativeType: 'acid' };
+        }
+        return d;
+      });
+    }
+
+    if (applied) {
+      ui.notifications.info(game.i18n.localize(`${K}.TOXICOLOGIST_APPLIED`));
+    }
+
+    return modified;
   }
 
   /**
