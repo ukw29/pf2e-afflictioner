@@ -170,7 +170,24 @@ async function handleAttackRoll(_message, flags) {
 
       const i = game.i18n;
       const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
-      const targets = Array.from(game.user.targets);
+
+      // Extract target from PF2e message flags (reliable regardless of who processes the hook)
+      const targets = [];
+      const pf2eTarget = flags.context?.target;
+      if (pf2eTarget?.token) {
+        try {
+          const tokenDoc = await fromUuid(pf2eTarget.token);
+          if (tokenDoc) {
+            const canvasToken = canvas.tokens.get(tokenDoc.id);
+            if (canvasToken) targets.push(canvasToken);
+          }
+        } catch { /* ignore */ }
+      }
+      // Fallback to current user's targets
+      if (!targets.length) {
+        targets.push(...game.user.targets);
+      }
+
       if (targets.length) {
         for (const target of targets) {
           await ChatMessage.create({

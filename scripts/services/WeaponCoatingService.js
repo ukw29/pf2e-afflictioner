@@ -297,7 +297,7 @@ export class WeaponCoatingService {
       if (!token || seen.has(token.id)) return;
       seen.add(token.id);
       const actor = token.actor;
-      if (!actor) return;
+      if (!actor || !actor.isOwner) return;
       for (const weapon of (actor.itemTypes?.weapon || [])) {
         weapons.push({
           actorId: actor.id,

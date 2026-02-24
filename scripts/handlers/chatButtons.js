@@ -61,7 +61,8 @@ function registerApplyWeaponPoisonHandler(root) {
 }
 
 async function injectCoatWeaponButton(message, root) {
-  if (!game.user.isGM) return;
+  const speakerActor = message.speaker?.actor ? game.actors.get(message.speaker.actor) : null;
+  if (!game.user.isGM && !speakerActor?.isOwner) return;
 
   // Prevent double-injection on re-renders
   if (root.dataset.coatWeaponInjected === 'true') return;

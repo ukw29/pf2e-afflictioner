@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2026-02-24
+
+### Added
+
+- **Player weapon coating**: Players can now coat their own weapons with injury poisons and use the Envenom/Vishkanya flow directly from chat buttons, without requiring GM intervention. The "Coat Weapon" button appears for any user who owns the speaker's actor.
+
+### Fixed
+
+- **Attack roll target detection**: Fixed coated weapon hit detection always showing "No targets selected" because it read the GM's targets instead of the actual attack target. Now extracts the target from PF2e's message flags embedded in the attack roll.
+
 ## [1.2.1] - 2026-02-24
 
 ### Fixed
