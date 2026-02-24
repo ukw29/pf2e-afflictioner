@@ -299,6 +299,22 @@ export async function injectConfirmationButton(message, root) {
     }
   }
 
+  // Fast Recovery: show extra stage-reduction indicator on stage saves
+  let fastRecoveryStages = 0;
+  if (saveType === 'stage') {
+    const token = canvas.tokens.get(tokenId);
+    if (token) {
+      const affliction = AfflictionStore.getAffliction(token, afflictionId);
+      if (affliction) {
+        const { FeatsService } = await import('../services/FeatsService.js');
+        if (FeatsService.hasFastRecovery(token.actor)) {
+          const frChange = FeatsService.getFastRecoveryStageChange(degree, affliction.isVirulent);
+          if (frChange !== null) fastRecoveryStages = Math.abs(frChange);
+        }
+      }
+    }
+  }
+
   const colors = colorScheme[effectiveDegree];
 
   const messageContent = root.querySelector('.message-content');
@@ -340,7 +356,10 @@ export async function injectConfirmationButton(message, root) {
   const infoHtml = blowgunPoisonerActive
     ? ` <i class="fas fa-info-circle" style="margin-left:5px;font-size:12px;opacity:0.9;pointer-events:all;" data-tooltip="${game.i18n.format('PF2E_AFFLICTIONER.FEATS.BLOWGUN_POISONER_DEGRADED_TOOLTIP', { to: degreeLabels[effectiveDegree] })}"></i>`
     : '';
-  button.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_CONSEQUENCES')}${infoHtml}`;
+  const frInfoHtml = fastRecoveryStages > 0
+    ? ` <i class="fas fa-bolt" style="margin-left:5px;font-size:12px;opacity:0.9;pointer-events:all;color:#90ee90;" data-tooltip="${game.i18n.format('PF2E_AFFLICTIONER.FEATS.FAST_RECOVERY_BUTTON_TOOLTIP', { stages: fastRecoveryStages })}"></i>`
+    : '';
+  button.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_CONSEQUENCES')}${infoHtml}${frInfoHtml}`;
 
   button.addEventListener('mouseenter', () => {
     button.style.transform = 'translateY(-1px)';

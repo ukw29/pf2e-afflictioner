@@ -241,7 +241,8 @@
     "FEATS": {
       "BLOWGUN_POISONER_APPLIED": "Blowgun Poisoner: {targetName}'s initial save against {afflictionName} was degraded one step.",
       "BLOWGUN_POISONER_DEGRADED_TOOLTIP": "Blowgun Poisoner: save result treated as {to}",
-      "FAST_RECOVERY_STAGE_CHANGE": "Fast Recovery: {tokenName}'s save reduced {afflictionName} by {stages} stage(s)."
+      "FAST_RECOVERY_STAGE_CHANGE": "Fast Recovery: {tokenName}'s save reduced {afflictionName} by {stages} stage(s).",
+      "FAST_RECOVERY_BUTTON_TOOLTIP": "Fast Recovery: stage will decrease by {stages} step(s)"
     },
     "DEGREES": {
       "CRITICAL_SUCCESS": "Critical Success",

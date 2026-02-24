@@ -294,7 +294,7 @@ export class AfflictionChatService {
     });
   }
 
-  static async postStageChange(token, affliction, oldStage, newStage) {
+  static async postStageChange(token, affliction, oldStage, newStage, options = {}) {
     const oldStageText = oldStage === 0 ? game.i18n.localize('PF2E_AFFLICTIONER.CHAT.INITIAL_EXPOSURE') : `${game.i18n.localize('PF2E_AFFLICTIONER.MANAGER.STAGE')} ${oldStage}`;
     const stageDirection = newStage > oldStage ? game.i18n.localize('PF2E_AFFLICTIONER.CHAT.STAGE_INCREASED') : game.i18n.localize('PF2E_AFFLICTIONER.CHAT.STAGE_DECREASED');
     const stageIcon = newStage > oldStage ? 'fa-arrow-up' : 'fa-arrow-down';
@@ -325,6 +325,10 @@ export class AfflictionChatService {
       }
     }
 
+    const fastRecoveryNote = (options.fastRecovery && newStage < oldStage)
+      ? `<div style="margin-top:6px;padding:5px 8px;background:rgba(0,0,0,0.3);border-left:3px solid #4a9c2a;border-radius:3px;font-size:0.85em;color:#f5f5f5;"><i class="fas fa-bolt" style="margin-right:4px;"></i>${game.i18n.format('PF2E_AFFLICTIONER.FEATS.FAST_RECOVERY_STAGE_CHANGE', { tokenName: token.name, afflictionName: affliction.name, stages: oldStage - newStage })}</div>`
+      : '';
+
     const content = `
       <div class="pf2e-afflictioner-stage-change" style="border-left: 5px solid ${stageColor}; padding: 12px; background: ${bgColor}; border-radius: 4px; margin: 8px 0;">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
@@ -336,6 +340,7 @@ export class AfflictionChatService {
         </div>
         ${effectsSummary}
         ${newStageData && newStageData.effects ? `<div style="margin: 8px 0; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px; font-style: italic; color: #f5f5f5; font-size: 0.9em; border-left: 3px solid ${stageColor}; padding-left: 10px;">${newStageData.effects}</div>` : ''}
+        ${fastRecoveryNote}
       </div>
     `;
 

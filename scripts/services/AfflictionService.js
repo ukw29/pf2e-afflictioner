@@ -224,7 +224,8 @@ export class AfflictionService {
     let showVirulentMessage = false;
 
     const fastRecoveryChange = !isManual ? FeatsService.getFastRecoveryStageChange(degree, affliction.isVirulent) : null;
-    if (fastRecoveryChange !== null && FeatsService.hasFastRecovery(token.actor)) {
+    const fastRecoveryApplied = fastRecoveryChange !== null && FeatsService.hasFastRecovery(token.actor);
+    if (fastRecoveryApplied) {
       stageChange = fastRecoveryChange;
       newVirulentConsecutiveSuccesses = 0;
     } else if (affliction.isVirulent && !isManual) {
@@ -367,7 +368,7 @@ export class AfflictionService {
       afflictionName: affliction.name
     }));
 
-    await AfflictionChatService.postStageChange(token, affliction, oldStage, finalStage);
+    await AfflictionChatService.postStageChange(token, affliction, oldStage, finalStage, { fastRecovery: fastRecoveryApplied });
   }
 
   static async applyStageEffects(token, affliction, stage) {
