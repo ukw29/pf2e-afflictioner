@@ -63,6 +63,12 @@ export const EN_PARSER_LOCALE = {
     { regex: /weakness\s+(\d+)\s+to\s+(\w+)/gi, typeGroup: 2, valueGroup: 1 },
   ],
 
+  // ── Speed penalty patterns ────────────────────────────────────────────────
+  // Each entry: regex with g flag, valueGroup index for the penalty number.
+  speedPenaltyPatterns: [
+    { regex: /[\u2013\u2014-](\d+)[\u2013\u2014-]foot\s+status\s+penalty\s+to\s+(?:all\s+)?[Ss]peed/g, valueGroup: 1 },
+  ],
+
   // ── Multiple-exposure patterns ─────────────────────────────────────────────
   // Each entry: main captures stageIncrease in group 1; minStage (optional)
   // captures the minimum stage qualifier in group 1.

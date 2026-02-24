@@ -110,6 +110,12 @@ export const ZH_PARSER_LOCALE = {
     { regex: /弱点\s*([\u4e00-\u9fff]+)\s*(\d+)/gi, typeGroup: 1, valueGroup: 2 },
   ],
 
+  // ── Speed penalty patterns ────────────────────────────────────────────────
+  // "速度-5尺状态减值" = speed –5-foot status penalty
+  speedPenaltyPatterns: [
+    { regex: /速度[\u2013\u2014-](\d+)尺状态减值/g, valueGroup: 1 },
+  ],
+
   // ── Multiple-exposure patterns ─────────────────────────────────────────────
   multipleExposurePatterns: [
     {
