@@ -2,6 +2,7 @@ import { registerSaveButtonHandlers, injectConfirmationButton } from './saveButt
 import { registerAfflictionButtonHandlers } from './afflictionButtons.js';
 import { registerTreatmentButtonHandlers, addTreatmentAfflictionSelection } from './treatmentButtons.js';
 import { registerCounteractButtonHandlers, addCounteractAfflictionSelection, injectCounteractConfirmButton } from './counteractButtons.js';
+import { VishkanyaService } from '../services/VishkanyaService.js';
 
 export function onRenderChatMessage(message, html) {
   const root = html?.jquery ? html[0] : html;
@@ -62,6 +63,9 @@ function registerApplyWeaponPoisonHandler(root) {
 async function injectCoatWeaponButton(message, root) {
   if (!game.user.isGM) return;
 
+  // Prevent double-injection on re-renders
+  if (root.dataset.coatWeaponInjected === 'true') return;
+
   const itemUuid = message.flags?.pf2e?.origin?.uuid;
   if (!itemUuid) return;
 
@@ -74,7 +78,13 @@ async function injectCoatWeaponButton(message, root) {
   if (!item) return;
 
   const traits = item.system?.traits?.value || [];
-  if (!traits.includes('injury')) return;
+  const isInjuryPoison = traits.includes('injury');
+  const isEnvenom = VishkanyaService.isEnvenomItem(item);
+
+  if (!isInjuryPoison && !isEnvenom) return;
+
+  const speakerActorId = message.speaker?.actor;
+  const speakerTokenId = message.speaker?.token;
 
   const footer = root.querySelector('.card-footer, .chat-card footer, .item-card footer');
   const container = footer || root.querySelector('.chat-card, .item-card') || root;
@@ -83,22 +93,40 @@ async function injectCoatWeaponButton(message, root) {
   btn.type = 'button';
   btn.className = 'pf2e-afflictioner-coat-weapon-btn';
   btn.innerHTML = `<i class="fas fa-flask"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.COAT_WEAPON_BTN')}`;
-  btn.dataset.itemUuid = itemUuid;
 
+  if (isEnvenom) {
+    const actor = speakerActorId ? game.actors.get(speakerActorId) : null;
+    if (!actor) return;
 
-  const speakerActorId = message.speaker?.actor;
-  const speakerTokenId = message.speaker?.token;
+    const afflictionData = VishkanyaService.buildVenomAfflictionData(actor);
+    btn.dataset.envenomData = encodeURIComponent(JSON.stringify(afflictionData));
 
-  btn.addEventListener('click', async () => {
-    const targetTokenIds = [...game.user.targets].map(t => t.id);
-    const { WeaponCoatingService } = await import('../services/WeaponCoatingService.js');
-    const coated = await WeaponCoatingService.openCoatDialog(itemUuid, speakerActorId, speakerTokenId, targetTokenIds);
-    if (coated) {
-      btn.disabled = true;
-      btn.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.COAT_WEAPON_DONE')}`;
-    }
-  });
+    btn.addEventListener('click', async () => {
+      const targetTokenIds = [...game.user.targets].map(t => t.id);
+      const hasDebilitatingVenom = VishkanyaService.hasDebilitatingVenom(actor);
+      const data = JSON.parse(decodeURIComponent(btn.dataset.envenomData));
+      const { WeaponCoatingService } = await import('../services/WeaponCoatingService.js');
+      const coated = await WeaponCoatingService.openCoatDialogWithData(data, speakerActorId, speakerTokenId, targetTokenIds, { hasDebilitatingVenom });
+      if (coated) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.COAT_WEAPON_DONE')}`;
+      }
+    });
+  } else {
+    btn.dataset.itemUuid = itemUuid;
 
+    btn.addEventListener('click', async () => {
+      const targetTokenIds = [...game.user.targets].map(t => t.id);
+      const { WeaponCoatingService } = await import('../services/WeaponCoatingService.js');
+      const coated = await WeaponCoatingService.openCoatDialog(itemUuid, speakerActorId, speakerTokenId, targetTokenIds);
+      if (coated) {
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.WEAPON_COATING.COAT_WEAPON_DONE')}`;
+      }
+    });
+  }
+
+  root.dataset.coatWeaponInjected = 'true';
   container.appendChild(btn);
 }
 

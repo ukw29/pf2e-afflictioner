@@ -2,6 +2,8 @@ import * as AfflictionStore from '../stores/AfflictionStore.js';
 import { AfflictionService } from '../services/AfflictionService.js';
 import { AfflictionParser } from '../services/AfflictionParser.js';
 import { shouldSkipAffliction } from '../utils.js';
+import { FeatsService } from '../services/FeatsService.js';
+import { DEGREE_OF_SUCCESS } from '../constants.js';
 
 export function registerAfflictionButtonHandlers(root, message) {
   registerDamageButtons(root);
@@ -159,6 +161,18 @@ async function addApplyAfflictionButton(message, htmlElement) {
   const noteDcMatch = afflictionNote.text?.match(/data-pf2-dc="(\d+)"/i);
   if (noteDcMatch) {
     afflictionData.dc = parseInt(noteDcMatch[1]);
+  }
+
+  // Blowgun Poisoner: degrade the target's initial save if the attacker critically hit with a blowgun
+  const attackOutcome = message.flags?.pf2e?.context?.outcome;
+  const attackOptions = message.flags?.pf2e?.context?.options ?? [];
+  const isBlowgunAttack = attackOptions.some(opt => typeof opt === 'string' && opt.includes('blowgun'));
+  if (
+    attackOutcome === DEGREE_OF_SUCCESS.CRITICAL_SUCCESS &&
+    isBlowgunAttack &&
+    FeatsService.hasBlowgunPoisoner(actor)
+  ) {
+    afflictionData.blowgunPoisonerCrit = true;
   }
 
   const allRollNotes = htmlElement.querySelectorAll('.roll-note');

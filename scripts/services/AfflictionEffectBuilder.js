@@ -256,6 +256,17 @@ export class AfflictionEffectBuilder {
       }
     }
 
+    // Speed penalties: "–N-foot status penalty to Speed" (en/em dash variants)
+    const speedPenaltyRe = /[\u2013\u2014-](\d+)[\u2013\u2014-]foot\s+status\s+penalty\s+to\s+(?:all\s+)?[Ss]peed/g;
+    let speedMatch;
+    while ((speedMatch = speedPenaltyRe.exec(effectText)) !== null) {
+      bonuses.push({
+        value: -parseInt(speedMatch[1]),
+        type: 'status',
+        selector: 'all-speeds'
+      });
+    }
+
     return bonuses;
   }
 

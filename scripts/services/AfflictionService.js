@@ -6,6 +6,7 @@ import { AfflictionEditorService } from './AfflictionEditorService.js';
 import { AfflictionEffectBuilder } from './AfflictionEffectBuilder.js';
 import { AfflictionChatService } from './AfflictionChatService.js';
 import { AfflictionTimerService } from './AfflictionTimerService.js';
+import { FeatsService } from './FeatsService.js';
 
 export class AfflictionService {
   static async promptInitialSave(token, afflictionData) {
@@ -72,7 +73,19 @@ export class AfflictionService {
   }
 
   static async handleInitialSave(token, affliction, saveTotal, dc, dieValue = null) {
-    const degree = this.calculateDegreeOfSuccess(saveTotal, dc, dieValue);
+    let degree = this.calculateDegreeOfSuccess(saveTotal, dc, dieValue);
+
+    if (affliction.blowgunPoisonerCrit) {
+      const degraded = FeatsService.degradeDegree(degree);
+      if (degraded !== degree) {
+        degree = degraded;
+        ui.notifications.info(game.i18n.format('PF2E_AFFLICTIONER.FEATS.BLOWGUN_POISONER_APPLIED', {
+          targetName: token.name,
+          afflictionName: affliction.name
+        }));
+      }
+    }
+
     const isReExposure = affliction._isReExposure;
     const existingAfflictionId = affliction._existingAfflictionId;
 
@@ -210,7 +223,11 @@ export class AfflictionService {
     let newVirulentConsecutiveSuccesses = affliction.virulentConsecutiveSuccesses || 0;
     let showVirulentMessage = false;
 
-    if (affliction.isVirulent && !isManual) {
+    const fastRecoveryChange = !isManual ? FeatsService.getFastRecoveryStageChange(degree, affliction.isVirulent) : null;
+    if (fastRecoveryChange !== null && FeatsService.hasFastRecovery(token.actor)) {
+      stageChange = fastRecoveryChange;
+      newVirulentConsecutiveSuccesses = 0;
+    } else if (affliction.isVirulent && !isManual) {
       switch (degree) {
         case DEGREE_OF_SUCCESS.CRITICAL_SUCCESS:
           stageChange = -1;

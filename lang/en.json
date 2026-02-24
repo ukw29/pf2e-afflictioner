@@ -238,6 +238,11 @@
       "CANNOT_COUNTERACT_RANK": "Can counteract up to rank {maxRank}, but affliction is rank {afflictionRank}.",
       "NO_STAGES_DEFINED": "Affliction {name} has no stages defined"
     },
+    "FEATS": {
+      "BLOWGUN_POISONER_APPLIED": "Blowgun Poisoner: {targetName}'s initial save against {afflictionName} was degraded one step.",
+      "BLOWGUN_POISONER_DEGRADED_TOOLTIP": "Blowgun Poisoner: save result treated as {to}",
+      "FAST_RECOVERY_STAGE_CHANGE": "Fast Recovery: {tokenName}'s save reduced {afflictionName} by {stages} stage(s)."
+    },
     "DEGREES": {
       "CRITICAL_SUCCESS": "Critical Success",
       "SUCCESS": "Success",
@@ -346,6 +351,13 @@
       "TOOLTIP_STAGE": "Stage {number}: {effects}",
       "TOOLTIP_NO_EFFECTS": "No effects",
       "COAT_WEAPON_DONE": "Weapon Coated"
+    },
+    "VISHKANYA": {
+      "DEBILITATION_TITLE": "Choose Debilitation",
+      "DEBILITATION_PROMPT": "Apply a debilitation with Debilitating Venom?",
+      "DEBILITATION_NONE": "None",
+      "DEBILITATION_HAMPERING": "Hampering (–5/–10ft Speed)",
+      "DEBILITATION_STUMBLING": "Stumbling (Off-Guard stage 2+)"
     },
     "CONFLICT": {
       "TITLE": "Import Conflicts",

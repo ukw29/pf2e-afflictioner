@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-02-24
+
+### Added
+
+- **Vishkanya ancestry feat support**: The "Coat Weapon" button now appears on chat cards for the Envenom action and all Enhance Venom feat actions (Lesser, Moderate, Greater). Venom tier and damage are determined automatically from the actor's feats (base 1d4, lesser 1d6/2d6, moderate 3–5d6, greater 7–11d6). The Vicious Venom feat marks the venom as virulent. The Debilitating Venom feat prompts a choice of Hampering (–5/–10ft Speed penalty) or Stumbling (Off-Guard on stages 2–3) before coating. Envenom venom is not consumed on use.
+- **Blowgun Poisoner feat support**: When an attacker with the Blowgun Poisoner feat critically succeeds at a blowgun Strike with a coated or innate-note poison, the target's initial Fortitude save is treated as one degree worse.
+- **Fast Recovery feat support**: When a character with Fast Recovery succeeds at a stage save against a disease or poison, the affliction regresses by 2 stages (1 on a critical success it regresses by 3; virulent afflictions reduce those values by 1). Fast Recovery bypasses the virulent consecutive-successes mechanic.
+
+## [1.1.10] - 2026-02-23
+
+### Added
+
+- **Token Tools button mode**: New setting "Use Token Tools Button" moves the Affliction Manager button from the Token HUD to the Scene Controls token tools sidebar. The button appears only when a token is selected, glows red with a pulsing animation when the selected token has active afflictions, and updates in real time as afflictions are added or removed.
+
+### Fixed
+
+- **Show Visual Indicators now controls the monitor panel**: The "Show Visual Indicators" setting now correctly hides the affliction monitor panel (floating corner widget) when turned off, in addition to the token tint it already controlled.
+- **Show Visual Indicators description corrected**: The setting hint now accurately describes what it controls — a red tint on afflicted tokens and the monitor panel — replacing the incorrect "biohazard icon" wording.
+
 ## [1.1.9] - 2026-02-23
 
 ### Added

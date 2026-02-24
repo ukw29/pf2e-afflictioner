@@ -236,6 +236,11 @@
       "CANNOT_COUNTERACT_RANK": "最高可反制环级 {maxRank}，但该苦难的环级为 {afflictionRank}。",
       "NO_STAGES_DEFINED": "苦难 {name} 未定义任何阶段"
     },
+    "FEATS": {
+      "BLOWGUN_POISONER_APPLIED": "吹管下毒者：{targetName} 对 {afflictionName} 的初始豁免被降低一个等级。",
+      "BLOWGUN_POISONER_DEGRADED_TOOLTIP": "吹管下毒者：豁免结果视为 {to}（实际骰出 {from}）",
+      "FAST_RECOVERY_STAGE_CHANGE": "快速康复：{tokenName} 的豁免使 {afflictionName} 减少了 {stages} 个阶段。"
+    },
     "DEGREES": {
       "CRITICAL_SUCCESS": "大成功",
       "SUCCESS": "成功",
@@ -343,6 +348,13 @@
       "TOOLTIP_MAX_DURATION": "最大持续时间：{value} {unit}",
       "TOOLTIP_STAGE": "阶段 {number}：{effects}",
       "TOOLTIP_NO_EFFECTS": "无效果"
+    },
+    "VISHKANYA": {
+      "DEBILITATION_TITLE": "选择衰弱效果",
+      "DEBILITATION_PROMPT": "是否通过致衰毒液施加衰弱效果？",
+      "DEBILITATION_NONE": "无",
+      "DEBILITATION_HAMPERING": "阻碍（移动速度 –5/–10 尺）",
+      "DEBILITATION_STUMBLING": "蹒跚（第 2 阶段起获得无防备状态）"
     },
     "CONFLICT": {
       "TITLE": "导入冲突",

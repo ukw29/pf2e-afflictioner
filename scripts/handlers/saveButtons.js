@@ -281,7 +281,25 @@ export async function injectConfirmationButton(message, root) {
     }
   };
 
-  const colors = colorScheme[degree];
+  // Blowgun Poisoner: degrade the displayed degree for initial saves
+  let effectiveDegree = degree;
+  let blowgunPoisonerActive = false;
+  if (saveType === 'initial') {
+    const token = canvas.tokens.get(tokenId);
+    if (token) {
+      const affliction = AfflictionStore.getAffliction(token, afflictionId);
+      if (affliction?.blowgunPoisonerCrit) {
+        const { FeatsService } = await import('../services/FeatsService.js');
+        const degraded = FeatsService.degradeDegree(degree);
+        if (degraded !== degree) {
+          effectiveDegree = degraded;
+          blowgunPoisonerActive = true;
+        }
+      }
+    }
+  }
+
+  const colors = colorScheme[effectiveDegree];
 
   const messageContent = root.querySelector('.message-content');
   if (!messageContent) return;
@@ -312,7 +330,17 @@ export async function injectConfirmationButton(message, root) {
     text-transform: uppercase;
     letter-spacing: 0.5px;
   `;
-  button.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_CONSEQUENCES')}`;
+
+  const degreeLabels = {
+    [DEGREE_OF_SUCCESS.CRITICAL_SUCCESS]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.CRITICAL_SUCCESS'),
+    [DEGREE_OF_SUCCESS.SUCCESS]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.SUCCESS'),
+    [DEGREE_OF_SUCCESS.FAILURE]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.FAILURE'),
+    [DEGREE_OF_SUCCESS.CRITICAL_FAILURE]: game.i18n.localize('PF2E_AFFLICTIONER.DEGREES.CRITICAL_FAILURE'),
+  };
+  const infoHtml = blowgunPoisonerActive
+    ? ` <i class="fas fa-info-circle" style="margin-left:5px;font-size:12px;opacity:0.9;pointer-events:all;" data-tooltip="${game.i18n.format('PF2E_AFFLICTIONER.FEATS.BLOWGUN_POISONER_DEGRADED_TOOLTIP', { to: degreeLabels[effectiveDegree] })}"></i>`
+    : '';
+  button.innerHTML = `<i class="fas fa-check"></i> ${game.i18n.localize('PF2E_AFFLICTIONER.BUTTONS.APPLY_CONSEQUENCES')}${infoHtml}`;
 
   button.addEventListener('mouseenter', () => {
     button.style.transform = 'translateY(-1px)';

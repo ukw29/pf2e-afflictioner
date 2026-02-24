@@ -3,6 +3,7 @@ import { AfflictionParser } from '../services/AfflictionParser.js';
 import * as AfflictionStore from '../stores/AfflictionStore.js';
 import * as WeaponCoatingStore from '../stores/WeaponCoatingStore.js';
 import { DEGREE_OF_SUCCESS, MODULE_ID } from '../constants.js';
+import { FeatsService } from '../services/FeatsService.js';
 
 export async function onCreateChatMessage(message, options, userId) {
   if (!game.user.isGM) return;
@@ -156,6 +157,17 @@ async function handleAttackRoll(_message, flags) {
     const hasPiercingOrSlashing = damageType === 'piercing' || damageType === 'slashing';
 
     if (hasPiercingOrSlashing) {
+      // Blowgun Poisoner: if the attacker critted with a blowgun and has the feat, degrade target's initial save
+      const weaponTraits = weapon.system?.traits?.value ?? [];
+      const isBlowgunStrike = weaponTraits.includes('blowgun') || weapon.system?.slug === 'blowgun';
+      const buttonAfflictionData = (
+        outcome === DEGREE_OF_SUCCESS.CRITICAL_SUCCESS &&
+        isBlowgunStrike &&
+        FeatsService.hasBlowgunPoisoner(actor)
+      )
+        ? { ...coating.afflictionData, blowgunPoisonerCrit: true }
+        : coating.afflictionData;
+
       const i = game.i18n;
       const K = 'PF2E_AFFLICTIONER.WEAPON_COATING';
       const targets = Array.from(game.user.targets);
@@ -170,7 +182,7 @@ async function handleAttackRoll(_message, flags) {
                         data-target-token-id="${target.id}"
                         data-actor-id="${actor.id}"
                         data-weapon-id="${weapon.id}"
-                        data-affliction-data="${encodeURIComponent(JSON.stringify(coating.afflictionData))}">
+                        data-affliction-data="${encodeURIComponent(JSON.stringify(buttonAfflictionData))}">
                   <i class="fas fa-biohazard"></i> ${i.format(`${K}.HIT_APPLY_BTN`, { targetName: target.name })}
                 </button>
               </div>`,
