@@ -285,7 +285,7 @@ export async function injectConfirmationButton(message, root) {
   let effectiveDegree = degree;
   let blowgunPoisonerActive = false;
   if (saveType === 'initial') {
-    const token = canvas.tokens.get(tokenId);
+    const token = canvas?.tokens?.get(tokenId);
     if (token) {
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
       if (affliction?.blowgunPoisonerCrit) {
@@ -302,7 +302,7 @@ export async function injectConfirmationButton(message, root) {
   // Fast Recovery: show extra stage-reduction indicator on stage saves
   let fastRecoveryStages = 0;
   if (saveType === 'stage') {
-    const token = canvas.tokens.get(tokenId);
+    const token = canvas?.tokens?.get(tokenId);
     if (token) {
       const affliction = AfflictionStore.getAffliction(token, afflictionId);
       if (affliction) {
