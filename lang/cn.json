@@ -20,10 +20,20 @@
       "GM_ROLL_MYSTERIOUS_HINT": "GM 为秘密苦难（有潜伏期或阶段1无机制效果）暗中掷骰进行初始豁免。玩家将完全看不到豁免请求，以保持绝对机密。",
       "USE_APP_INITIATIVE_NAME": "使用应用时的先攻",
       "USE_APP_INITIATIVE_HINT": "启用后，苦难豁免会在首次应用该苦难的同一先攻步骤触发，而不是在受苦难指示物自身的先攻步骤触发。此为非官方规则——PF2e规则书中并未明确规定。",
+      "USE_TOKEN_TOOLS_BUTTON_NAME": "使用指示物工具栏按钮",
+      "USE_TOKEN_TOOLS_BUTTON_HINT": "将苦难管理器按钮从指示物 HUD 移动到指示物工具侧边栏。该按钮仅在选中指示物时显示，当选中的指示物具有激活的苦难时，该按钮会发红光。",
       "EDITED_AFFLICTIONS_STORE_NAME": "已编辑苦难",
       "EDITED_AFFLICTIONS_STORE_HINT": "存储 GM 编辑过的苦难定义",
       "COMMUNITY_DATA_VERSION_NAME": "社区数据版本",
-      "COMMUNITY_DATA_VERSION_HINT": "上次导入的社区苦难数据版本"
+      "COMMUNITY_DATA_VERSION_HINT": "上次导入的社区苦难数据版本",
+      "PROMPT_COATING_DURATION_NAME": "提示涂层持续时间",
+      "PROMPT_COATING_DURATION_HINT": "启用后，将提示 GM 选择每种武器涂层的持续时间。禁用时，所有涂层都将无限期持续，直到被消耗。",
+      "COATING_DURATION_UNLIMITED": "无限期",
+      "COATING_DURATION_START_NEXT_TURN": "下回合开始",
+      "COATING_DURATION_END_NEXT_TURN": "下回合结束",
+      "COATING_DURATION_1_MIN": "1 分钟",
+      "COATING_DURATION_10_MIN": "10 分钟",
+      "COATING_DURATION_1_HOUR": "1 小时"
     },
     "MANAGER": {
       "TITLE": "苦难管理器",
@@ -237,10 +247,10 @@
       "NO_STAGES_DEFINED": "苦难 {name} 未定义任何阶段"
     },
     "FEATS": {
-      "BLOWGUN_POISONER_APPLIED": "吹管下毒者：{targetName} 对 {afflictionName} 的初始豁免被降低一个等级。",
-      "BLOWGUN_POISONER_DEGRADED_TOOLTIP": "吹管下毒者：豁免结果视为 {to}（实际骰出 {from}）",
-      "FAST_RECOVERY_STAGE_CHANGE": "快速康复：{tokenName} 的豁免使 {afflictionName} 减少了 {stages} 个阶段。",
-      "FAST_RECOVERY_BUTTON_TOOLTIP": "快速康复：阶段将减少 {stages} 级"
+      "BLOWGUN_POISONER_APPLIED": "吹箭投毒者：{targetName} 对 {afflictionName} 的初始豁免被降低一个等级。",
+      "BLOWGUN_POISONER_DEGRADED_TOOLTIP": "吹箭投毒者：豁免结果视为 {to}（实际骰出 {from}）",
+      "FAST_RECOVERY_STAGE_CHANGE": "快速恢复：{tokenName} 的豁免使 {afflictionName} 减少了 {stages} 个阶段。",
+      "FAST_RECOVERY_BUTTON_TOOLTIP": "快速恢复：阶段将减少 {stages} 级"
     },
     "DEGREES": {
       "CRITICAL_SUCCESS": "大成功",
@@ -348,14 +358,28 @@
       "TOOLTIP_ONSET": "潜伏期：{value} {unit}",
       "TOOLTIP_MAX_DURATION": "最大持续时间：{value} {unit}",
       "TOOLTIP_STAGE": "阶段 {number}：{effects}",
-      "TOOLTIP_NO_EFFECTS": "无效果"
+      "TOOLTIP_NO_EFFECTS": "无效果",
+      "COAT_WEAPON_DONE": "武器已涂毒",
+      "DURATION_TITLE": "涂层持续时间",
+      "DURATION_PROMPT": "此涂层应持续多久？",
+      "DURATION_HINT_STRICT": "高速炼金（严格）",
+      "DURATION_HINT_MODERATE": "高速炼金（宽松）",
+      "DURATION_HINT_UNLIMITED": "购买的毒药",
+      "DURATION_CUSTOM_LABEL": "自定义持续时间：",
+      "DURATION_UNIT_ROUNDS": "轮",
+      "DURATION_UNIT_MINUTES": "分钟",
+      "DURATION_UNIT_HOURS": "小时",
+      "EXPIRED": "{weaponName} 上的 {poisonName} 涂层已过期",
+      "EFFECT_NAME": "{poisonName} ({weaponName})",
+      "EFFECT_DESCRIPTION": "{weaponName} 已涂抹 {poisonName}",
+      "TOXICOLOGIST_APPLIED": "毒药学家：毒素伤害可作为强酸伤害造成"
     },
     "VISHKANYA": {
       "DEBILITATION_TITLE": "选择衰弱效果",
       "DEBILITATION_PROMPT": "是否通过致衰毒液施加衰弱效果？",
       "DEBILITATION_NONE": "无",
       "DEBILITATION_HAMPERING": "阻碍（移动速度 –5/–10 尺）",
-      "DEBILITATION_STUMBLING": "蹒跚（第 2 阶段起获得无防备状态）"
+      "DEBILITATION_STUMBLING": "踉跄（第 2 阶段起获得措手不及）"
     },
     "CONFLICT": {
       "TITLE": "导入冲突",
